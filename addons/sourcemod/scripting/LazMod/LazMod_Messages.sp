@@ -1,141 +1,90 @@
-#pragma semicolon 1
+
+
 
 #include <clientprefs>
 #include <sourcemod>
 #include <sdktools>
 #include <lazmod>
+#include <lazmod_stocks>
 #include <vphysics>
 
-new bool:g_bClientLang[MAXPLAYERS];
-new Handle:g_hCookieClientLang;
 
-public Plugin:myinfo = {
-	name = "BuildMod - Messages",
+
+
+public Plugin myinfo = {
+	name = "LazMod - Messages",
 	author = "LaZycAt, hjkwe654",
 	description = "Show props infomation.",
 	version = LAZMOD_VER,
 	url = ""
-};
+}
 
 public OnPluginStart() {
-	LoadTranslations("common.phrases");
-	CreateTimer(0.1, Display_Msgs, 0, TIMER_REPEAT);
-	g_hCookieClientLang = RegClientCookie("cookie_BuildModClientLang", "BuildMod Client Language.", CookieAccess_Private);
+	LoadTranslations("common.phrases")
+	CreateTimer(0.1, Display_Msgs, 0, TIMER_REPEAT)
 }
 
-public Action:OnClientCommand(Client, args) {
-	if (Client > 0) {
-		if (LM_IsClientValid(Client, Client)) {
-			new String:Lang[8];
-			GetClientCookie(Client, g_hCookieClientLang, Lang, sizeof(Lang));
-			if (StrEqual(Lang, "1"))
-				g_bClientLang[Client] = true;
-			else
-				g_bClientLang[Client] = false;
-		}
-	}
-}
-
-public Action:Display_Msgs(Handle:timer) {	
-	for (new Client = 1; Client <= MaxClients; Client++) {		
-		if (LM_IsClientValid(Client, Client, true) && !IsFakeClient(Client)) {
-			new iAimTarget = LM_ClientAimEntity(Client, false, true);
+public Action Display_Msgs(Handle timer) {	
+	for (int plyClient = 1; plyClient <= MaxClients; plyClient++) {		
+		if (LM_IsClientValid(plyClient, plyClient, true) && !IsFakeClient(plyClient)) {
+			int iAimTarget = LM_GetClientAimEntity(plyClient, false, true)
 			if (iAimTarget != -1 && IsValidEdict(iAimTarget))
-				EntityInfo(Client, iAimTarget);
+				EntityInfo(plyClient, iAimTarget)
 		}
 	}
-	return;
+	return Plugin_Handled
 }
 
-public EntityInfo(Client, iTarget) {
-	if (IsFunc(iTarget))
-		return;
+public EntityInfo(Client, entTarget) {
+	if (LM_IsFuncProp(entTarget))
+		return
 	
-	SetHudTextParams(0.015, 0.08, 0.1, 255, 255, 255, 255, 0, 6.0, 0.1, 0.2);
-	if (IsPlayer(iTarget)) {
-		new iHealth = GetClientHealth(iTarget);
+	SetHudTextParams(0.015, 0.08, 0.1, 255, 255, 255, 255, 0, 6.0, 0.1, 0.2)
+	if (LM_IsPlayer(entTarget)) {
+		int iHealth = GetClientHealth(entTarget)
 		if (iHealth <= 1)
-			iHealth = 0;
+			iHealth = 0
+
 		if (LM_IsAdmin(Client)) {
-			new String:szSteamId[32], String:szIP[16];
-			GetClientAuthString(iTarget, szSteamId, sizeof(szSteamId));
-			GetClientIP(iTarget, szIP, sizeof(szIP));
-			if (g_bClientLang[Client])
-				ShowHudText(Client, -1, "玩家: %N\n血量: %i\n玩家編號: %i\nSteamID:%s\nIP: %s", iTarget, iHealth, GetClientUserId(iTarget), szSteamId, szIP);
-			else
-				ShowHudText(Client, -1, "Player: %N\nHealth: %i\nUserID: %i\nSteamID:%s\nIP: %s", iTarget, iHealth, GetClientUserId(iTarget), szSteamId, szIP);
+			char szSteamId[32]
+			GetClientAuthId(entTarget, AuthId_Steam2, szSteamId, sizeof(szSteamId))
+			ShowHudText(Client, -1, "Player: %N\nHealth: %i\nUserID: %i\nSteamID:%s", entTarget, iHealth, GetClientUserId(entTarget), szSteamId)
 		} else {
-			if (g_bClientLang[Client])
-				ShowHudText(Client, -1, "玩家: %N\n血量: %i", iTarget, iHealth);
-			else
-				ShowHudText(Client, -1, "Player: %N\nHealth: %i", iTarget, iHealth);
+			ShowHudText(Client, -1, "Player: %N\nHealth: %i", entTarget, iHealth)
 		}
-		return;
+		return
 	}
-	new String:szClass[32];
-	GetEdictClassname(iTarget, szClass, sizeof(szClass));
-	if (IsNpc(iTarget)) {
-		new iHealth = GetEntProp(iTarget, Prop_Data, "m_iHealth");
+
+	char szClass[32]
+	GetEdictClassname(entTarget, szClass, sizeof(szClass))
+	if (LM_IsNpc(entTarget)) {
+		int iHealth = GetEntProp(entTarget, Prop_Data, "m_iHealth")
 		if (iHealth <= 1)
-			iHealth = 0;
-		if (g_bClientLang[Client])
-			ShowHudText(Client, -1, "類型: %s\n血量: %i", szClass, iHealth);
-		else
-			ShowHudText(Client, -1, "Classname: %s\nHealth: %i", szClass, iHealth);
-		return;
+			iHealth = 0
+		ShowHudText(Client, -1, "Classname: %s\nHealth: %i", szClass, iHealth)
+		return
 	}
 	
-	new String:szModel[128], String:szOwner[32];
-	new iOwner = LM_GetEntityOwner(iTarget);
-	GetEntPropString(iTarget, Prop_Data, "m_ModelName", szModel, sizeof(szModel));
-	if (iOwner != -1)
-		GetClientName(iOwner, szOwner, sizeof(szOwner));
-	else if (iOwner > MAXPLAYERS){
-		if (g_bClientLang[Client])
-			szOwner = "*離線";
-		else
-			szOwner = "*Disconnectd";
+	char szOwner[32]
+	int plyOwner = LM_GetEntityOwner(entTarget)
+	if (plyOwner != -1)
+		GetClientName(plyOwner, szOwner, sizeof(szOwner))
+	else if (plyOwner > MAXPLAYERS){
+		szOwner = "*Disconnectd"
 	} else {
-		if (g_bClientLang[Client])
-			szOwner = "*無";
-		else
-			szOwner = "*None";
+		szOwner = "*None"
 	}
+
+	char szModel[128] 
+	GetEntPropString(entTarget, Prop_Data, "m_ModelName", szModel, sizeof(szModel))
 	
-	if (Phys_IsPhysicsObject(iTarget)) {
-		if (g_bClientLang[Client])
-			ShowHudText(Client, -1, "類型: %s\n編號: %i\n模組: %s\n擁有者: %s\n重量:%f", szClass, iTarget, szModel, szOwner, Phys_GetMass(iTarget));
-		else
-			ShowHudText(Client, -1, "Classname: %s\nIndex: %i\nModel: %s\nOwner: %s\nMass:%f", szClass, iTarget, szModel, szOwner, Phys_GetMass(iTarget));
-	} else {
-		if (g_bClientLang[Client])
-			ShowHudText(Client, -1, "類型: %s\n編號: %i\n模組: %s\n擁有者: %s", szClass, iTarget, szModel, szOwner);
-		else
-			ShowHudText(Client, -1, "Classname: %s\nIndex: %i\nModel: %s\nOwner: %s", szClass, iTarget, szModel, szOwner);
-	}
-	return;
+	if (Phys_IsPhysicsObject(entTarget)) 
+		ShowHudText(Client, -1, "Classname: %s\nIndex: %i\nModel: %s\nOwner: %s\nMass:%f", szClass, entTarget, szModel, szOwner, Phys_GetMass(entTarget))
+	else 
+		ShowHudText(Client, -1, "Classname: %s\nIndex: %i\nModel: %s\nOwner: %s", szClass, entTarget, szModel, szOwner)
+	
+	return
 }
 
-bool:IsFunc(iEntity){
-	new String:szClass[32];
-	GetEdictClassname(iEntity, szClass, sizeof(szClass));
-	if (StrContains(szClass, "func_", false) == 0 && !StrEqual(szClass, "func_physbox"))
-		return true;
-	return false;
-}
-
-bool:IsNpc(iEntity){
-	new String:szClass[32];
-	GetEdictClassname(iEntity, szClass, sizeof(szClass));
-	if (StrContains(szClass, "npc_", false) == 0)
-		return true;
-	return false;
-}
-
-bool:IsPlayer(iEntity){
-	if ((GetEntityFlags(iEntity) & (FL_CLIENT | FL_FAKECLIENT)))
-		return true;
-	return false;
-}
 
 

@@ -1,99 +1,100 @@
+
 #define LAZMOD_API_VER 3
 #define LAZMOD_VER "1.0.0"
 #define MAX_HOOK_ENTITIES 4096
+#define MSGTAG "\x01[\x04LM\x01]"
 
 /**
  * Register an entity owner.
  * 
- * @param entity_index		Entity index.
- * @param client_index		Client index.
+ * @param entProp			Entity index.
+ * @param plyClient			Client index.
  * @param Doll				Is prop_ragdoll?
  * @return					Ture on success. False on failure.
  */
-native bool:LM_SetEntityOwner(entity_index, client_index, bool:Doll = false);
+native bool LM_SetEntityOwner(entProp, plyClient, bool Doll = false)
 
 /**
  * Get an entity owner.
  * 
- * @param entity_index		Entity index.
+ * @param entProp			Entity index.
  * @return					-1 on failure. Any other value indicates a Entity index owner.
  */
-native LM_GetEntityOwner(entity_index);
+native LM_GetEntityOwner(entProp)
 
 /**
  * Set client props limit.
  *
- * @param client_index		Client index.
+ * @param plyClient			Client index.
  * @param amount			Amount to increase or decrease. If amount = 0 then set limit to 0.
  * @param Doll				Is prop_ragdoll?
  * @noreturn
  */
-native LM_SetLimit(client_index, amount, bool:Doll = false);
+native LM_SetSpawnLimit(int plyClient, amount, bool Doll = false)
 
 /**
  * Check client can use BuildMod.
  * 
- * @param client_index		Client index.
+ * @param plyClient			Client index.
  * @return					True on success. False on failure.
  */
-native bool:LM_AllowToUse(client_index);
+native bool LM_AllowToUse(int plyClient)
 
 /**
  * Check client can use Fly.
  * 
- * @param client_index		Client index.
+ * @param plyClient			Client index.
  * @return					True on success. False on failure.
  */
-native bool:LM_AllowFly(client_index);
+native bool LM_AllowFly(int plyClient)
 
 /**
  * Get client admin.
  * 
- * @param client_index		Client index.
- * @param Level2			Level 2 access.
+ * @param plyClient			Client index.
  * @return					True on admin. False on not.
  */
-native bool:LM_IsAdmin(client_index, bool:Level2 = false);
+native bool LM_IsAdmin(int plyClient)
 
 /**
  * Get client aim entity.
  * 
- * @param client_index		Client index.
+ * @param plyClient			Client index.
  * @param show_message		Show a message when entity invalid?
  * @param included_clients	Allow native to getting clients?
  * @return					-1 on failure. Any other value indicates a Entity index.
  */
-native LM_ClientAimEntity(client_index, bool:show_message = true, bool:included_clients = false);
+native LM_GetClientAimEntity(int plyClient, bool show_message = true, bool included_clients = false)
 
 /**
  * Get an entity of owner is equal client.
  * 
- * @param client_index		Client index.
- * @param entity_index		Entity index.
+ * @param plyClient			Client index.
+ * @param entProp			Entity index.
  * @param bIngoreCvar		Ingore 'bm_nonowner' cvar?
  * @return					True on owner. False on not.
  */
-native bool:LM_IsEntityOwner(client_index, entity_index, bool:bIngoreCvar = false);
+native bool LM_IsEntityOwner(int plyClient, entProp, bool bIngoreCvar = false)
 
 /**
  * Logging commands and args.
  * 
- * @param client_index		Client index.
+ * @param plyClient			Client index.
  * @param command			Command to log.
  * @param args				Args to log.
  * @noreturn
  */
-native LM_Logging(client_index, const String:command[], const String:args[]);
+native LM_LogCmd(int plyClient, const char[] command, const char[] args)
 
 /**
  * Prints a message with the BuildMod tag.
  *
- * @param client_index		Client index.
+ * @param plyClient			Client index.
  * @param format			Formatting rules.
  * @param ...				Variable number of format parameters.
  * @noreturn
  */
-native LM_PrintToChat(client_index, const String:format[], any:...);
+native LM_PrintToChat(int plyClient, const char[] format, any ...)
 
 /**
  * Prints a message to all clients with the BuildMod tag.
@@ -102,39 +103,63 @@ native LM_PrintToChat(client_index, const String:format[], any:...);
  * @param ...				Variable number of format parameters.
  * @noreturn
  */
-native LM_PrintToAll(const String:format[], any:...);
+native LM_PrintToAll(const char[] format, any ...)
 
 /**
  * Add client to blacklist.
  *
- * @param client_index		Client index.
+ * @param plyClient			Client index.
  * @return					True on success. False on failure.
  */
-native LM_AddBlacklist(client_index);
+native LM_AddBlacklist(int plyClient)
 
 /**
  * Remove client from blacklist.
  *
- * @param client_index		Client index.
+ * @param plyClient			Client index.
  * @return					True on success. False on failure.
  */
-native LM_RemoveBlacklist(client_index);
+native LM_RemoveBlacklist(int plyClient)
 
 /**
- * Get client is blacklisted.
+ * Check if client is blacklisted.
  *
- * @param client_index		Client index.
+ * @param plyClient			Client index.
  * @return					True on blacklisted. False on not.
  */
-native bool:LM_IsBlacklisted(client_index);
+native bool LM_IsBlacklisted(int plyClient)
 
 /**
  * Check is target client valid.
  *
- * @param client_index		Client index.
- * @param target_index		Target index.
- * @param Alive				Check is target alive.
- * @param ReplyTarget		Alive result reply target client or self.
+ * @param plyClient			Client index.
+ * @param plyTarget			Target index.
+ * @param bIsAlive			Check is target alive.
+ * @param plyReply			True to reply the result to target instead.
  * @return					True if target valid. Otherwise false.
  */
-native bool:LM_IsClientValid(client_index, target_index, bool:Alive = false, bool:ReplyTarget = false);
+native bool LM_IsClientValid(int plyClient, int plyTarget, bool bIsAlive = false, bool plyReply = false)
+
+/**
+ * Check if a prop is a Func_ prop
+ *
+ * @param entProp			Entity index.
+ * @return					True if func, false otherwise.
+ */
+native bool LM_IsFuncProp(int entProp)
+
+/**
+ * Check if a prop is a Func_ prop
+ *
+ * @param entProp			Entity index.
+ * @return					True if NPC, false otherwise.
+ */
+native bool LM_IsNpc(int entProp)
+
+/**
+ * Check if a prop is a Player
+ *
+ * @param entProp			Entity index.
+ * @return					True if Player, false otherwise.
+ */
+native bool LM_IsPlayer(int entProp)
