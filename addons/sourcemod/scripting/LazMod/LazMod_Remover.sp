@@ -114,7 +114,9 @@ public OnPluginStart() {
 	RegAdminCmd("sm_dels", Command_DelStrider, ADMFLAG_BAN, "WTF.")
 	RegAdminCmd("sm_dels2", Command_DelStrider2, ADMFLAG_CONVARS, "WTF.")
 	
-	HookEntityOutput("prop_physics_respawnable", "OnBreak", OnPropBreak)
+	HookEntityOutput("prop_physics_override", "OnBreak", OnPropBreak)
+	
+	PrintToServer( "LazMod Remover loaded!" )
 }
 
 public OnMapStart() {

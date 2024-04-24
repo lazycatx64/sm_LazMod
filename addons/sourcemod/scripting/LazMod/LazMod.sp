@@ -100,6 +100,7 @@ public OnPluginStart() {
 	ServerCommand("gamedesc_override \"BuildMod %s\"", LAZMOD_VER)
 	g_hBlackListArray = CreateArray(33, 128);	// 33 arrays, every array size is 128
 	ReadBlackList()
+	PrintToServer( "LazMod Core loaded!" )
 }
 
 public OnMapStart() {

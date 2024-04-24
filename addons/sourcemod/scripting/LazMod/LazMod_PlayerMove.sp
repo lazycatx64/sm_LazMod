@@ -28,6 +28,8 @@ public OnPluginStart()
 		RegAdminCmd("sm_fly", Command_AdminFly, ADMFLAG_CUSTOM2, "WTF.")
 		RegAdminCmd("sm_tele", Command_AdminTeleport, ADMFLAG_GENERIC, "Teleport player.")
 	}
+	
+	PrintToServer( "LazMod PlayerMove loaded!" )
 }
 
 //////////////////////////////

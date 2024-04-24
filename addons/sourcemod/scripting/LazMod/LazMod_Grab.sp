@@ -30,7 +30,8 @@ public Plugin myinfo = {
 public OnPluginStart() {
 	RegAdminCmd("+grabent", Command_EnableGrab, 0, "Grab props.")
 	RegAdminCmd("-grabent", Command_DisableGrab, 0, "Grab props.")
-	// g_hCookieClientLang = RegClientCookie("cookie_BuildModClientLang", "BuildMod Client Language.", CookieAccess_Private)
+	
+	PrintToServer( "LazMod Grab loaded!" )
 }
 
 public OnMapStart() {

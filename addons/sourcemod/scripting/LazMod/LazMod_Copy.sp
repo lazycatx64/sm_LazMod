@@ -43,6 +43,8 @@ public OnPluginStart() {
 
 	RegAdminCmd("+copyent", Command_Copyent, 0, "Copy a prop.")
 	RegAdminCmd("-copyent", Command_Paste, 0, "Paste a copied prop.")
+	
+	PrintToServer( "LazMod Copy loaded!" )
 }
 
 public OnMapStart() {

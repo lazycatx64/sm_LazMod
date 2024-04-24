@@ -65,6 +65,8 @@ public OnPluginStart() {
 		g_bListExist = false
 		LogError("list.txt is not exist!")
 	}
+	
+	PrintToServer( "LazMod Save loaded!" )
 }
 
 public Action Command_SaveSystem(plyClient, args) {

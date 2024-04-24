@@ -30,6 +30,8 @@ public OnPluginStart() {
 	g_hPropModelPathArray = CreateArray(128, 2048);	// Max Prop List is 1024-->2048
 	g_hPropTypeArray = CreateArray(33, 2048);		// Max Prop List is 1024-->2048
 	ReadProps()
+	
+	PrintToServer( "LazMod Creator loaded!" )
 }
 
 public Action Command_SpawnF(Client, args) {
@@ -163,6 +165,7 @@ ReadProps() {
 	
 		ReadPropsLine(szLine, iCountProps++)
 	}
+	PrintToServer( "LazMod Creator - Loaded %i props", iCountProps )
 	CloseHandle(iFile)
 }
 

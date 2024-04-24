@@ -34,6 +34,8 @@ public OnPluginStart() {
 	g_hWheelNameArray = CreateArray(32, 32);		// Max Wheel List is 32
 	g_hWheelModelPathArray = CreateArray(128, 32);	// Max Wheel List is 32
 	ReadWheels()
+	
+	PrintToServer( "LazMod Editor loaded!" )
 }
 
 public Action Command_SetMass(Client, args) {

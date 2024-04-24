@@ -25,6 +25,8 @@ public OnPluginStart() {
 	RegAdminCmd("sm_door", Command_SpawnDoor, 0, "Doors creator.")
 	g_hCookieSDoorTarget = RegClientCookie("cookie_SDoorTarget", "For SDoor.", CookieAccess_Private)
 	g_hCookieSDoorModel = RegClientCookie("cookie_SDoorModel", "For SDoor.", CookieAccess_Private)
+	
+	PrintToServer( "LazMod Door loaded!" )
 }
 
 public Action Command_SpawnDoor(Client, args) {

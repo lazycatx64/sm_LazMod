@@ -28,6 +28,8 @@ public Plugin myinfo = {
 public OnPluginStart() {
 	RegAdminCmd("sm_deathray", Command_Deathray, 0, "boom boom.")
 	RegAdminCmd("sm_droct", Command_DrOct, 0, "Can also add range parameter but you shouldn't.")
+
+	PrintToServer( "LazMod Beam loaded!" )
 }
 
 public OnMapStart() {

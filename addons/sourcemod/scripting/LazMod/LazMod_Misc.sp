@@ -99,6 +99,8 @@ public OnPluginStart() {
 	GetConVarString(g_hHostName, g_szHostName, sizeof(g_szHostName))
 	RegConsoleCmd("sm_delay", Command_Delay)
 	RegConsoleCmd("kill", Command_kill, "")
+	
+	PrintToServer( "LazMod Misc loaded!" )
 }
 
 public OnMapStart() {

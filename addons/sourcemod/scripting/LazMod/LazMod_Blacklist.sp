@@ -18,6 +18,8 @@ public OnPluginStart() {
 	LoadTranslations("common.phrases")
 	RegAdminCmd("sm_bl", Command_AddBL, ADMFLAG_CONVARS, "Add client to LazMod blacklist to prevent them from using LazMod commands.")
 	RegAdminCmd("sm_unbl", Command_RemoveBL, ADMFLAG_CONVARS, "Remove client from blacklist")
+
+	PrintToServer( "LazMod Blacklist loaded!" )
 }
 
 public Action Command_AddBL(Client, args) {

@@ -22,6 +22,8 @@ public Plugin myinfo = {
 public OnPluginStart() {
 	LoadTranslations("common.phrases")
 	CreateTimer(0.1, Display_Msgs, 0, TIMER_REPEAT)
+	
+	PrintToServer( "LazMod Messages loaded!" )
 }
 
 public Action Display_Msgs(Handle timer) {	

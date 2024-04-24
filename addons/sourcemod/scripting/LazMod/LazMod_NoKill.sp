@@ -26,6 +26,8 @@ public OnPluginStart() {
 	RegAdminCmd("sm_nk", Command_NoKill, 0, "Enable/Disable protector.")
 	HookEvent("player_hurt", OnDamage, EventHookMode_Post)
 	HookEvent("player_death", OnDeath, EventHookMode_Post)
+	
+	PrintToServer( "LazMod NoKill loaded!" )
 }
 
 public OnMapStart()
