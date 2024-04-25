@@ -283,9 +283,9 @@ public Action Command_Delete(Client, args) {
 		
 		DispatchKeyValue(entProp, "targetname", "Del_Target")
 		
-		TE_SetupBeamRingPoint(vOriginAim, 10.0, 150.0, g_mdlBeam, g_mdlHalo, 0, 10, 0.6, 3.0, 0.5, COLOR_WHITE, 20, 0)
+		TE_SetupBeamRingPoint(vOriginAim, 10.0, 150.0, g_mdlBeam, g_mdlHalo, 0, 10, 0.5, 2.0, 0.5, COLOR_WHITE, 20, 0)
 		TE_SendToAll()
-		TE_SetupBeamPoints(vOriginAim, vOriginPlayer, g_mdlPhysBeam, g_mdlHalo, 0, 66, 1.0, 3.0, 3.0, 0, 0.0, COLOR_RED, 20)
+		TE_SetupBeamPoints(vOriginAim, vOriginPlayer, g_mdlPhysBeam, g_mdlHalo, 0, 66, 0.5, 2.0, 2.0, 0, 0.0, COLOR_RED, 20)
 		TE_SendToAll()
 
 		if (LM_IsAdmin(Client)) {
