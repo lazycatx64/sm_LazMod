@@ -12,7 +12,7 @@
 
 
 public Plugin myinfo = {
-	name = "LazMod - Messages",
+	name = "LazMod - PropInfo",
 	author = "LaZycAt, hjkwe654",
 	description = "Show props infomation.",
 	version = LAZMOD_VER,
@@ -23,7 +23,7 @@ public OnPluginStart() {
 	LoadTranslations("common.phrases")
 	CreateTimer(0.1, Display_Msgs, 0, TIMER_REPEAT)
 	
-	PrintToServer( "LazMod Messages loaded!" )
+	PrintToServer( "LazMod PropInfo loaded!" )
 }
 
 public Action Display_Msgs(Handle timer) {	
