@@ -34,23 +34,28 @@ public OnPluginStart() {
 
 	// Player commands
 	{
-		RegAdminCmd("sm_render", Command_Render, 0, "Render an entity.")
-		RegAdminCmd("sm_color", Command_Color, 0, "Color a prop.")
-		RegAdminCmd("sm_rotate", Command_Rotate, 0, "Rotate an entity.")
-		RegAdminCmd("sm_nobreak", Command_NoBreakProp, 0, "Set a prop wont break.")
-		RegAdminCmd("sm_unnobreak", Command_UnNoBreakProp, 0, "Undo nobreak.")
-		RegAdminCmd("sm_angles", Command_SetAngles, ADMFLAG_CUSTOM1, "Set the angles of a prop directly.")
-		RegAdminCmd("sm_align", Command_Align, ADMFLAG_CUSTOM1, "Aligning props.")
-		RegAdminCmd("sm_move", Command_Move, ADMFLAG_CUSTOM1, "Move props.")
-		RegAdminCmd("sm_extend", Command_Extend, ADMFLAG_CUSTOM1, "Create a third prop based on the position and angle of first two props.")
-		RegAdminCmd("sm_center", Command_Center, ADMFLAG_CUSTOM1, "Moves a prop to the exact middle of the other two props.")
-		RegAdminCmd("sm_skin", Command_Skin, ADMFLAG_CUSTOM1, "Change skin of a prop.")
-		RegAdminCmd("sm_light", Command_LightDynamic, ADMFLAG_CUSTOM1, "Create a dynamic light.")
-		// RegAdminCmd("sm_drop", Command_Drop, 0, "Drop a prop from sky.") // TODO: SourceOP dead
 		RegAdminCmd("sm_freeze", Command_Freeze, 0, "Freeze a prop.")
 		RegAdminCmd("sm_unfreeze", Command_UnFreeze, 0, "Unfreeze a prop.")
 		// RegAdminCmd("sm_ffreeze", Command_ForceFreeze, ADMFLAG_CUSTOM1, "ForceFreeze a prop.")
 		// RegAdminCmd("sm_unffreeze", Command_UnForceFreeze, ADMFLAG_CUSTOM1, "UnForceFreeze a prop.")
+
+		RegAdminCmd("sm_rotate", Command_Rotate, 0, "Rotate an entity.")
+		RegAdminCmd("sm_angles", Command_SetAngles, 0, "Set the angles of a prop directly.")
+
+		RegAdminCmd("sm_render", Command_Render, 0, "Render an entity.")
+		RegAdminCmd("sm_color", Command_Color, 0, "Color a prop.")
+
+		RegAdminCmd("sm_move", Command_Move, 0, "Move props.")
+		RegAdminCmd("sm_align", Command_Align, 0, "Aligning props.")
+		RegAdminCmd("sm_extend", Command_Extend, 0, "Create a third prop based on the position and angle of first two props.")
+		RegAdminCmd("sm_center", Command_Center, 0, "Moves a prop to the exact middle of the other two props.")
+
+		RegAdminCmd("sm_nobreak", Command_NoBreakProp, 0, "Set a prop wont break.")
+		RegAdminCmd("sm_unnobreak", Command_UnNoBreakProp, 0, "Undo nobreak.")
+
+		RegAdminCmd("sm_skin", Command_Skin, 0, "Change skin of a prop.")
+		RegAdminCmd("sm_light", Command_LightDynamic, 0, "Create a dynamic light.")
+		// RegAdminCmd("sm_drop", Command_Drop, 0, "Drop a prop from sky.") // TODO: SourceOP dead
 
 		// RegAdminCmd("sm_stand", Command_Stand, 0, "Set the mass of a prop.")
 
@@ -793,34 +798,62 @@ public Action Command_EntFire(plyClient, args) {
 		return Plugin_Handled
 	}
 	
-	int entProp = LM_GetClientAimEntity(plyClient)
-	if (entProp == -1) 
-		return Plugin_Handled
-	
-	if (!LM_IsEntityOwner(plyClient, entProp) && !LM_IsAdmin(plyClient)) {
-		LM_PrintToChat(plyClient, "You can only use this command to your own props!")
-		return Plugin_Handled
-	}
-
-	char szName[33], szInput[33], szValue[33]
+	char szName[32], szInput[32], szValue[64]
 	float fDelay
+	Handle hExcute
 
 	GetCmdArg(1, szName, sizeof(szName))
 	GetCmdArg(2, szInput, sizeof(szInput))
 	GetCmdArg(3, szValue, sizeof(szValue))
-	if (!GetCmdArgFloatEx(4, fDelay)) {
-		LM_PrintToChat(plyClient, "Delay value must be an integer or decimal!")
-		return Plugin_Handled
+	fDelay = GetCmdArgFloat(4)
+
+	int iMaxEntities = GetMaxEntities()*2
+	char szTargetName[32], szClassName[32]
+	for (int entProp=0; entProp < iMaxEntities; entProp++) {
+
+		if (!IsValidEntity(entProp))
+			continue
+
+		GetEntPropString(entProp, Prop_Data, "m_iName", szTargetName, sizeof(szTargetName));
+		GetEntPropString(entProp, Prop_Data, "m_iClassname", szClassName, sizeof(szClassName));
+
+		if (StrEqual(szTargetName, szName) || StrEqual(szClassName, szName)) {
+			if (fDelay > 0) {
+				CreateDataTimer(fDelay, Timer_EntFireDelay, hExcute)
+				WritePackCell(hExcute, entProp)
+				WritePackString(hExcute, szInput)
+				WritePackCell(hExcute, plyClient)
+				WritePackString(hExcute, szValue)
+			} else {
+				SetVariantString(szValue)
+				AcceptEntityInput(entProp, szInput, entProp, plyClient, 0)
+			}
+			continue
+		}
 	}
-	
-	SetVariantString(szValue)
-	AcceptEntityInput(entProp, szInput, entProp, plyClient, 0)
-	
-	
+
 	char szArgString[256]
 	GetCmdArgString(szArgString, sizeof(szArgString))
 	LM_LogCmd(plyClient, "sm_ent_fire", szArgString)
 	return Plugin_Handled
+}
+public Action Timer_EntFireDelay(Handle Timer, Handle hExcute) {
+	char szInput[255], szValue[25]
+	int entProp, plyClient
+	
+	ResetPack(hExcute)
+	entProp = ReadPackCell(hExcute)
+	ReadPackString(hExcute, szInput, sizeof(szInput))
+	plyClient = ReadPackCell(hExcute)
+	ReadPackString(hExcute, szValue, sizeof(szValue))
+	
+	if (!IsValidEntity(entProp))
+		return Plugin_Stop
+
+	SetVariantString(szValue)
+	AcceptEntityInput(entProp, szInput, entProp, plyClient, 0)
+	
+	return Plugin_Stop
 }
 
 public Action Command_EntGetName(plyClient, args) {
