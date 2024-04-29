@@ -77,9 +77,6 @@ public OnPluginStart() {
 	// Admin Commands
 	{
 		RegAdminCmd("sm_ball", Command_Ball, ADMFLAG_GENERIC, "Spawn a energy ball.")
-		RegAdminCmd("sm_output", Command_OutPut, ADMFLAG_GENERIC, "Add output on entity.")
-		RegAdminCmd("sm_keyvalue", Command_KeyValue, ADMFLAG_GENERIC, "Set an entity keyvalues.")
-		RegAdminCmd("sm_input", Command_InPut, ADMFLAG_GENERIC, "Fires an input on the entity.")
 		
 		RegAdminCmd("sm_fda", Command_AdminForceDeleteAll, ADMFLAG_BAN, "Delall a player's props.")
 		RegAdminCmd("sm_setowner", Command_AdminSetOwner, ADMFLAG_BAN, "WTF.")
@@ -146,42 +143,6 @@ public Action Command_Ball(Client, args) {
 	return Plugin_Handled
 }
 
-public Action Command_InPut(Client, args) {
-	if (!LM_AllowToUse(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
-		return Plugin_Handled
-	
-	if (args < 1) {
-		LM_PrintToChat(Client, "Usage: !input <input> <value>")
-		return Plugin_Handled
-	}
-	
-	int entProp = LM_GetClientAimEntity(Client)
-	if (entProp == -1) 
-		return Plugin_Handled
-	
-	if (!LM_IsAdmin(Client)) {
-		if (LM_IsPlayer(entProp))
-			return Plugin_Handled
-	}
-	
-	if (LM_IsEntityOwner(Client, entProp)) {
-		char szInput[33], szValues[33]
-		GetCmdArg(1, szInput, sizeof(szInput))
-		GetCmdArg(2, szValues, sizeof(szValues))
-		
-		SetVariantString(szValues)
-		AcceptEntityInput(entProp, szInput, entProp, Client, 0)
-	}
-	
-	char szTemp[33], szArgs[128]
-	for (int i = 1; i <= GetCmdArgs(); i++) {
-		GetCmdArg(i, szTemp, sizeof(szTemp))
-		Format(szArgs, sizeof(szArgs), "%s %s", szArgs, szTemp)
-	}
-	LM_LogCmd(Client, "sm_input", szArgs)
-	return Plugin_Handled
-}
-
 // TODO: SourceOP Dead
 public Action Command_GetInertia(Client, args) {
 	if (!LM_AllowToUse(Client) || LM_IsBlacklisted(Client))
@@ -199,37 +160,6 @@ public Action Command_GetInertia(Client, args) {
 		Format(szArgs, sizeof(szArgs), "%s %s", szArgs, szTemp)
 	}
 	LM_LogCmd(Client, "sm_getinertia", szArgs)
-	return Plugin_Handled
-}
-
-public Action Command_KeyValue(Client, args) {
-	if (!LM_AllowToUse(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
-		return Plugin_Handled
-	
-	if (args < 2) {
-		LM_PrintToChat(Client, "Usage: !keyvalue <keyvalue> <value>")
-		return Plugin_Handled
-	}
-	
-	int entProp = LM_GetClientAimEntity(Client)
-	if (entProp == -1) 
-		return Plugin_Handled
-	
-	if (LM_IsEntityOwner(Client, entProp)) {
-		
-		char szKeys[33], szValues[33]
-		GetCmdArg(1, szKeys, sizeof(szKeys))
-		GetCmdArg(2, szValues, sizeof(szValues))
-		
-		DispatchKeyValue(entProp, szKeys, szValues)
-	}
-	
-	char szTemp[33], szArgs[128]
-	for (int i = 1; i <= GetCmdArgs(); i++) {
-		GetCmdArg(i, szTemp, sizeof(szTemp))
-		Format(szArgs, sizeof(szArgs), "%s %s", szArgs, szTemp)
-	}
-	LM_LogCmd(Client, "sm_keyvalue", szArgs)
 	return Plugin_Handled
 }
 
@@ -285,36 +215,6 @@ public Action Command_SetInertia(Client, args) {
 		Format(szArgs, sizeof(szArgs), "%s %s", szArgs, szTemp)
 	}
 	LM_LogCmd(Client, "sm_setinertia", szArgs)
-	return Plugin_Handled
-}
-
-public Action Command_OutPut(Client, args) {
-	if (!LM_AllowToUse(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
-		return Plugin_Handled
-	
-	if (args < 2) {
-		LM_PrintToChat(Client, "Usage: !output <output> <value>")
-		return Plugin_Handled
-	}
-	
-	int entProp = LM_GetClientAimEntity(Client)
-	if (entProp == -1) 
-		return Plugin_Handled
-	
-	if (LM_IsEntityOwner(Client, entProp)) {
-		char szKeys[33], szValues[33]
-		GetCmdArg(1, szKeys, sizeof(szKeys))
-		GetCmdArg(2, szValues, sizeof(szValues))
-		
-		DispatchKeyValue(entProp, szKeys, szValues)
-	}
-	
-	char szTemp[33], szArgs[128]
-	for (int i = 1; i <= GetCmdArgs(); i++) {
-		GetCmdArg(i, szTemp, sizeof(szTemp))
-		Format(szArgs, sizeof(szArgs), "%s %s", szArgs, szTemp)
-	}
-	LM_LogCmd(Client, "sm_output", szArgs)
 	return Plugin_Handled
 }
 

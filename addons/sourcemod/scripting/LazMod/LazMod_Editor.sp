@@ -27,9 +27,20 @@ public OnPluginStart() {
 	RegAdminCmd("sm_unfreeze", Command_UnFreeze, 0, "Unfreeze a prop.")
 	// RegAdminCmd("sm_ffreeze", Command_ForceFreeze, ADMFLAG_CUSTOM1, "ForceFreeze a prop.")
 	// RegAdminCmd("sm_unffreeze", Command_UnForceFreeze, ADMFLAG_CUSTOM1, "UnForceFreeze a prop.")
-	RegAdminCmd("sm_mass", Command_SetMass, 0, "Set the mass of a prop.")
+
+	// RegAdminCmd("sm_stand", Command_Stand, 0, "Set the mass of a prop.")
+
+
+	RegAdminCmd("sm_setmass", Command_SetMass, 0, "Set the mass of a prop.")
+	// RegAdminCmd("sm_mass", Command_GetMass, 0, "Get the mass of a prop.")
 	RegAdminCmd("sm_weld", Command_Weld, 0, "Weld a prop.")
 	RegAdminCmd("sm_wheel", Command_Wheel, 0, "Place a wheel on your prop.")
+
+
+	RegAdminCmd("sm_ent_fire", Command_EntFire, ADMFLAG_CHEATS, "Add output on entity.")
+	RegAdminCmd("sm_input", Command_EntInput, ADMFLAG_CHEATS, "Aim on an entity and execute an input/addoutput.")
+	RegAdminCmd("sm_output", Command_EntOutput, ADMFLAG_CHEATS, "Add output on entity.")
+	RegAdminCmd("sm_keyvalue", Command_EntKeyValue, ADMFLAG_CHEATS, "Set an entity keyvalues.")
 	
 	g_hWheelNameArray = CreateArray(32, 32);		// Max Wheel List is 32
 	g_hWheelModelPathArray = CreateArray(128, 32);	// Max Wheel List is 32
@@ -405,3 +416,155 @@ ReadPropsLine(const char[] szLine, iCountWheels) {
 		SetArrayString(g_hWheelModelPathArray, iCountWheels, szWheelPath)
 	}
 }
+
+
+
+
+
+
+
+
+
+public Action Command_EntFire(Client, args) {
+	if (!LM_AllowToUse(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
+		return Plugin_Handled
+	
+	if (args < 1) {
+		LM_PrintToChat(Client, "Usage: !ent_fire <name> <input> [value] [delay]")
+		return Plugin_Handled
+	}
+	
+	int entProp = LM_GetClientAimEntity(Client)
+	if (entProp == -1) 
+		return Plugin_Handled
+	
+	if (!LM_IsAdmin(Client)) {
+		if (LM_IsPlayer(entProp))
+			return Plugin_Handled
+	}
+	
+	if (LM_IsEntityOwner(Client, entProp)) {
+		char szInput[33], szValues[33]
+		GetCmdArg(1, szInput, sizeof(szInput))
+		GetCmdArg(2, szValues, sizeof(szValues))
+		
+		SetVariantString(szValues)
+		AcceptEntityInput(entProp, szInput, entProp, Client, 0)
+	}
+	
+	char szTemp[33], szArgs[128]
+	for (int i = 1; i <= GetCmdArgs(); i++) {
+		GetCmdArg(i, szTemp, sizeof(szTemp))
+		Format(szArgs, sizeof(szArgs), "%s %s", szArgs, szTemp)
+	}
+	LM_LogCmd(Client, "sm_input", szArgs)
+	return Plugin_Handled
+}
+
+public Action Command_EntInput(Client, args) {
+	if (!LM_AllowToUse(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
+		return Plugin_Handled
+	
+	if (args < 1) {
+		LM_PrintToChat(Client, "Usage: !input <input> <value>")
+		return Plugin_Handled
+	}
+	
+	int entProp = LM_GetClientAimEntity(Client)
+	if (entProp == -1) 
+		return Plugin_Handled
+	
+	if (!LM_IsAdmin(Client)) {
+		if (LM_IsPlayer(entProp))
+			return Plugin_Handled
+	}
+	
+	if (LM_IsEntityOwner(Client, entProp)) {
+		char szInput[33], szValues[33]
+		GetCmdArg(1, szInput, sizeof(szInput))
+		GetCmdArg(2, szValues, sizeof(szValues))
+		
+		SetVariantString(szValues)
+		AcceptEntityInput(entProp, szInput, entProp, Client, 0)
+	}
+	
+	char szTemp[33], szArgs[128]
+	for (int i = 1; i <= GetCmdArgs(); i++) {
+		GetCmdArg(i, szTemp, sizeof(szTemp))
+		Format(szArgs, sizeof(szArgs), "%s %s", szArgs, szTemp)
+	}
+	LM_LogCmd(Client, "sm_input", szArgs)
+	return Plugin_Handled
+}
+
+
+public Action Command_EntKeyValue(Client, args) {
+	if (!LM_AllowToUse(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
+		return Plugin_Handled
+	
+	if (args < 2) {
+		LM_PrintToChat(Client, "Usage: !keyvalue <keyvalue> <value>")
+		return Plugin_Handled
+	}
+	
+	int entProp = LM_GetClientAimEntity(Client)
+	if (entProp == -1) 
+		return Plugin_Handled
+	
+	if (LM_IsEntityOwner(Client, entProp)) {
+		
+		char szKeys[33], szValues[33]
+		GetCmdArg(1, szKeys, sizeof(szKeys))
+		GetCmdArg(2, szValues, sizeof(szValues))
+		
+		DispatchKeyValue(entProp, szKeys, szValues)
+	}
+	
+	char szTemp[33], szArgs[128]
+	for (int i = 1; i <= GetCmdArgs(); i++) {
+		GetCmdArg(i, szTemp, sizeof(szTemp))
+		Format(szArgs, sizeof(szArgs), "%s %s", szArgs, szTemp)
+	}
+	LM_LogCmd(Client, "sm_keyvalue", szArgs)
+	return Plugin_Handled
+}
+
+
+public Action Command_EntOutput(Client, args) {
+	if (!LM_AllowToUse(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
+		return Plugin_Handled
+	
+	if (args < 2) {
+		LM_PrintToChat(Client, "Usage: !output <output> <value>")
+		return Plugin_Handled
+	}
+	
+	int entProp = LM_GetClientAimEntity(Client)
+	if (entProp == -1) 
+		return Plugin_Handled
+	
+	if (LM_IsEntityOwner(Client, entProp)) {
+		char szKeys[33], szValues[33]
+		GetCmdArg(1, szKeys, sizeof(szKeys))
+		GetCmdArg(2, szValues, sizeof(szValues))
+		
+		DispatchKeyValue(entProp, szKeys, szValues)
+	}
+	
+	char szTemp[33], szArgs[128]
+	for (int i = 1; i <= GetCmdArgs(); i++) {
+		GetCmdArg(i, szTemp, sizeof(szTemp))
+		Format(szArgs, sizeof(szArgs), "%s %s", szArgs, szTemp)
+	}
+	LM_LogCmd(Client, "sm_output", szArgs)
+	return Plugin_Handled
+}
+
+
+
+
+
+
+
+
+
