@@ -7,11 +7,20 @@
 #include <lazmod_stocks>
 #include <vphysics>
 
+#include <smlib>
 
 
 
-Handle g_hWheelNameArray
-Handle g_hWheelModelPathArray
+
+float g_vAlignOrigin[MAXPLAYERS][3]
+
+bool g_bExtendIsRunning[MAXPLAYERS]
+int g_entExtendTarget[MAXPLAYERS]
+
+int g_iCenterIsRunning[MAXPLAYERS]
+int g_entCenterMain[MAXPLAYERS]
+int g_entCenterFirst[MAXPLAYERS]
+
 
 public Plugin myinfo = {
 	name = "LazMod - Editor",
@@ -21,32 +30,161 @@ public Plugin myinfo = {
 	url = ""
 }
 
-public OnPluginStart() {	
-	// RegAdminCmd("sm_drop", Command_Drop, 0, "Drop a prop from sky.") // TODO: SourceOP dead
-	RegAdminCmd("sm_freeze", Command_Freeze, 0, "Freeze a prop.")
-	RegAdminCmd("sm_unfreeze", Command_UnFreeze, 0, "Unfreeze a prop.")
-	// RegAdminCmd("sm_ffreeze", Command_ForceFreeze, ADMFLAG_CUSTOM1, "ForceFreeze a prop.")
-	// RegAdminCmd("sm_unffreeze", Command_UnForceFreeze, ADMFLAG_CUSTOM1, "UnForceFreeze a prop.")
+public OnPluginStart() {
 
-	// RegAdminCmd("sm_stand", Command_Stand, 0, "Set the mass of a prop.")
+	// Player commands
+	{
+		RegAdminCmd("sm_render", Command_Render, 0, "Render an entity.")
+		RegAdminCmd("sm_color", Command_Color, 0, "Color a prop.")
+		RegAdminCmd("sm_rotate", Command_Rotate, 0, "Rotate an entity.")
+		RegAdminCmd("sm_nobreak", Command_NoBreakProp, 0, "Set a prop wont break.")
+		RegAdminCmd("sm_unnobreak", Command_UnNoBreakProp, 0, "Undo nobreak.")
+		RegAdminCmd("sm_angles", Command_SetAngles, ADMFLAG_CUSTOM1, "Set the angles of a prop directly.")
+		RegAdminCmd("sm_align", Command_Align, ADMFLAG_CUSTOM1, "Aligning props.")
+		RegAdminCmd("sm_move", Command_Move, ADMFLAG_CUSTOM1, "Move props.")
+		RegAdminCmd("sm_extend", Command_Extend, ADMFLAG_CUSTOM1, "Create a third prop based on the position and angle of first two props.")
+		RegAdminCmd("sm_center", Command_Center, ADMFLAG_CUSTOM1, "Moves a prop to the exact middle of the other two props.")
+		RegAdminCmd("sm_skin", Command_Skin, ADMFLAG_CUSTOM1, "Change skin of a prop.")
+		RegAdminCmd("sm_light", Command_LightDynamic, ADMFLAG_CUSTOM1, "Create a dynamic light.")
+		// RegAdminCmd("sm_drop", Command_Drop, 0, "Drop a prop from sky.") // TODO: SourceOP dead
+		RegAdminCmd("sm_freeze", Command_Freeze, 0, "Freeze a prop.")
+		RegAdminCmd("sm_unfreeze", Command_UnFreeze, 0, "Unfreeze a prop.")
+		// RegAdminCmd("sm_ffreeze", Command_ForceFreeze, ADMFLAG_CUSTOM1, "ForceFreeze a prop.")
+		// RegAdminCmd("sm_unffreeze", Command_UnForceFreeze, ADMFLAG_CUSTOM1, "UnForceFreeze a prop.")
 
+		// RegAdminCmd("sm_stand", Command_Stand, 0, "Set the mass of a prop.")
 
-	RegAdminCmd("sm_setmass", Command_SetMass, 0, "Set the mass of a prop.")
-	// RegAdminCmd("sm_mass", Command_GetMass, 0, "Get the mass of a prop.")
-	RegAdminCmd("sm_weld", Command_Weld, 0, "Weld a prop.")
-	RegAdminCmd("sm_wheel", Command_Wheel, 0, "Place a wheel on your prop.")
+		RegAdminCmd("sm_setmass", Command_SetMass, 0, "Set the mass of a prop.")
+		// RegAdminCmd("sm_mass", Command_GetMass, 0, "Get the mass of a prop.")
+		RegAdminCmd("sm_weld", Command_Weld, 0, "Weld a prop.")
+	}
 
-
-	RegAdminCmd("sm_ent_fire", Command_EntFire, ADMFLAG_CHEATS, "Add output on entity.")
-	RegAdminCmd("sm_input", Command_EntInput, ADMFLAG_CHEATS, "Aim on an entity and execute an input/addoutput.")
-	RegAdminCmd("sm_output", Command_EntOutput, ADMFLAG_CHEATS, "Add output on entity.")
-	RegAdminCmd("sm_keyvalue", Command_EntKeyValue, ADMFLAG_CHEATS, "Set an entity keyvalues.")
-	
-	g_hWheelNameArray = CreateArray(32, 32);		// Max Wheel List is 32
-	g_hWheelModelPathArray = CreateArray(128, 32);	// Max Wheel List is 32
-	ReadWheels()
+	// Admin commands
+	{
+		RegAdminCmd("sm_ent_fire", Command_EntFire, ADMFLAG_CHEATS, "Replicate the ent_fire.")
+		RegAdminCmd("sm_getname", Command_EntGetName, ADMFLAG_CHEATS, "Aim on an entity to get its targetname and classname.")
+		RegAdminCmd("sm_input", Command_EntInput, ADMFLAG_CHEATS, "Aim on an entity and call an input.")
+		RegAdminCmd("sm_output", Command_EntOutput, ADMFLAG_CHEATS, "Aim on an entity and call an output or set a keyvalue.")
+	}
 	
 	PrintToServer( "LazMod Editor loaded!" )
+}
+
+public Action Command_Render(Client, args) {
+	if (!LM_AllowToUse(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
+		return Plugin_Handled
+	
+	if (args < 5) {
+		LM_PrintToChat(Client, "Usage: !render/!rd <fx amount> <fx> <R> <G> <B>")
+		LM_PrintToChat(Client, "Ex. Flashing Green: !render 150 4 15 255 0")
+		return Plugin_Handled
+	}
+	
+	int entProp = LM_GetClientAimEntity(Client)
+	if (entProp == -1) 
+		return Plugin_Handled
+	
+	if (LM_IsEntityOwner(Client, entProp)) {
+		char szRenderAlpha[20], szRenderFX[20], szColorRGB[20][3], szColors[128]
+
+		GetCmdArg(1, szRenderAlpha, sizeof(szRenderAlpha))
+		GetCmdArg(2, szRenderFX, sizeof(szRenderFX))
+		GetCmdArg(3, szColorRGB[0], sizeof(szColorRGB))
+		GetCmdArg(4, szColorRGB[1], sizeof(szColorRGB))
+		GetCmdArg(5, szColorRGB[2], sizeof(szColorRGB))
+		
+		Format(szColors, sizeof(szColors), "%s %s %s", szColorRGB[0], szColorRGB[1], szColorRGB[2])
+		if (StringToInt(szRenderAlpha) < 1)
+			szRenderAlpha = "1"
+		DispatchKeyValue(entProp, "rendermode", "5")
+		DispatchKeyValue(entProp, "renderamt", szRenderAlpha)
+		DispatchKeyValue(entProp, "renderfx", szRenderFX)
+		DispatchKeyValue(entProp, "rendercolor", szColors)
+	}
+	
+	char szTemp[33], szArgs[128]
+	for (int i = 1; i <= GetCmdArgs(); i++) {
+		GetCmdArg(i, szTemp, sizeof(szTemp))
+		Format(szArgs, sizeof(szArgs), "%s %s", szArgs, szTemp)
+	}
+	LM_LogCmd(Client, "sm_render", szArgs)
+	return Plugin_Handled
+}
+
+public Action Command_Color(Client, args) {
+	if (!LM_AllowToUse(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
+		return Plugin_Handled
+	
+	if (args < 3) {
+		LM_PrintToChat(Client, "Usage: !color <R> <G> <B>")
+		LM_PrintToChat(Client, "Ex: Green: !color 0 255 0")
+		
+		return Plugin_Handled
+	}
+	
+	int entProp = LM_GetClientAimEntity(Client)
+	if (entProp == -1) 
+		return Plugin_Handled
+	
+	if (LM_IsEntityOwner(Client, entProp)) {
+		char szColorRGB[20][3], szColors[33]
+		GetCmdArg(1, szColorRGB[0], sizeof(szColorRGB))
+		GetCmdArg(2, szColorRGB[1], sizeof(szColorRGB))
+		GetCmdArg(3, szColorRGB[2], sizeof(szColorRGB))
+		
+		Format(szColors, sizeof(szColors), "%s %s %s", szColorRGB[0], szColorRGB[1], szColorRGB[2])
+		DispatchKeyValue(entProp, "rendermode", "5")
+		DispatchKeyValue(entProp, "renderamt", "255")
+		DispatchKeyValue(entProp, "renderfx", "0")
+		DispatchKeyValue(entProp, "rendercolor", szColors)
+	}
+	
+	char szTemp[33], szArgs[128]
+	for (int i = 1; i <= GetCmdArgs(); i++) {
+		GetCmdArg(i, szTemp, sizeof(szTemp))
+		Format(szArgs, sizeof(szArgs), "%s %s", szArgs, szTemp)
+	}
+	LM_LogCmd(Client, "sm_color", szArgs)
+	return Plugin_Handled
+}
+
+public Action Command_Rotate(Client, args) {
+	if (!LM_AllowToUse(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
+		return Plugin_Handled
+	
+	if (args < 1) {
+		LM_PrintToChat(Client, "Usage: !rotate/!r <x> <y> <z>")
+		LM_PrintToChat(Client, "Ex: !rotate 0 90 0")
+		return Plugin_Handled
+	}
+	
+	int entProp = LM_GetClientAimEntity(Client)
+	if (entProp == -1) 
+		return Plugin_Handled
+	
+	if (LM_IsEntityOwner(Client, entProp)) {
+		char szAngleX[8], szAngleY[8], szAngleZ[8]
+		float fEntityOrigin[3], fEntityAngle[3]
+		GetCmdArg(1, szAngleX, sizeof(szAngleX))
+		GetCmdArg(2, szAngleY, sizeof(szAngleY))
+		GetCmdArg(3, szAngleZ, sizeof(szAngleZ))
+		
+		GetEntPropVector(entProp, Prop_Data, "m_vecOrigin", fEntityOrigin)
+		GetEntPropVector(entProp, Prop_Data, "m_angRotation", fEntityAngle)
+		fEntityAngle[0] += StringToFloat(szAngleX)
+		fEntityAngle[1] += StringToFloat(szAngleY)
+		fEntityAngle[2] += StringToFloat(szAngleZ)
+		
+		TeleportEntity(entProp, fEntityOrigin, fEntityAngle, NULL_VECTOR)
+	}
+	
+	char szTemp[33], szArgs[128]
+	for (int i = 1; i <= GetCmdArgs(); i++) {
+		GetCmdArg(i, szTemp, sizeof(szTemp))
+		Format(szArgs, sizeof(szArgs), "%s %s", szArgs, szTemp)
+	}
+	LM_LogCmd(Client, "sm_rotate", szArgs)
+	return Plugin_Handled
 }
 
 public Action Command_SetMass(Client, args) {
@@ -90,6 +228,395 @@ public Action Command_SetMass(Client, args) {
 	return Plugin_Handled
 }
 
+
+public Action Command_NoBreakProp(Client, args) {
+	if (!LM_AllowToUse(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
+		return Plugin_Handled
+	
+	int entProp = LM_GetClientAimEntity(Client)
+	if (entProp == -1) 
+		return Plugin_Handled
+	
+	if (LM_IsEntityOwner(Client, entProp)) {
+		SetVariantString("999999999")
+		AcceptEntityInput(entProp, "sethealth", -1)
+	}
+	
+	char szTemp[33], szArgs[128]
+	for (int i = 1; i <= GetCmdArgs(); i++) {
+		GetCmdArg(i, szTemp, sizeof(szTemp))
+		Format(szArgs, sizeof(szArgs), "%s %s", szArgs, szTemp)
+	}
+	LM_LogCmd(Client, "sm_nobreak", szArgs)
+	return Plugin_Handled
+}
+
+public Action Command_UnNoBreakProp(Client, args) {
+	if (!LM_AllowToUse(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
+		return Plugin_Handled
+	
+	int entProp = LM_GetClientAimEntity(Client)
+	if (entProp == -1) 
+		return Plugin_Handled
+	
+	if (LM_IsEntityOwner(Client, entProp)) {
+		SetVariantString("50")
+		AcceptEntityInput(entProp, "sethealth", -1)
+	}
+	
+	char szTemp[33], szArgs[128]
+	for (int i = 1; i <= GetCmdArgs(); i++) {
+		GetCmdArg(i, szTemp, sizeof(szTemp))
+		Format(szArgs, sizeof(szArgs), "%s %s", szArgs, szTemp)
+	}
+	LM_LogCmd(Client, "sm_unnobreak", szArgs)
+	return Plugin_Handled
+}
+
+public Action Command_SetAngles(Client, args) {
+	if (!LM_AllowToUse(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
+		return Plugin_Handled
+	
+	if (args < 1) {
+		LM_PrintToChat(Client, "Usage: !angles <x> [y] [z]")
+		return Plugin_Handled
+	}
+	
+	int entProp = LM_GetClientAimEntity(Client)
+	if (entProp == -1) 
+		return Plugin_Handled
+	
+	if (LM_IsEntityOwner(Client, entProp)) {
+		float vEntityOrigin[3], vEntityAngle[3]
+		vEntityAngle[0] = GetCmdArgFloat(1)
+		vEntityAngle[1] = GetCmdArgFloat(2)
+		vEntityAngle[2] = GetCmdArgFloat(3)
+		
+		GetEntPropVector(entProp, Prop_Data, "m_vecOrigin", vEntityOrigin)
+		
+		TeleportEntity(entProp, vEntityOrigin, vEntityAngle, NULL_VECTOR)
+	}
+	
+	char szTemp[33], szArgs[128]
+	for (int i = 1; i <= GetCmdArgs(); i++) {
+		GetCmdArg(i, szTemp, sizeof(szTemp))
+		Format(szArgs, sizeof(szArgs), "%s %s", szArgs, szTemp)
+	}
+	LM_LogCmd(Client, "sm_angles", szArgs)
+	return Plugin_Handled
+}
+
+public Action Command_Align(Client, args) {
+	if (!LM_AllowToUse(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
+		return Plugin_Handled
+	
+	if (args < 1) {
+		LM_PrintToChat(Client, "Usage: !align <mode>")
+		LM_PrintToChat(Client, "!align set = Select the prop to be alignment refer")
+		LM_PrintToChat(Client, "!align x  = Align the aimed prop with X coord")
+		LM_PrintToChat(Client, "!align y  = Align the aimed prop with Y coord")
+		LM_PrintToChat(Client, "!align z  = Align the aimed prop with Z coord")
+		return Plugin_Handled
+	}
+	
+	int entProp = LM_GetClientAimEntity(Client)
+	if (entProp == -1) 
+		return Plugin_Handled
+	
+	if (!LM_IsEntityOwner(Client, entProp))
+		return Plugin_Handled
+	
+	char szMode[5]
+	float fEntityAngle[3], fEntityOrigin[3]
+	GetCmdArg(1, szMode, sizeof(szMode))
+	
+	GetEntPropVector(entProp, Prop_Data, "m_vecOrigin", fEntityOrigin)
+	GetEntPropVector(entProp, Prop_Data, "m_angRotation", fEntityAngle)
+
+	if (StrEqual(szMode[0], "set") || StrEqual(szMode[0], "s")) {
+		GetEntPropVector(entProp, Prop_Data, "m_vecOrigin", g_vAlignOrigin[Client])
+		LM_PrintToChat(Client, "Align set.")
+	} else if (StrEqual(szMode[0], "x")) {
+		fEntityOrigin[0] = g_vAlignOrigin[Client][0]
+		TeleportEntity(entProp, fEntityOrigin, fEntityAngle, NULL_VECTOR)
+	} else if (StrEqual(szMode[0], "y")) {
+		fEntityOrigin[1] = g_vAlignOrigin[Client][1]
+		TeleportEntity(entProp, fEntityOrigin, fEntityAngle, NULL_VECTOR)
+	} else if (StrEqual(szMode[0], "z")) {
+		fEntityOrigin[2] = g_vAlignOrigin[Client][2]
+		TeleportEntity(entProp, fEntityOrigin, fEntityAngle, NULL_VECTOR)
+	}
+	
+	char szTemp[33], szArgs[128]
+	for (int i = 1; i <= GetCmdArgs(); i++) {
+		GetCmdArg(i, szTemp, sizeof(szTemp))
+		Format(szArgs, sizeof(szArgs), "%s %s", szArgs, szTemp)
+	}
+	LM_LogCmd(Client, "sm_align", szArgs)
+	return Plugin_Handled
+}
+
+public Action Command_Move(Client, args) {
+	if (!LM_AllowToUse(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
+		return Plugin_Handled
+	
+	if (args < 1) {
+		LM_PrintToChat(Client, "Usage: !move <x> [y] [z]")
+		LM_PrintToChat(Client, "Ex, move up 50: !move 0 0 50")
+
+		return Plugin_Handled
+	}
+	
+	int entProp = LM_GetClientAimEntity(Client)
+	if (entProp == -1) 
+		return Plugin_Handled
+	
+	if (LM_IsEntityOwner(Client, entProp)) {
+		float fEntityOrigin[3], fEntityAngle[3];	
+		char szArgX[33], szArgY[33], szArgZ[33]
+		GetCmdArg(1, szArgX, sizeof(szArgX))
+		GetCmdArg(2, szArgY, sizeof(szArgY))
+		GetCmdArg(3, szArgZ, sizeof(szArgZ))
+		
+		GetEntPropVector(entProp, Prop_Data, "m_vecOrigin", fEntityOrigin)
+		GetEntPropVector(entProp, Prop_Data, "m_angRotation", fEntityAngle)
+		
+		fEntityOrigin[0] += StringToFloat(szArgX)
+		fEntityOrigin[1] += StringToFloat(szArgY)
+		fEntityOrigin[2] += StringToFloat(szArgZ)
+		
+		TeleportEntity(entProp, fEntityOrigin, fEntityAngle, NULL_VECTOR)
+	}
+	
+	char szTemp[33], szArgs[128]
+	for (int i = 1; i <= GetCmdArgs(); i++) {
+		GetCmdArg(i, szTemp, sizeof(szTemp))
+		Format(szArgs, sizeof(szArgs), "%s %s", szArgs, szTemp)
+	}
+	LM_LogCmd(Client, "sm_move", szArgs)
+	return Plugin_Handled
+}
+
+public Action Command_Extend(plyClient, args) {
+	if (!LM_AllowToUse(plyClient) || LM_IsBlacklisted(plyClient) || !LM_IsClientValid(plyClient, plyClient, true))
+		return Plugin_Handled
+	
+	int entProp = LM_GetClientAimEntity(plyClient)
+	if (entProp == -1) 
+		return Plugin_Handled
+	
+	char szClass[33]
+	GetEdictClassname(entProp, szClass, sizeof(szClass))
+	if (LM_IsEntityOwner(plyClient, entProp)) {
+		int entThirdProp
+		if (StrContains(szClass, "prop_dynamic") >= 0) {
+			entThirdProp = CreateEntityByName("prop_dynamic_override")
+			SetEntProp(entThirdProp, Prop_Send, "m_nSolidType", 6)
+			SetEntProp(entThirdProp, Prop_Data, "m_nSolidType", 6)
+		} else
+			entThirdProp = CreateEntityByName(szClass)
+			
+		if (LM_SetEntityOwner(entThirdProp, plyClient)) {
+			if (!g_bExtendIsRunning[plyClient]) {
+				g_entExtendTarget[plyClient] = entProp
+				g_bExtendIsRunning[plyClient] = true
+				LM_PrintToChat(plyClient, "Extend #1 set, use !ex again on #2 prop.")
+			} else {
+				char szModel[255]
+				float fOriginProp1[3], fAngle[3], fOriginProp2[3], fOriginProp3[3]
+				
+				GetEntPropVector(g_entExtendTarget[plyClient], Prop_Data, "m_vecOrigin", fOriginProp1)
+				GetEntPropVector(g_entExtendTarget[plyClient], Prop_Data, "m_angRotation", fAngle)
+				GetEntPropString(g_entExtendTarget[plyClient], Prop_Data, "m_ModelName", szModel, sizeof(szModel))
+				GetEntPropVector(entProp, Prop_Data, "m_vecOrigin", fOriginProp2)
+				
+				for (int i = 0; i < 3; i++)
+					fOriginProp3[i] = (fOriginProp2[i] + fOriginProp2[i] - fOriginProp1[i])
+				
+				DispatchKeyValue(entThirdProp, "model", szModel)
+				DispatchSpawn(entThirdProp)
+				TeleportEntity(entThirdProp, fOriginProp3, fAngle, NULL_VECTOR)
+				
+				if(Phys_IsPhysicsObject(entThirdProp))
+					Phys_EnableMotion(entThirdProp, false)
+				
+				g_bExtendIsRunning[plyClient] = false
+				LM_PrintToChat(plyClient, "Extended a prop.")
+			}
+		} else
+			RemoveEdict(entThirdProp)
+	}
+	
+	char szTemp[33], szArgs[128]
+	for (int i = 1; i <= GetCmdArgs(); i++) {
+		GetCmdArg(i, szTemp, sizeof(szTemp))
+		Format(szArgs, sizeof(szArgs), "%s %s", szArgs, szTemp)
+	}
+	LM_LogCmd(plyClient, "sm_extend", szArgs)
+	return Plugin_Handled
+}
+
+public Action Command_Center(Client, args) {
+	if (!LM_AllowToUse(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
+		return Plugin_Handled
+	
+	int entProp = LM_GetClientAimEntity(Client)
+	if (entProp == -1) 
+		return Plugin_Handled
+	
+	if (!LM_IsEntityOwner(Client, entProp))
+		return Plugin_Handled
+
+
+	if (g_iCenterIsRunning[Client] == 1) {
+		g_entCenterFirst[Client] = entProp
+		g_iCenterIsRunning[Client] = 2
+		LM_PrintToChat(Client, "Now select the third prop to finish.")
+
+	} else if (g_iCenterIsRunning[Client] == 2) {
+		float fAngleMain[3], fOriginMain[3], fOriginFirst[3], fOriginSecend[3]
+		
+		GetEntPropVector(g_entCenterMain[Client], Prop_Data, "m_angRotation", fAngleMain)
+		GetEntPropVector(g_entCenterFirst[Client], Prop_Data, "m_vecOrigin", fOriginFirst)
+		GetEntPropVector(entProp, Prop_Data, "m_vecOrigin", fOriginSecend)
+		
+		for (int i = 0; i < 3; i++)
+			fOriginMain[i] = (fOriginFirst[i] + fOriginSecend[i]) / 2
+		
+		TeleportEntity(g_entCenterMain[Client], fOriginMain, fAngleMain, NULL_VECTOR)
+		g_iCenterIsRunning[Client] = 0
+
+	} else {
+		g_entCenterMain[Client] = entProp
+		g_iCenterIsRunning[Client] = 1
+		LM_PrintToChat(Client, "The prop to be moved have been selected, now select the secend prop.")
+
+	}
+	
+	char szTemp[33], szArgs[128]
+	for (int i = 1; i <= GetCmdArgs(); i++) {
+		GetCmdArg(i, szTemp, sizeof(szTemp))
+		Format(szArgs, sizeof(szArgs), "%s %s", szArgs, szTemp)
+	}
+	LM_LogCmd(Client, "sm_center", szArgs)
+	return Plugin_Handled
+}
+
+public Action Command_Skin(Client, args) {
+	if (!LM_AllowToUse(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
+		return Plugin_Handled
+	
+	if (args < 1) {
+		LM_PrintToChat(Client, "Usage: !skin <number>")
+		LM_PrintToChat(Client, "Notice: Not every model have multiple skins.")
+		return Plugin_Handled
+	}
+	
+	int entProp = LM_GetClientAimEntity(Client)
+	if (entProp == -1) 
+		return Plugin_Handled
+	
+	if (!LM_IsEntityOwner(Client, entProp)) 
+		return Plugin_Handled
+
+
+	char szSkin[33]
+	GetCmdArg(1, szSkin, sizeof(szSkin))
+	
+	SetVariantString(szSkin)
+	AcceptEntityInput(entProp, "skin", entProp, Client, 0)
+	
+	
+	char szTemp[33], szArgs[128]
+	for (int i = 1; i <= GetCmdArgs(); i++) {
+		GetCmdArg(i, szTemp, sizeof(szTemp))
+		Format(szArgs, sizeof(szArgs), "%s %s", szArgs, szTemp)
+	}
+	LM_LogCmd(Client, "sm_skin", szArgs)
+	return Plugin_Handled
+}
+
+public Action Command_LightDynamic(Client, args) {
+	if (!LM_AllowToUse(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
+		return Plugin_Handled
+	
+	if (args < 1) {
+		LM_PrintToChat(Client, "Usage: !ld <range> <brightness> <R> <G> <B>")
+		return Plugin_Handled
+	}
+	
+	new entLightMelon = CreateEntityByName("prop_physics_multiplayer")
+	if (LM_SetEntityOwner(entLightMelon, Client)) {
+		char szRange[33], szBrightness[33], szColorR[33], szColorG[33], szColorB[33], szColor[33]
+		char szNameMelon[64]
+		float fAimPos[3]
+		GetCmdArg(1, szRange, sizeof(szRange))
+		GetCmdArg(2, szBrightness, sizeof(szBrightness))
+		GetCmdArg(3, szColorR, sizeof(szColorR))
+		GetCmdArg(4, szColorG, sizeof(szColorG))
+		GetCmdArg(5, szColorB, sizeof(szColorB))
+		
+		LM_ClientAimPos(Client, fAimPos)
+		fAimPos[2] += 50
+		
+		if(!IsModelPrecached("models/props_junk/watermelon01.mdl"))
+			PrecacheModel("models/props_junk/watermelon01.mdl")
+		
+		if (StrEqual(szBrightness, ""))
+			szBrightness = "3"
+		if (StringToInt(szColorR) < 100 || StrEqual(szColorR, ""))
+			szColorR = "100"
+		if (StringToInt(szColorG) < 100 || StrEqual(szColorG, ""))
+			szColorG = "100"
+		if (StringToInt(szColorB) < 100 || StrEqual(szColorB, ""))
+			szColorB = "100"
+		Format(szColor, sizeof(szColor), "%s %s %s", szColorR, szColorG, szColorB)
+		
+		DispatchKeyValue(entLightMelon, "model", "models/props_junk/watermelon01.mdl")
+		DispatchKeyValue(entLightMelon, "rendermode", "5")
+		DispatchKeyValue(entLightMelon, "renderamt", "150")
+		DispatchKeyValue(entLightMelon, "renderfx", "15")
+		DispatchKeyValue(entLightMelon, "rendercolor", szColor)
+		
+		int entLightDynamic = CreateEntityByName("light_dynamic")
+		if (StringToInt(szRange) > 1500) {
+			LM_PrintToChat(Client, "Max range is 1500!")
+			return Plugin_Handled
+		}
+		if (StringToInt(szBrightness) > 7) {
+			LM_PrintToChat(Client, "Max brightness is 7!")
+			return Plugin_Handled
+		}
+		SetVariantString(szRange)
+		AcceptEntityInput(entLightDynamic, "distance", -1)
+		SetVariantString(szBrightness)
+		AcceptEntityInput(entLightDynamic, "brightness", -1)
+		SetVariantString("2")
+		AcceptEntityInput(entLightDynamic, "style", -1)
+		SetVariantString(szColor)
+		AcceptEntityInput(entLightDynamic, "color", -1)
+		
+		DispatchSpawn(entLightMelon)
+		TeleportEntity(entLightMelon, fAimPos, NULL_VECTOR, NULL_VECTOR)
+		DispatchSpawn(entLightDynamic)
+		TeleportEntity(entLightDynamic, fAimPos, NULL_VECTOR, NULL_VECTOR)
+		
+		Format(szNameMelon, sizeof(szNameMelon), "entLightDMelon%i", GetRandomInt(1000, 5000))
+		DispatchKeyValue(entLightMelon, "targetname", szNameMelon)
+		SetVariantString(szNameMelon)
+		AcceptEntityInput(entLightDynamic, "setparent", -1)
+		AcceptEntityInput(entLightDynamic, "turnon", Client, Client)
+	} else
+		RemoveEdict(entLightMelon)
+	
+	char szTemp[33], szArgs[128]
+	for (int i = 1; i <= GetCmdArgs(); i++) {
+		GetCmdArg(i, szTemp, sizeof(szTemp))
+		Format(szArgs, sizeof(szArgs), "%s %s", szArgs, szTemp)
+	}
+	LM_LogCmd(Client, "sm_ld", szArgs)
+	return Plugin_Handled
+}
 
 // TODO: SourceOP dead
 public Action Command_Drop(Client, args) {
@@ -249,314 +776,144 @@ public Action Command_Weld(Client, args) {
 	return Plugin_Handled
 }
 
-public Action Command_Wheel(Client, args) {
-	if (!LM_AllowToUse(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
+
+
+
+
+
+
+
+
+public Action Command_EntFire(plyClient, args) {
+	if (!LM_AllowToUse(plyClient) || LM_IsBlacklisted(plyClient) || !LM_IsClientValid(plyClient, plyClient, true))
 		return Plugin_Handled
 	
-	if (args < 1) {
-		LM_PrintToChat(Client, "Usage: !wheel <type>")
-		LM_PrintToChat(Client, "Ex: !wheel 3")
-		
-		return Plugin_Handled
-	}
-	
-	char szWheelName[33], szModelPath[128]
-	GetCmdArg(1, szWheelName, sizeof(szWheelName))
-	
-	new IndexInArray = FindStringInArray(g_hWheelNameArray, szWheelName)
-	if (IndexInArray != -1) {
-		float eyePos[3]
-		float eyeAng[3]
-		
-		GetClientEyePosition(Client, eyePos)
-		GetClientEyeAngles(Client, eyeAng)
-		
-		Handle trace = TR_TraceRayFilterEx(eyePos, eyeAng, MASK_SHOT, RayType_Infinite, TraceEntityFilterOnlyVPhysics)
-		
-		if (TR_DidHit(trace) && TR_GetEntityIndex(trace)) {
-			int entIndex = TR_GetEntityIndex(trace)
-			if (LM_IsEntityOwner(Client, entIndex)) {	
-				int entWheel = CreateEntityByName("prop_physics_override")
-				if (LM_SetEntityOwner(entWheel, Client)) {
-					float hitPos[3]
-					float hitNormal[3]
-					TR_GetEndPosition(hitPos, trace)
-					TR_GetPlaneNormal(trace, hitNormal)
-					
-					GetArrayString(g_hWheelModelPathArray, IndexInArray, szModelPath, sizeof(szModelPath))
-					
-					if (!IsModelPrecached(szModelPath))
-						PrecacheModel(szModelPath)
-					
-					DispatchKeyValue(entWheel, "model", szModelPath)
-					DispatchKeyValue(entWheel, "spawnflags", "256")
-					DispatchKeyValueFloat(entWheel, "physdamagescale", 0.0)
-					DispatchKeyValueFloat(entWheel, "ExplodeDamage", 0.0)
-					DispatchKeyValueFloat(entWheel, "ExplodeRadius", 0.0)
-					
-					DispatchSpawn(entWheel)
-					ActivateEntity(entWheel)
-					
-					float surfaceAng[3];					
-					GetVectorAngles(hitNormal, surfaceAng)
-					
-					float wheelCenter[3]; // Should be calculating the width of the model for this.
-					float vecToAdd[3]
-					
-					vecToAdd[0] = hitNormal[0]
-					vecToAdd[1] = hitNormal[1]
-					vecToAdd[2] = hitNormal[2]
-					
-					switch(StringToInt(szWheelName)) {
-						case 1:
-							ScaleVector(vecToAdd, 5.0)
-						case 2:
-							ScaleVector(vecToAdd, 10.0)
-						case 3:
-							ScaleVector(vecToAdd, 7.5)
-						case 4:
-							ScaleVector(vecToAdd, 12.5)
-						case 5:
-							ScaleVector(vecToAdd, 11.0)
-						case 6:
-							ScaleVector(vecToAdd, 40.0)
-						case 7:
-							ScaleVector(vecToAdd, 40.0)
-					}
-					
-					AddVectors(hitPos, vecToAdd, wheelCenter)
-					TeleportEntity(entWheel, wheelCenter, surfaceAng, NULL_VECTOR)
-					
-					Phys_CreateHingeConstraint(entIndex, entWheel, INVALID_HANDLE, hitPos, hitNormal)
-					LM_PrintToChat(Client, "Added wheel to target")
-				} else
-					RemoveEdict(entWheel)
-			}
-		} else {
-			LM_PrintToChat(Client, "Target not found.")
-		}
-		
-		CloseHandle(trace)
-	} else {
-		LM_PrintToChat(Client, "Wheel not found.")
-	}
-	char szTemp[33], szArgs[128]
-	for (int i = 1; i <= GetCmdArgs(); i++) {
-		GetCmdArg(i, szTemp, sizeof(szTemp))
-		Format(szArgs, sizeof(szArgs), "%s %s", szArgs, szTemp)
-	}
-	LM_LogCmd(Client, "sm_wheel", szArgs)
-	return Plugin_Handled
-}
-
-public bool TraceEntityFilterOnlyVPhysics(entity, contentsMask) {
-    return ((entity > MaxClients) && Phys_IsPhysicsObject(entity))
-}
-
-ReadWheels() {
-	char szFile[255]
-	BuildPath(Path_SM, szFile, sizeof(szFile), "configs/lazmod/wheels.ini")
-	
-	Handle iFile = OpenFile(szFile, "rt")
-	if (iFile == INVALID_HANDLE)
-		return
-	
-	new iCountWheels = 0
-	while (!IsEndOfFile(iFile))
-	{
-		char szLine[255]
-		if (!ReadFileLine(iFile, szLine, sizeof(szLine)))
-			break
-		
-		/* 略過註解 */
-		new iLen = strlen(szLine)
-		bool bIgnore = false
-		
-		for (int i = 0; i < iLen; i++) {
-			if (bIgnore) {
-				if (szLine[i] == '"')
-					bIgnore = false
-			} else {
-				if (szLine[i] == '"')
-					bIgnore = true
-				else if (szLine[i] == ';') {
-					szLine[i] = '\0'
-					break
-				} else if (szLine[i] == '/' && i != iLen - 1 && szLine[i+1] == '/') {
-					szLine[i] = '\0'
-					break
-				}
-			}
-		}
-		
-		TrimString(szLine)
-		
-		if ((szLine[0] == '/' && szLine[1] == '/') || (szLine[0] == ';' || szLine[0] == '\0'))
-			continue
-	
-		ReadPropsLine(szLine, iCountWheels++)
-	}
-	CloseHandle(iFile)
-}
-
-ReadPropsLine(const char[] szLine, iCountWheels) {
-	char szWheelName[64], szWheelPath[64]
-	new idx, cur_idx
-	
-	if ((cur_idx = BreakString(szLine, szWheelName, sizeof(szWheelName))) == -1)
-		return
-	 
-	SetArrayString(g_hWheelNameArray, iCountWheels, szWheelName)
-	
-	idx = cur_idx
-	
-	/* Get Model File Path */
-	if (cur_idx != -1) {
-		BreakString(szLine[idx], szWheelPath, sizeof(szWheelPath))
-		SetArrayString(g_hWheelModelPathArray, iCountWheels, szWheelPath)
-	}
-}
-
-
-
-
-
-
-
-
-
-public Action Command_EntFire(Client, args) {
-	if (!LM_AllowToUse(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
-		return Plugin_Handled
-	
-	if (args < 1) {
-		LM_PrintToChat(Client, "Usage: !ent_fire <name> <input> [value] [delay]")
+	if (args < 2) {
+		LM_PrintToChat(plyClient, "Usage: !ent_fire <name> <input> [value] [delay]")
 		return Plugin_Handled
 	}
 	
-	int entProp = LM_GetClientAimEntity(Client)
+	int entProp = LM_GetClientAimEntity(plyClient)
 	if (entProp == -1) 
 		return Plugin_Handled
 	
-	if (!LM_IsAdmin(Client)) {
+	if (!LM_IsEntityOwner(plyClient, entProp) && !LM_IsAdmin(plyClient)) {
+		LM_PrintToChat(plyClient, "You can only use this command to your own props!")
+		return Plugin_Handled
+	}
+
+	char szName[33], szInput[33], szValue[33]
+	float fDelay
+
+	GetCmdArg(1, szName, sizeof(szName))
+	GetCmdArg(2, szInput, sizeof(szInput))
+	GetCmdArg(3, szValue, sizeof(szValue))
+	if (!GetCmdArgFloatEx(4, fDelay)) {
+		LM_PrintToChat(plyClient, "Delay value must be an integer or decimal!")
+		return Plugin_Handled
+	}
+	
+	SetVariantString(szValue)
+	AcceptEntityInput(entProp, szInput, entProp, plyClient, 0)
+	
+	
+	char szArgString[256]
+	GetCmdArgString(szArgString, sizeof(szArgString))
+	LM_LogCmd(plyClient, "sm_ent_fire", szArgString)
+	return Plugin_Handled
+}
+
+public Action Command_EntGetName(plyClient, args) {
+	if (!LM_AllowToUse(plyClient) || LM_IsBlacklisted(plyClient) || !LM_IsClientValid(plyClient, plyClient, true))
+		return Plugin_Handled
+	
+	int entProp = LM_GetClientAimEntity(plyClient)
+	if (entProp == -1) 
+		return Plugin_Handled
+	
+	if (!LM_IsEntityOwner(plyClient, entProp) && !LM_IsAdmin(plyClient)) {
+		LM_PrintToChat(plyClient, "You can only use this command to your own props!")
+		return Plugin_Handled
+	}
+
+	char szName[64]
+	Entity_GetName(entProp, szName, sizeof(szName))
+	LM_PrintToChat(plyClient, "Name/m_iName: %s", szName)
+	Entity_GetClassName(entProp, szName, sizeof(szName))
+	LM_PrintToChat(plyClient, "ClassName/m_iClassname: %s", szName)
+	Entity_GetTargetName(entProp, szName, sizeof(szName))
+	LM_PrintToChat(plyClient, "TargetName/m_target: %s", szName)
+
+	char szArgString[256]
+	GetCmdArgString(szArgString, sizeof(szArgString))
+	LM_LogCmd(plyClient, "sm_getname", szArgString)
+	return Plugin_Handled
+}
+
+public Action Command_EntInput(plyClient, args) {
+	if (!LM_AllowToUse(plyClient) || LM_IsBlacklisted(plyClient) || !LM_IsClientValid(plyClient, plyClient, true))
+		return Plugin_Handled
+	
+	if (args < 1) {
+		LM_PrintToChat(plyClient, "Usage: !input <input> [value]")
+		return Plugin_Handled
+	}
+	
+	int entProp = LM_GetClientAimEntity(plyClient)
+	if (entProp == -1) 
+		return Plugin_Handled
+	
+	if (!LM_IsAdmin(plyClient)) {
 		if (LM_IsPlayer(entProp))
 			return Plugin_Handled
 	}
 	
-	if (LM_IsEntityOwner(Client, entProp)) {
-		char szInput[33], szValues[33]
-		GetCmdArg(1, szInput, sizeof(szInput))
-		GetCmdArg(2, szValues, sizeof(szValues))
-		
-		SetVariantString(szValues)
-		AcceptEntityInput(entProp, szInput, entProp, Client, 0)
+	if (!LM_IsEntityOwner(plyClient, entProp) && !LM_IsAdmin(plyClient)) {
+		LM_PrintToChat(plyClient, "You can only use this command to your own props!")
+		return Plugin_Handled
 	}
+
+	char szInput[33], szValues[33]
+	GetCmdArg(1, szInput, sizeof(szInput))
+	GetCmdArg(2, szValues, sizeof(szValues))
 	
-	char szTemp[33], szArgs[128]
-	for (int i = 1; i <= GetCmdArgs(); i++) {
-		GetCmdArg(i, szTemp, sizeof(szTemp))
-		Format(szArgs, sizeof(szArgs), "%s %s", szArgs, szTemp)
-	}
-	LM_LogCmd(Client, "sm_input", szArgs)
+	SetVariantString(szValues)
+	AcceptEntityInput(entProp, szInput, entProp, plyClient, 0)
+	
+
+	char szArgString[256]
+	GetCmdArgString(szArgString, sizeof(szArgString))
+	LM_LogCmd(plyClient, "sm_input", szArgString)
 	return Plugin_Handled
 }
 
-public Action Command_EntInput(Client, args) {
-	if (!LM_AllowToUse(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
-		return Plugin_Handled
-	
-	if (args < 1) {
-		LM_PrintToChat(Client, "Usage: !input <input> <value>")
-		return Plugin_Handled
-	}
-	
-	int entProp = LM_GetClientAimEntity(Client)
-	if (entProp == -1) 
-		return Plugin_Handled
-	
-	if (!LM_IsAdmin(Client)) {
-		if (LM_IsPlayer(entProp))
-			return Plugin_Handled
-	}
-	
-	if (LM_IsEntityOwner(Client, entProp)) {
-		char szInput[33], szValues[33]
-		GetCmdArg(1, szInput, sizeof(szInput))
-		GetCmdArg(2, szValues, sizeof(szValues))
-		
-		SetVariantString(szValues)
-		AcceptEntityInput(entProp, szInput, entProp, Client, 0)
-	}
-	
-	char szTemp[33], szArgs[128]
-	for (int i = 1; i <= GetCmdArgs(); i++) {
-		GetCmdArg(i, szTemp, sizeof(szTemp))
-		Format(szArgs, sizeof(szArgs), "%s %s", szArgs, szTemp)
-	}
-	LM_LogCmd(Client, "sm_input", szArgs)
-	return Plugin_Handled
-}
-
-
-public Action Command_EntKeyValue(Client, args) {
-	if (!LM_AllowToUse(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
+public Action Command_EntOutput(plyClient, args) {
+	if (!LM_AllowToUse(plyClient) || LM_IsBlacklisted(plyClient) || !LM_IsClientValid(plyClient, plyClient, true))
 		return Plugin_Handled
 	
 	if (args < 2) {
-		LM_PrintToChat(Client, "Usage: !keyvalue <keyvalue> <value>")
+		LM_PrintToChat(plyClient, "Usage: !output <output> <value>")
 		return Plugin_Handled
 	}
 	
-	int entProp = LM_GetClientAimEntity(Client)
+	int entProp = LM_GetClientAimEntity(plyClient)
 	if (entProp == -1) 
 		return Plugin_Handled
 	
-	if (LM_IsEntityOwner(Client, entProp)) {
-		
-		char szKeys[33], szValues[33]
-		GetCmdArg(1, szKeys, sizeof(szKeys))
-		GetCmdArg(2, szValues, sizeof(szValues))
-		
-		DispatchKeyValue(entProp, szKeys, szValues)
+	if (!LM_IsEntityOwner(plyClient, entProp) && !LM_IsAdmin(plyClient)) {
+		LM_PrintToChat(plyClient, "You can only use this command to your own props!")
+		return Plugin_Handled
 	}
-	
-	char szTemp[33], szArgs[128]
-	for (int i = 1; i <= GetCmdArgs(); i++) {
-		GetCmdArg(i, szTemp, sizeof(szTemp))
-		Format(szArgs, sizeof(szArgs), "%s %s", szArgs, szTemp)
-	}
-	LM_LogCmd(Client, "sm_keyvalue", szArgs)
-	return Plugin_Handled
-}
 
-
-public Action Command_EntOutput(Client, args) {
-	if (!LM_AllowToUse(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
-		return Plugin_Handled
+	char szKeys[33], szValues[33]
+	GetCmdArg(1, szKeys, sizeof(szKeys))
+	GetCmdArg(2, szValues, sizeof(szValues))
 	
-	if (args < 2) {
-		LM_PrintToChat(Client, "Usage: !output <output> <value>")
-		return Plugin_Handled
-	}
+	DispatchKeyValue(entProp, szKeys, szValues)
 	
-	int entProp = LM_GetClientAimEntity(Client)
-	if (entProp == -1) 
-		return Plugin_Handled
-	
-	if (LM_IsEntityOwner(Client, entProp)) {
-		char szKeys[33], szValues[33]
-		GetCmdArg(1, szKeys, sizeof(szKeys))
-		GetCmdArg(2, szValues, sizeof(szValues))
-		
-		DispatchKeyValue(entProp, szKeys, szValues)
-	}
-	
-	char szTemp[33], szArgs[128]
-	for (int i = 1; i <= GetCmdArgs(); i++) {
-		GetCmdArg(i, szTemp, sizeof(szTemp))
-		Format(szArgs, sizeof(szArgs), "%s %s", szArgs, szTemp)
-	}
-	LM_LogCmd(Client, "sm_output", szArgs)
+	char szArgString[256]
+	GetCmdArgString(szArgString, sizeof(szArgString))
+	LM_LogCmd(plyClient, "sm_output", szArgString)
 	return Plugin_Handled
 }
 
