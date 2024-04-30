@@ -14,7 +14,7 @@
 public Plugin myinfo = {
 	name = "LazMod - PropInfo",
 	author = "LaZycAt, hjkwe654",
-	description = "Show props infomation.",
+	description = "Show props infomation on hud.",
 	version = LAZMOD_VER,
 	url = ""
 }
