@@ -57,7 +57,6 @@ public OnPluginStart() {
 	{
 		// RegAdminCmd("sm_ball", Command_Ball, ADMFLAG_GENERIC, "Spawn a energy ball.")
 		
-		RegAdminCmd("sm_fda", Command_AdminForceDeleteAll, ADMFLAG_BAN, "Delall a player's props.")
 		RegAdminCmd("sm_setowner", Command_AdminSetOwner, ADMFLAG_BAN, "WTF.")
 		RegAdminCmd("sm_team", Command_AdminTeam, ADMFLAG_GENERIC, "Force a player join a team.")
 		RegAdminCmd("sm_hurt", Command_AdminHurt, ADMFLAG_BAN, "To hurt you.")
@@ -404,33 +403,6 @@ public Action Command_Rope(Client, args) {
 // 	return Plugin_Handled
 // }
 
-
-public Action Command_AdminForceDeleteAll(Client, args) {
-	if (args < 1) {
-		LM_PrintToChat(Client, "Usage: !fda <userid>")
-		return Plugin_Handled
-	}
-	
-	char pla[33]
-	GetCmdArg(1, pla, sizeof(pla))
-	if (StrEqual(pla, "@all")) {
-		for (int player = 1; player <= MaxClients; player++) {
-			if (LM_IsClientValid(Client, player))
-				FakeClientCommand(player, "sm_da")
-		}
-		return Plugin_Handled
-	}
-	
-	FakeClientCommand(Client, "sm_cexec %s sm_da", pla)
-	
-	char szTemp[33], szArgs[128]
-	for (int i = 1; i <= GetCmdArgs(); i++) {
-		GetCmdArg(i, szTemp, sizeof(szTemp))
-		Format(szArgs, sizeof(szArgs), "%s %s", szArgs, szTemp)
-	}
-	LM_LogCmd(Client, "sm_fda", szArgs)
-	return Plugin_Handled
-}
 
 public Action Command_AdminSetOwner(Client, args) {
 	if (!LM_IsClientValid(Client, Client, true))
