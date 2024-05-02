@@ -42,7 +42,7 @@ public OnPluginStart() {
 	g_hPropTypeArray = CreateArray(33, 2048);		// Max Prop List is 1024-->2048
 	ReadProps()
 
-	RegAdminCmd("sm_wheel", Command_Wheel, 0, "Place a wheel on your prop.")
+	RegAdminCmd("sm_spawnwheel", Command_SpawnWheel, 0, "Place a wheel on your prop.")
 	g_hWheelNameArray = CreateArray(32, 32);		// Max Wheel List is 32
 	g_hWheelModelPathArray = CreateArray(128, 32);	// Max Wheel List is 32
 	ReadWheels()
@@ -160,7 +160,7 @@ public Action Command_SpawnProp(plyClient, args) {
 			TeleportEntity(entProp, vSpawnOrigin, NULL_VECTOR, NULL_VECTOR)
 			
 			if (iPropType == 1 && Phys_IsPhysicsObject(entProp))
-					Phys_EnableMotion(entProp, false)
+				Phys_EnableMotion(entProp, false)
 
 		} else
 			RemoveEdict(entProp)
@@ -237,14 +237,13 @@ ReadPropsLine(const char[] szLine, iCountProps) {
 
 
 
-public Action Command_Wheel(plyClient, args) {
+public Action Command_SpawnWheel(plyClient, args) {
 	if (!LM_AllowToLazMod(plyClient) || LM_IsBlacklisted(plyClient) || !LM_IsClientValid(plyClient, plyClient, true))
 		return Plugin_Handled
 	
 	if (args < 1) {
 		LM_PrintToChat(plyClient, "Usage: !wheel <type>")
 		LM_PrintToChat(plyClient, "Ex: !wheel 3")
-		LM_PrintToChat(plyClient, "Note: Some wheel does not work properly that was broken by game updates, may or may not be fixed in the future")
 		
 		return Plugin_Handled
 	}
@@ -305,12 +304,21 @@ public Action Command_Wheel(plyClient, args) {
 							ScaleVector(vVecToAdd, 7.5)
 						case 4:
 							ScaleVector(vVecToAdd, 12.5)
-						case 5:
+						case 5: {
 							ScaleVector(vVecToAdd, 11.0)
-						case 6:
-							ScaleVector(vVecToAdd, 40.0)
-						case 7:
-							ScaleVector(vVecToAdd, 40.0)
+							vSurfaceAngles[0] += 90
+							vSurfaceAngles[2] += 90
+						}
+						case 6: {
+							ScaleVector(vVecToAdd, 30.0)
+							vSurfaceAngles[0] += 90
+							vSurfaceAngles[2] += 90
+						}
+						case 7: {
+							ScaleVector(vVecToAdd, 30.0)
+							vSurfaceAngles[0] += 90
+							vSurfaceAngles[2] += 90
+						}
 					}
 					
 					AddVectors(vHitPos, vVecToAdd, vWheelPos)
