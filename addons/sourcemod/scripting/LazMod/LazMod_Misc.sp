@@ -285,123 +285,123 @@ public Action Command_Rope(Client, args) {
 	return Plugin_Handled
 }
 
-// // TODO: SourceOP Dead
-// public Action Command_Thruster(Client, args) {
-// 	if (!LM_AllowToLazMod(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
-// 		return Plugin_Handled
+// TODO: SourceOP Dead
+public Action Command_Thruster(Client, args) {
+	if (!LM_AllowToLazMod(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
+		return Plugin_Handled
 	
-// 	if (args < 2) {
-// 		LM_PrintToChat(Client, "Usage: !thruster <group> <force>")
-// 		LM_PrintToChat(Client, "Ex: !thruster aaa 1000")
+	if (args < 2) {
+		LM_PrintToChat(Client, "Usage: !thruster <group> <force>")
+		LM_PrintToChat(Client, "Ex: !thruster aaa 1000")
 		
-// 		return Plugin_Handled
-// 	}
+		return Plugin_Handled
+	}
 	
-// 	int entProp = LM_GetClientAimEntity(Client)
-// 	if (entProp == -1) 
-// 		return Plugin_Handled
+	int entProp = LM_GetClientAimEntity(Client)
+	if (entProp == -1) 
+		return Plugin_Handled
 	
-// 	if (LM_IsEntityOwner(Client, entProp)) {
-// 		char szGroup[16], szForce[12]
-// 		GetCmdArg(1, szGroup, sizeof(szGroup))
-// 		GetCmdArg(2, szForce, sizeof(szForce))
-// 		LM_PrintToChat(Client, "Placed a thruster, Group: %s, Force: %s", szGroup, szForce)
-// 		FakeClientCommand(Client, "e_thruster \"%s\" %s", szGroup, szForce)
-// 	}
+	if (LM_IsEntityOwner(Client, entProp)) {
+		char szGroup[16], szForce[12]
+		GetCmdArg(1, szGroup, sizeof(szGroup))
+		GetCmdArg(2, szForce, sizeof(szForce))
+		LM_PrintToChat(Client, "Placed a thruster, Group: %s, Force: %s", szGroup, szForce)
+		FakeClientCommand(Client, "e_thruster \"%s\" %s", szGroup, szForce)
+	}
 	
-// 	char szTemp[33], szArgs[128]
-// 	for (int i = 1; i <= GetCmdArgs(); i++) {
-// 		GetCmdArg(i, szTemp, sizeof(szTemp))
-// 		Format(szArgs, sizeof(szArgs), "%s %s", szArgs, szTemp)
-// 	}
-// 	LM_LogCmd(Client, "sm_thruster", szArgs)
-// 	return Plugin_Handled
-// }
+	char szTemp[33], szArgs[128]
+	for (int i = 1; i <= GetCmdArgs(); i++) {
+		GetCmdArg(i, szTemp, sizeof(szTemp))
+		Format(szArgs, sizeof(szArgs), "%s %s", szArgs, szTemp)
+	}
+	LM_LogCmd(Client, "sm_thruster", szArgs)
+	return Plugin_Handled
+}
 
-// // TODO: SourceOP Dead
-// public Action Command_DelThruster(Client, args) {
-// 	if (!LM_AllowToLazMod(Client) || LM_IsBlacklisted(Client))
-// 		return Plugin_Handled
+// TODO: SourceOP Dead
+public Action Command_DelThruster(Client, args) {
+	if (!LM_AllowToLazMod(Client) || LM_IsBlacklisted(Client))
+		return Plugin_Handled
 	
-// 	if (args < 1) {
-// 		LM_PrintToChat(Client, "Usage: !delthruster/!dth <group>")
-// 		LM_PrintToChat(Client, "Ex: !dth aaa")
+	if (args < 1) {
+		LM_PrintToChat(Client, "Usage: !delthruster/!dth <group>")
+		LM_PrintToChat(Client, "Ex: !dth aaa")
 		
-// 		return Plugin_Handled
-// 	}
+		return Plugin_Handled
+	}
 	
-// 	char szGroup[16]
-// 	GetCmdArg(1, szGroup, sizeof(szGroup))
-// 	// FakeClientCommand(Client, "e_delthruster_group \"%s\"", szGroup)
+	char szGroup[16]
+	GetCmdArg(1, szGroup, sizeof(szGroup))
+	// FakeClientCommand(Client, "e_delthruster_group \"%s\"", szGroup)
 	
-// 	char szTemp[33], szArgs[128]
-// 	for (int i = 1; i <= GetCmdArgs(); i++) {
-// 		GetCmdArg(i, szTemp, sizeof(szTemp))
-// 		Format(szArgs, sizeof(szArgs), "%s %s", szArgs, szTemp)
-// 	}
-// 	LM_LogCmd(Client, "sm_delthruster", szArgs)
-// 	return Plugin_Handled
-// }
+	char szTemp[33], szArgs[128]
+	for (int i = 1; i <= GetCmdArgs(); i++) {
+		GetCmdArg(i, szTemp, sizeof(szTemp))
+		Format(szArgs, sizeof(szArgs), "%s %s", szArgs, szTemp)
+	}
+	LM_LogCmd(Client, "sm_delthruster", szArgs)
+	return Plugin_Handled
+}
 
-// // TODO: SourceOP Dead
-// public Action Command_EnableThruster(Client, args) {
-// 	if (!LM_AllowToLazMod(Client) || LM_IsBlacklisted(Client))
-// 		return Plugin_Handled
+// TODO: SourceOP Dead
+public Action Command_EnableThruster(Client, args) {
+	if (!LM_AllowToLazMod(Client) || LM_IsBlacklisted(Client))
+		return Plugin_Handled
 	
-// 	if (args < 1) {
-// 		LM_PrintToChat(Client, "Usage: +th <group>")
-// 		LM_PrintToChat(Client, "Ex: +th aaa")
-// 		return Plugin_Handled
-// 	}
+	if (args < 1) {
+		LM_PrintToChat(Client, "Usage: +th <group>")
+		LM_PrintToChat(Client, "Ex: +th aaa")
+		return Plugin_Handled
+	}
 	
-// 	char szGroup[4]
-// 	GetCmdArg(1, szGroup, sizeof(szGroup))
-// 	// FakeClientCommand(Client, "+thruster \"%s\"", szGroup)
+	char szGroup[4]
+	GetCmdArg(1, szGroup, sizeof(szGroup))
+	// FakeClientCommand(Client, "+thruster \"%s\"", szGroup)
 	
-// 	return Plugin_Handled
-// }
+	return Plugin_Handled
+}
 
-// // TODO: SourceOP Dead
-// public Action Command_DisableThruster(Client, args) {
-// 	if (!LM_AllowToLazMod(Client) || LM_IsBlacklisted(Client))
-// 		return Plugin_Handled
+// TODO: SourceOP Dead
+public Action Command_DisableThruster(Client, args) {
+	if (!LM_AllowToLazMod(Client) || LM_IsBlacklisted(Client))
+		return Plugin_Handled
 	
-// 	char szGroup[4]
-// 	GetCmdArg(1, szGroup, sizeof(szGroup))
-// 	// FakeClientCommand(Client, "-thruster \"%s\"", szGroup)
+	char szGroup[4]
+	GetCmdArg(1, szGroup, sizeof(szGroup))
+	// FakeClientCommand(Client, "-thruster \"%s\"", szGroup)
 	
-// 	return Plugin_Handled
-// }
+	return Plugin_Handled
+}
 
-// // TODO: SourceOP Dead
-// public Action Command_rEnableThruster(Client, args) {
-// 	if (!LM_AllowToLazMod(Client) || LM_IsBlacklisted(Client))
-// 		return Plugin_Handled
+// TODO: SourceOP Dead
+public Action Command_rEnableThruster(Client, args) {
+	if (!LM_AllowToLazMod(Client) || LM_IsBlacklisted(Client))
+		return Plugin_Handled
 	
-// 	if (args < 1) {
-// 		LM_PrintToChat(Client, "Usage: +rth <group>")
-// 		LM_PrintToChat(Client, "Ex: +rth aaa")
-// 		return Plugin_Handled
-// 	}
+	if (args < 1) {
+		LM_PrintToChat(Client, "Usage: +rth <group>")
+		LM_PrintToChat(Client, "Ex: +rth aaa")
+		return Plugin_Handled
+	}
 	
-// 	char group[4]
-// 	GetCmdArg(1, group, sizeof(group))
-// 	// FakeClientCommand(Client, "+rthruster \"%s\"", group)
+	char group[4]
+	GetCmdArg(1, group, sizeof(group))
+	// FakeClientCommand(Client, "+rthruster \"%s\"", group)
 	
-// 	return Plugin_Handled
-// }
+	return Plugin_Handled
+}
 
-// // TODO: SourceOP Dead
-// public Action Command_rDisableThruster(Client, args) {
-// 	if (!LM_AllowToLazMod(Client) || LM_IsBlacklisted(Client))
-// 		return Plugin_Handled
+// TODO: SourceOP Dead
+public Action Command_rDisableThruster(Client, args) {
+	if (!LM_AllowToLazMod(Client) || LM_IsBlacklisted(Client))
+		return Plugin_Handled
 	
-// 	char group[4]
-// 	GetCmdArg(1, group, sizeof(group))
-// 	FakeClientCommand(Client, "-rthruster \"%s\"", group)
+	char group[4]
+	GetCmdArg(1, group, sizeof(group))
+	FakeClientCommand(Client, "-rthruster \"%s\"", group)
 	
-// 	return Plugin_Handled
-// }
+	return Plugin_Handled
+}
 
 
 public Action Command_AdminSetOwner(Client, args) {
