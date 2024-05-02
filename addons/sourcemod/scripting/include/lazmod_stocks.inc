@@ -1,6 +1,4 @@
 
-#define Unicode_stocks "測試"
-
 bool g_bFirstRun = false
 
 stock LM_FirstRun() {
@@ -54,3 +52,29 @@ stock bool LM_IsInSquare(float vEntityOrigin[3], float vPoint1[3], float vPoint2
 	return false
 }
 
+
+/**
+ * Max edicts allowed for LazMod
+ * HL2DM currently is 2048.
+ * 5% (103) is reserved, so we have 1945 avaliable.
+ * https://developer.valvesoftware.com/wiki/Entity_limit
+ * 
+ * @return 		Max edicts allowed for LazMod
+ */
+stock int LM_GetMaxEdict() {
+	
+	return RoundToFloor(GetMaxEntities()*0.95)
+}
+
+/**
+ * Check if current edict count is about to break SourceEngine.
+ * HL2DM currently is 2048.
+ * 5% (103) is reserved, so we have 1945 avaliable.
+ * https://developer.valvesoftware.com/wiki/Entity_limit
+ * 
+ * @return 		True if about to hit the reserved limit, false otherwise
+ */
+stock bool LM_CheckMaxEdict() {
+	
+	return GetEntityCount() <= LM_GetMaxEdict()
+}

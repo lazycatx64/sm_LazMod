@@ -76,8 +76,8 @@ public OnPluginStart() {
 	g_hCvarSwitch		= CreateConVar("lm_enable", "2", "Enable the LazMod. 2=For All, 1=Admins Only, 0=Disabled.", 0, true, 0.0, true, 2.0)
 	g_hCvarNonOwner		= CreateConVar("lm_nonowner", "0", "Switch non-admin player can control non-owner props or not", 0, true, 0.0, true, 1.0)
 	g_hCvarFly			= CreateConVar("lm_fly", "1", "Switch non-admin player can use !fly to noclip or not", 0, true, 0.0, true, 1.0)
-	g_hCvarClPropLimit	= CreateConVar("lm_prop", "700", "Player prop spawn limit.", 0, true, 0.0)
-	g_hCvarClDollLimit	= CreateConVar("lm_doll", "10", "Player doll spawn limit.", 0, true, 0.0)
+	g_hCvarClPropLimit	= CreateConVar("lm_props", "500", "Player prop spawn limit.", 0, true, 0.0)
+	g_hCvarClDollLimit	= CreateConVar("lm_dolls", "10", "Player doll spawn limit.", 0, true, 0.0)
 	g_hCvarServerLimit	= CreateConVar("lm_maxprops", "2000", "Total prop spawn limit.", 0, true, 0.0, true, 3000.0)
 	RegAdminCmd("sm_version", Command_Version, 0, "Show Lazmod Core version")
 	RegAdminCmd("sm_count", Command_SpawnCount, 0, "Show how many entities are you spawned.")
@@ -145,13 +145,8 @@ public Action Command_SpawnCount(Client, args) {
 	if (!LM_AllowToUse(Client) || LM_IsBlacklisted(Client))
 		return Plugin_Handled
 		
-	char szTemp[33], szArgs[128]
-	for (int i = 1; i <= GetCmdArgs(); i++) {
-		GetCmdArg(i, szTemp, sizeof(szTemp))
-		Format(szArgs, sizeof(szArgs), "%s %s", szArgs, szTemp)
-	}
-	LM_LogCmd(Client, "sm_count", szArgs)
-	LM_PrintToChat(Client, "Your Limit: %i/%i [Ragdoll: %i/%i], Server Limit: %i/%i", g_iPropCurrent[Client], g_iCvarClPropLimit[Client], g_iDollCurrent[Client], g_iCvarClDollLimit, g_iServerCurrent, g_iCvarServerLimit)
+	LM_PrintToChat(Client, "Your Limit: %i/%i [Ragdoll: %i/%i]", g_iPropCurrent[Client], g_iCvarClPropLimit[Client], g_iDollCurrent[Client], g_iCvarClDollLimit)
+	LM_PrintToChat(Client, "Server Limit: %i/%i (%i/%i edicts)",  g_iServerCurrent, g_iCvarServerLimit, GetEntityCount(), LM_GetMaxEdict())
 	if (LM_IsAdmin(Client)) {
 		for (int i = 1; i < MaxClients; i++) {
 			if (LM_IsClientValid(i, i) && Client != i)
@@ -159,6 +154,10 @@ public Action Command_SpawnCount(Client, args) {
 		
 		}
 	}
+
+	char szArgs[128]
+	GetCmdArgString(szArgs, sizeof(szArgs))
+	LM_LogCmd(Client, "sm_count", szArgs)
 	return Plugin_Handled
 }
 
@@ -175,7 +174,11 @@ Native_SetEntityOwner(Handle hPlugin, iNumParams) {
 		return true
 	}
 	if (IsValidEntity(entProp) && LM_IsClientValid(plyClient, plyClient)) {
-		if (g_iServerCurrent < g_iCvarServerLimit) {
+		if (!LM_CheckMaxEdict()) {
+			LM_PrintToAll("TOO MUCH ENTITIES.")
+			return false
+
+		} else if (g_iServerCurrent < g_iCvarServerLimit) {
 			if (bIsDoll) {
 				if (g_iDollCurrent[plyClient] < g_iCvarClDollLimit) {
 					g_iDollCurrent[plyClient] += 1
@@ -381,29 +384,22 @@ Native_IsEntityOwner(Handle hPlugin, iNumParams) {
 	if (iNumParams >= 3)
 		bIngoreCvar = GetNativeCell(3)
 	
-	if (LM_GetEntityOwner(entProp) != plyClient) {
-		if (!LM_IsAdmin(plyClient)) {
-			if (LM_IsPlayer(entProp)) {
-				LM_PrintToChat(plyClient, "You are not allowed to do this to players!")
-				return false
-			}
-			if (LM_GetEntityOwner(entProp) == -1) {
-				if (!bIngoreCvar) {
-					if (!g_iCvarNonOwner) {
-						LM_PrintToChat(plyClient, "This prop does not belong to you!")
-						return false
-					} else
-						return true
-				} else
-					return true
-			} else {
-				LM_PrintToChat(plyClient, "This prop does not belong to you!")
-				return false
-			}
-		} else
-			return true
-	} else
+	if (LM_IsAdmin(plyClient))
 		return true
+
+	if (LM_GetEntityOwner(entProp) == plyClient)
+		return true
+
+	if (LM_IsPlayer(entProp) && !LM_IsAdmin(plyClient)) {
+		LM_PrintToChat(plyClient, "You are not allowed to do this to players!")
+		return false
+	}
+
+	if (LM_GetEntityOwner(entProp) == -1 && (bIngoreCvar || g_iCvarNonOwner))
+		return true
+
+	LM_PrintToChat(plyClient, "This prop does not belong to you!")
+	return false
 }
 
 Native_LogCmd(Handle hPlugin, iNumParams) {
@@ -442,7 +438,7 @@ Native_PrintToAll(Handle hPlugin, iNumParams) {
 	char szMsg[192]
 	int written
 	FormatNativeString(0, 1, 2, sizeof(szMsg), written, szMsg)
-	PrintToChatAll("%s%s", MSGTAG, szMsg)
+	PrintToChatAll("%s %s", MSGTAG, szMsg)
 }
 
 Native_IsClientValid(Handle hPlugin, iNumParams) {
