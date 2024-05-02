@@ -47,6 +47,7 @@ public OnPluginStart() {
 
 
 	g_hCvarSpawnInFront	= CreateConVar("lm_spawn_infront", "1", "Spawn props in front of player instead at aimed position.", FCVAR_NOTIFY, true, 0.0, true, 1.0)
+	g_iCvarSpawnInFront = GetConVarBool(g_hCvarSpawnInFront)
 	HookConVarChange(g_hCvarSpawnInFront, Hook_CvarSpawnInFront)
 
 

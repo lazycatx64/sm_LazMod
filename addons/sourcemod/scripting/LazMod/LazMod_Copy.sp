@@ -52,6 +52,7 @@ public OnPluginStart() {
 	RegAdminCmd("-copyent", Command_CopyentOff, 0, "Paste a copied prop.")
 	
 	g_hCvarStackMax	= CreateConVar("lm_stack_max", "10", "How much prop you can stack in one time", FCVAR_NOTIFY, true, 0.0, true, 50.0)
+	g_iCvarStackMax = GetConVarBool(g_hCvarStackMax)
 	HookConVarChange(g_hCvarStackMax, Hook_CvarStackMax)
 
 	PrintToServer( "LazMod Copy loaded!" )

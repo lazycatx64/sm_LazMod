@@ -28,6 +28,7 @@ public OnPluginStart() {
 	g_hHudTimer = CreateTimer(0.1, Display_Msgs, 0, TIMER_REPEAT)
 	
 	g_hCvarPropInfo	= CreateConVar("lm_propinfo", "1", "Enable the hud to display propinfo", FCVAR_NOTIFY, true, 0.0, true, 1.0)
+	g_iCvarPropInfo = GetConVarBool(g_hCvarPropInfo)
 	HookConVarChange(g_hCvarPropInfo, Hook_CvarPropInfo)
 
 	PrintToServer( "LazMod PropInfo loaded!" )

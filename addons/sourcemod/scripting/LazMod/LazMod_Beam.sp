@@ -35,9 +35,11 @@ public OnPluginStart() {
 	RegAdminCmd("sm_droct", Command_DrOct, 0, "Will pull everything in the range, then push them away.")
 
 	g_hCvarDRayRandClr	= CreateConVar("lm_deathray_randcolor", "1", "Should the beam use random color", FCVAR_NOTIFY, true, 0.0, true, 1.0)
+	g_iCvarDRayRandClr = GetConVarBool(g_hCvarDRayRandClr)
 	HookConVarChange(g_hCvarDRayRandClr, Hook_CvarDRayRandClr)
 
 	g_hCvarDRayDmg	= CreateConVar("lm_deathray_damage", "200", "Damage of deathray", FCVAR_NOTIFY, true, 0.0)
+	g_iCvarDRayDmg = GetConVarBool(g_hCvarDRayDmg)
 	HookConVarChange(g_hCvarDRayDmg, Hook_CvarDRayDmg)
 
 	PrintToServer( "LazMod Beam loaded!" )
