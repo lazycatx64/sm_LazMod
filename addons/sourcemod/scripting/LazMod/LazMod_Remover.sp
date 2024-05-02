@@ -202,7 +202,7 @@ public Action Timer_Disconnect(Handle hTimer, Handle hPack) {
 }
 
 public Action Command_Delete(plyClient, args) {
-	if (!LM_AllowToUse(plyClient) || LM_IsBlacklisted(plyClient) || !LM_IsClientValid(plyClient, plyClient, true))
+	if (!LM_AllowToLazMod(plyClient) || LM_IsBlacklisted(plyClient) || !LM_IsClientValid(plyClient, plyClient, true))
 		return Plugin_Handled
 	
 	int entProp = LM_GetClientAimEntity(plyClient, true, true)
@@ -298,7 +298,7 @@ public Action Command_Delete(plyClient, args) {
 }
 
 public Action Command_DeleteAll(plyClient, args) {
-	if (!LM_AllowToUse(plyClient) || !LM_IsClientValid(plyClient, plyClient))
+	if (!LM_AllowToLazMod(plyClient) || !LM_IsClientValid(plyClient, plyClient))
 		return Plugin_Handled
 	
 	int entProp = 0, iCount = 0

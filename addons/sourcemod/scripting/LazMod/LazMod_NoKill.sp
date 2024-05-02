@@ -35,7 +35,7 @@ public OnMapStart()
 
 
 public Action Command_NoKill(Client, args) {
-	if (!LM_AllowToUse(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client)) {
+	if (!LM_AllowToLazMod(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client)) {
 		PrintToChat(Client, "No!")
 		return Plugin_Handled
 	}

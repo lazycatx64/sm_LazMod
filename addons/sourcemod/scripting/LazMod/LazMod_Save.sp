@@ -59,7 +59,7 @@ public Action Command_SaveSpawn(plyClient, args) {
 		LM_PrintToChat(plyClient, "Process is already running. Please Wait...")
 		return Plugin_Handled
 	}
-	if (!LM_AllowToUse(plyClient) || LM_IsBlacklisted(plyClient) && LM_IsClientValid(plyClient, plyClient))
+	if (!LM_AllowToLazMod(plyClient) || LM_IsBlacklisted(plyClient) && LM_IsClientValid(plyClient, plyClient))
 		return Plugin_Handled
 	
 	char szMode[8], szSaveName[32], szSteamID[32]

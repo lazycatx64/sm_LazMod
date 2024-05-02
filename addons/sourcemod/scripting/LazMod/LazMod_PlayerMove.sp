@@ -37,7 +37,7 @@ public OnPluginStart()
 //////////////////////////////
 public Action Command_EnableSprint(Client, args) 
 {
-	if (!LM_AllowToUse(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
+	if (!LM_AllowToLazMod(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
 		return Plugin_Handled
 
 	float vOriginPlayer[3]
@@ -69,7 +69,7 @@ public Action Command_DisableSprint(Client, args)
 //////////////////////////////
 public Action Command_AdminFly(Client, args)
 {
-	if (!LM_AllowToUse(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
+	if (!LM_AllowToLazMod(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
 		return Plugin_Handled
 
 	if (GetEntityMoveType(Client) != MOVETYPE_NOCLIP)

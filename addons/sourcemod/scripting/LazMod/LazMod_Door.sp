@@ -30,7 +30,7 @@ public OnPluginStart() {
 }
 
 public Action Command_SpawnDoor(Client, args) {
-	if(!LM_AllowToUse(Client) || LM_IsBlacklisted(Client))
+	if(!LM_AllowToLazMod(Client) || LM_IsBlacklisted(Client))
 		return Plugin_Handled
 	
 	char szDoorTarget[16], szType[4], szFormatStr[64], szNameStr[8]

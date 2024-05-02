@@ -54,7 +54,7 @@ public OnMapStart() {
 }
 
 public Action Command_Stack(Client, args) {
-	if (!LM_AllowToUse(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
+	if (!LM_AllowToLazMod(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
 		return Plugin_Handled
 	
 	if (g_bStackIsRunning[Client]) {
@@ -204,7 +204,7 @@ public Action Timer_Stack(Handle Timer, Handle hDataPack) {
 
 
 public Action Command_Copyent(plyClient, args) {
-	if (!LM_AllowToUse(plyClient) || LM_IsBlacklisted(plyClient) || !LM_IsClientValid(plyClient, plyClient, true))
+	if (!LM_AllowToLazMod(plyClient) || LM_IsBlacklisted(plyClient) || !LM_IsClientValid(plyClient, plyClient, true))
 		return Plugin_Handled
 	
 	int entProp = LM_GetClientAimEntity(plyClient, true, true)
@@ -300,7 +300,7 @@ public Action Command_Copyent(plyClient, args) {
 }
 
 public Action Command_Paste(Client, args) {
-	if (!LM_AllowToUse(Client) || LM_IsBlacklisted(Client))
+	if (!LM_AllowToLazMod(Client) || LM_IsBlacklisted(Client))
 		return Plugin_Handled
 		
 	g_bCopyIsRunning[Client] = false

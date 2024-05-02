@@ -76,7 +76,7 @@ public OnPluginStart() {
 }
 
 public Action Command_Render(Client, args) {
-	if (!LM_AllowToUse(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
+	if (!LM_AllowToLazMod(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
 		return Plugin_Handled
 	
 	if (args < 5) {
@@ -117,7 +117,7 @@ public Action Command_Render(Client, args) {
 }
 
 public Action Command_Color(Client, args) {
-	if (!LM_AllowToUse(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
+	if (!LM_AllowToLazMod(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
 		return Plugin_Handled
 	
 	if (args < 3) {
@@ -154,7 +154,7 @@ public Action Command_Color(Client, args) {
 }
 
 public Action Command_Rotate(Client, args) {
-	if (!LM_AllowToUse(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
+	if (!LM_AllowToLazMod(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
 		return Plugin_Handled
 	
 	if (args < 1) {
@@ -193,7 +193,7 @@ public Action Command_Rotate(Client, args) {
 }
 
 public Action Command_SetMass(Client, args) {
-	if (!LM_AllowToUse(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
+	if (!LM_AllowToLazMod(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
 		return Plugin_Handled
 	
 	if (args < 1) {
@@ -235,7 +235,7 @@ public Action Command_SetMass(Client, args) {
 
 
 public Action Command_NoBreakProp(Client, args) {
-	if (!LM_AllowToUse(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
+	if (!LM_AllowToLazMod(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
 		return Plugin_Handled
 	
 	int entProp = LM_GetClientAimEntity(Client)
@@ -257,7 +257,7 @@ public Action Command_NoBreakProp(Client, args) {
 }
 
 public Action Command_UnNoBreakProp(Client, args) {
-	if (!LM_AllowToUse(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
+	if (!LM_AllowToLazMod(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
 		return Plugin_Handled
 	
 	int entProp = LM_GetClientAimEntity(Client)
@@ -279,7 +279,7 @@ public Action Command_UnNoBreakProp(Client, args) {
 }
 
 public Action Command_SetAngles(Client, args) {
-	if (!LM_AllowToUse(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
+	if (!LM_AllowToLazMod(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
 		return Plugin_Handled
 	
 	if (args < 1) {
@@ -312,7 +312,7 @@ public Action Command_SetAngles(Client, args) {
 }
 
 public Action Command_Align(Client, args) {
-	if (!LM_AllowToUse(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
+	if (!LM_AllowToLazMod(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
 		return Plugin_Handled
 	
 	if (args < 1) {
@@ -362,7 +362,7 @@ public Action Command_Align(Client, args) {
 }
 
 public Action Command_Move(Client, args) {
-	if (!LM_AllowToUse(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
+	if (!LM_AllowToLazMod(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
 		return Plugin_Handled
 	
 	if (args < 1) {
@@ -403,7 +403,7 @@ public Action Command_Move(Client, args) {
 }
 
 public Action Command_Extend(plyClient, args) {
-	if (!LM_AllowToUse(plyClient) || LM_IsBlacklisted(plyClient) || !LM_IsClientValid(plyClient, plyClient, true))
+	if (!LM_AllowToLazMod(plyClient) || LM_IsBlacklisted(plyClient) || !LM_IsClientValid(plyClient, plyClient, true))
 		return Plugin_Handled
 	
 	int entProp = LM_GetClientAimEntity(plyClient)
@@ -462,7 +462,7 @@ public Action Command_Extend(plyClient, args) {
 }
 
 public Action Command_Center(Client, args) {
-	if (!LM_AllowToUse(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
+	if (!LM_AllowToLazMod(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
 		return Plugin_Handled
 	
 	int entProp = LM_GetClientAimEntity(Client)
@@ -508,7 +508,7 @@ public Action Command_Center(Client, args) {
 }
 
 public Action Command_Skin(Client, args) {
-	if (!LM_AllowToUse(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
+	if (!LM_AllowToLazMod(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
 		return Plugin_Handled
 	
 	if (args < 1) {
@@ -542,7 +542,7 @@ public Action Command_Skin(Client, args) {
 }
 
 public Action Command_LightDynamic(Client, args) {
-	if (!LM_AllowToUse(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
+	if (!LM_AllowToLazMod(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
 		return Plugin_Handled
 	
 	if (args < 1) {
@@ -625,7 +625,7 @@ public Action Command_LightDynamic(Client, args) {
 
 // TODO: SourceOP dead
 public Action Command_Drop(Client, args) {
-	if (!LM_AllowToUse(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
+	if (!LM_AllowToLazMod(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
 		return Plugin_Handled
 	
 	int entProp = LM_GetClientAimEntity(Client)
@@ -645,7 +645,7 @@ public Action Command_Drop(Client, args) {
 }
 
 public Action Command_Freeze(Client, args) {
-	if (!LM_AllowToUse(Client) || LM_IsBlacklisted(Client))
+	if (!LM_AllowToLazMod(Client) || LM_IsBlacklisted(Client))
 		return Plugin_Handled
 	
 	if (!IsPlayerAlive(Client)) {
@@ -674,7 +674,7 @@ public Action Command_Freeze(Client, args) {
 }
 
 public Action Command_UnFreeze(Client, args) {
-	if (!LM_AllowToUse(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
+	if (!LM_AllowToLazMod(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
 		return Plugin_Handled
 	
 	int entProp = LM_GetClientAimEntity(Client)
@@ -699,7 +699,7 @@ public Action Command_UnFreeze(Client, args) {
 }
 
 public Action Command_ForceFreeze(Client, args) {
-	if (!LM_AllowToUse(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
+	if (!LM_AllowToLazMod(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
 		return Plugin_Handled
 	
 	int entProp = LM_GetClientAimEntity(Client)
@@ -725,7 +725,7 @@ public Action Command_ForceFreeze(Client, args) {
 }
 
 public Action Command_UnForceFreeze(Client, args) {
-	if (!LM_AllowToUse(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
+	if (!LM_AllowToLazMod(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
 		return Plugin_Handled
 	
 	int entProp = LM_GetClientAimEntity(Client)
@@ -752,7 +752,7 @@ public Action Command_UnForceFreeze(Client, args) {
 }
 
 public Action Command_Weld(Client, args) {
-	if (!LM_AllowToUse(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
+	if (!LM_AllowToLazMod(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
 		return Plugin_Handled
 	
 	int entProp = LM_GetClientAimEntity(Client)
@@ -790,7 +790,7 @@ public Action Command_Weld(Client, args) {
 
 
 public Action Command_EntFire(plyClient, args) {
-	if (!LM_AllowToUse(plyClient) || LM_IsBlacklisted(plyClient) || !LM_IsClientValid(plyClient, plyClient, true))
+	if (!LM_AllowToLazMod(plyClient) || LM_IsBlacklisted(plyClient) || !LM_IsClientValid(plyClient, plyClient, true))
 		return Plugin_Handled
 	
 	if (args < 2) {
@@ -857,7 +857,7 @@ public Action Timer_EntFireDelay(Handle Timer, Handle hExcute) {
 }
 
 public Action Command_EntGetName(plyClient, args) {
-	if (!LM_AllowToUse(plyClient) || LM_IsBlacklisted(plyClient) || !LM_IsClientValid(plyClient, plyClient, true))
+	if (!LM_AllowToLazMod(plyClient) || LM_IsBlacklisted(plyClient) || !LM_IsClientValid(plyClient, plyClient, true))
 		return Plugin_Handled
 	
 	int entProp = LM_GetClientAimEntity(plyClient)
@@ -884,7 +884,7 @@ public Action Command_EntGetName(plyClient, args) {
 }
 
 public Action Command_EntInput(plyClient, args) {
-	if (!LM_AllowToUse(plyClient) || LM_IsBlacklisted(plyClient) || !LM_IsClientValid(plyClient, plyClient, true))
+	if (!LM_AllowToLazMod(plyClient) || LM_IsBlacklisted(plyClient) || !LM_IsClientValid(plyClient, plyClient, true))
 		return Plugin_Handled
 	
 	if (args < 1) {
@@ -921,7 +921,7 @@ public Action Command_EntInput(plyClient, args) {
 }
 
 public Action Command_EntOutput(plyClient, args) {
-	if (!LM_AllowToUse(plyClient) || LM_IsBlacklisted(plyClient) || !LM_IsClientValid(plyClient, plyClient, true))
+	if (!LM_AllowToLazMod(plyClient) || LM_IsBlacklisted(plyClient) || !LM_IsClientValid(plyClient, plyClient, true))
 		return Plugin_Handled
 	
 	if (args < 2) {

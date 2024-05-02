@@ -38,7 +38,7 @@ native LM_SetSpawnLimit(int plyClient, amount, bool Doll = false)
  * @param plyClient			Client index.
  * @return					True on success. False on failure.
  */
-native bool LM_AllowToUse(int plyClient)
+native bool LM_AllowToLazMod(int plyClient)
 
 /**
  * Check client can use Fly.

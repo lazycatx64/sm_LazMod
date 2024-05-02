@@ -44,7 +44,7 @@ public OnPluginStart() {
 }
 
 public Action Command_SpawnF(Client, args) {
-	if (!LM_AllowToUse(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
+	if (!LM_AllowToLazMod(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
 		return Plugin_Handled
 	
 	if (args < 1) {
@@ -60,7 +60,7 @@ public Action Command_SpawnF(Client, args) {
 }
 
 public Action Command_SpawnProp(Client, args) {
-	if (!LM_AllowToUse(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
+	if (!LM_AllowToLazMod(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
 		return Plugin_Handled
 	
 	if (args < 1) {
@@ -195,7 +195,7 @@ ReadPropsLine(const char[] szLine, iCountProps) {
 
 
 public Action Command_Wheel(Client, args) {
-	if (!LM_AllowToUse(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
+	if (!LM_AllowToLazMod(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
 		return Plugin_Handled
 	
 	if (args < 1) {

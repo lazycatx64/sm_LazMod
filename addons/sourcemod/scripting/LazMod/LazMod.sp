@@ -49,7 +49,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, err_max) {
 	CreateNative("LM_GetEntityOwner",		Native_GetEntityOwner)
 	CreateNative("LM_IsEntityOwner",		Native_IsEntityOwner)
 
-	CreateNative("LM_AllowToUse",		Native_AllowToUse)
+	CreateNative("LM_AllowToLazMod",		Native_AllowToLazMod)
 	CreateNative("LM_AllowFly",			Native_AllowFly)
 
 	CreateNative("LM_IsClientValid",	Native_IsClientValid)
@@ -142,7 +142,7 @@ public Action Command_Version(Client, args) {
 }
 
 public Action Command_SpawnCount(Client, args) {
-	if (!LM_AllowToUse(Client) || LM_IsBlacklisted(Client))
+	if (!LM_AllowToLazMod(Client) || LM_IsBlacklisted(Client))
 		return Plugin_Handled
 		
 	LM_PrintToChat(Client, "Your Limit: %i/%i [Ragdoll: %i/%i]", g_iPropCurrent[Client], g_iCvarClPropLimit[Client], g_iDollCurrent[Client], g_iCvarClDollLimit)
@@ -258,23 +258,23 @@ Native_SetSpawnLimit(Handle hPlugin, iNumParams) {
 		g_iServerCurrent = 0
 }
 
-Native_AllowToUse(Handle hPlugin, iNumParams) {
-	new Client = GetNativeCell(1)
+Native_AllowToLazMod(Handle hPlugin, iNumParams) {
+	int plyClient = GetNativeCell(1)
 
 
-	if (!IsClientConnected(Client)) {
-		ThrowNativeError(SP_ERROR_NATIVE, "Client id %i is not connected.", Client)
+	if (!IsClientConnected(plyClient)) {
+		ThrowNativeError(SP_ERROR_NATIVE, "Client id %i is not connected.", plyClient)
 		return -1
 	}
 
 	switch (g_iCvarEnabled) {
 		case 0: {
-			LM_PrintToChat(Client, "LazMod is not available or disabled!")
+			LM_PrintToChat(plyClient, "LazMod is not available or disabled!")
 			return false
 		}
 		case 1: {
-			if (!LM_IsAdmin(Client)) {
-				LM_PrintToChat(Client, "LazMod is not available or disabled.")
+			if (!LM_IsAdmin(plyClient)) {
+				LM_PrintToChat(plyClient, "LazMod is not available or disabled.")
 				return false
 			} else
 				return true

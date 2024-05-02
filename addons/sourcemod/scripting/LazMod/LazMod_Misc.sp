@@ -90,7 +90,7 @@ public OnMapStart() {
 
 // TODO: SourceOP Dead
 public Action Command_Airboat(Client, args) {
-	if (!LM_AllowToUse(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
+	if (!LM_AllowToLazMod(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
 		return Plugin_Handled
 	
 	// FakeClientCommand(Client, "e_spawnboat")	// SourceOP Dead
@@ -106,7 +106,7 @@ public Action Command_Airboat(Client, args) {
 
 // TODO: SourceOP Dead
 public Action Command_Ball(Client, args) {
-	if (!LM_AllowToUse(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
+	if (!LM_AllowToLazMod(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
 		return Plugin_Handled
 	
 	// FakeClientCommand(Client, "e_spawnball")	// SourceOP Dead
@@ -122,7 +122,7 @@ public Action Command_Ball(Client, args) {
 
 // TODO: SourceOP Dead
 public Action Command_GetInertia(Client, args) {
-	if (!LM_AllowToUse(Client) || LM_IsBlacklisted(Client))
+	if (!LM_AllowToLazMod(Client) || LM_IsBlacklisted(Client))
 		return Plugin_Handled
 	
 	int entProp = LM_GetClientAimEntity(Client)
@@ -142,7 +142,7 @@ public Action Command_GetInertia(Client, args) {
 
 // TODO: SourceOP Dead
 public Action Command_SetEnt(Client, args) {
-	if (!LM_AllowToUse(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
+	if (!LM_AllowToLazMod(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
 		return Plugin_Handled
 	
 	int entProp = LM_GetClientAimEntity(Client)
@@ -165,7 +165,7 @@ public Action Command_SetEnt(Client, args) {
 
 // TODO: SourceOP Dead
 public Action Command_SetInertia(Client, args) {
-	if (!LM_AllowToUse(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
+	if (!LM_AllowToLazMod(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
 		return Plugin_Handled
 	
 	if (args < 1) {
@@ -197,7 +197,7 @@ public Action Command_SetInertia(Client, args) {
 
 // TODO: SourceOP Dead
 public Action Command_Push(Client, args) {
-	if (!LM_AllowToUse(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
+	if (!LM_AllowToLazMod(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
 		return Plugin_Handled
 	
 	if (args < 1) {
@@ -229,7 +229,7 @@ public Action Command_Push(Client, args) {
 
 // TODO: SourceOP Dead
 public Action Command_Setview(Client, args) {
-	if (!LM_AllowToUse(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
+	if (!LM_AllowToLazMod(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
 		return Plugin_Handled
 	
 	int entProp = LM_GetClientAimEntity(Client)
@@ -250,7 +250,7 @@ public Action Command_Setview(Client, args) {
 
 // TODO: SourceOP Dead
 public Action Command_Resetview(Client, args) {
-	if (!LM_AllowToUse(Client) || LM_IsBlacklisted(Client))
+	if (!LM_AllowToLazMod(Client) || LM_IsBlacklisted(Client))
 		return Plugin_Handled
 	
 	// FakeClientCommand(Client, "e_resetview")	// SourceOP Dead
@@ -266,7 +266,7 @@ public Action Command_Resetview(Client, args) {
 
 // TODO: SourceOP Dead
 public Action Command_Rope(Client, args) {
-	if (!LM_AllowToUse(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
+	if (!LM_AllowToLazMod(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
 		return Plugin_Handled
 	
 	int entProp = LM_GetClientAimEntity(Client)
@@ -287,7 +287,7 @@ public Action Command_Rope(Client, args) {
 
 // // TODO: SourceOP Dead
 // public Action Command_Thruster(Client, args) {
-// 	if (!LM_AllowToUse(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
+// 	if (!LM_AllowToLazMod(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
 // 		return Plugin_Handled
 	
 // 	if (args < 2) {
@@ -320,7 +320,7 @@ public Action Command_Rope(Client, args) {
 
 // // TODO: SourceOP Dead
 // public Action Command_DelThruster(Client, args) {
-// 	if (!LM_AllowToUse(Client) || LM_IsBlacklisted(Client))
+// 	if (!LM_AllowToLazMod(Client) || LM_IsBlacklisted(Client))
 // 		return Plugin_Handled
 	
 // 	if (args < 1) {
@@ -345,7 +345,7 @@ public Action Command_Rope(Client, args) {
 
 // // TODO: SourceOP Dead
 // public Action Command_EnableThruster(Client, args) {
-// 	if (!LM_AllowToUse(Client) || LM_IsBlacklisted(Client))
+// 	if (!LM_AllowToLazMod(Client) || LM_IsBlacklisted(Client))
 // 		return Plugin_Handled
 	
 // 	if (args < 1) {
@@ -363,7 +363,7 @@ public Action Command_Rope(Client, args) {
 
 // // TODO: SourceOP Dead
 // public Action Command_DisableThruster(Client, args) {
-// 	if (!LM_AllowToUse(Client) || LM_IsBlacklisted(Client))
+// 	if (!LM_AllowToLazMod(Client) || LM_IsBlacklisted(Client))
 // 		return Plugin_Handled
 	
 // 	char szGroup[4]
@@ -375,7 +375,7 @@ public Action Command_Rope(Client, args) {
 
 // // TODO: SourceOP Dead
 // public Action Command_rEnableThruster(Client, args) {
-// 	if (!LM_AllowToUse(Client) || LM_IsBlacklisted(Client))
+// 	if (!LM_AllowToLazMod(Client) || LM_IsBlacklisted(Client))
 // 		return Plugin_Handled
 	
 // 	if (args < 1) {
@@ -393,7 +393,7 @@ public Action Command_Rope(Client, args) {
 
 // // TODO: SourceOP Dead
 // public Action Command_rDisableThruster(Client, args) {
-// 	if (!LM_AllowToUse(Client) || LM_IsBlacklisted(Client))
+// 	if (!LM_AllowToLazMod(Client) || LM_IsBlacklisted(Client))
 // 		return Plugin_Handled
 	
 // 	char group[4]
