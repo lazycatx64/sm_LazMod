@@ -42,8 +42,9 @@ public OnPluginStart() {
 		RegAdminCmd("sm_angles", Command_SetAngles, 0, "Set the angles of a prop directly.")
 		RegAdminCmd("sm_stand", Command_Stand, 0, "Reset the angles of a prop.")
 
-		RegAdminCmd("sm_render", Command_Render, 0, "Change the render effect of a prop.")
-		RegAdminCmd("sm_color", Command_Color, 0, "Change the color of a prop.")
+		RegAdminCmd("sm_fx", Command_Renderfx, 0, "Change the render effect of a prop.")
+		RegAdminCmd("sm_color", Command_RenderColor, 0, "Change the color of a prop.")
+		RegAdminCmd("sm_alpha", Command_RenderAlpha, 0, "Change the alpha of a prop.")
 
 		RegAdminCmd("sm_move", Command_Move, 0, "Moves a props by coordinates.")
 		RegAdminCmd("sm_align", Command_Align, 0, "Align a prop using the position of another prop as a reference.")
@@ -264,13 +265,13 @@ public Action Command_Stand(plyClient, args) {
 
 
 
-public Action Command_Render(plyClient, args) {
+public Action Command_Renderfx(plyClient, args) {
 	if (!LM_AllowToLazMod(plyClient) || LM_IsBlacklisted(plyClient) || !LM_IsClientValid(plyClient, plyClient, true))
 		return Plugin_Handled
 	
-	if (args < 5) {
-		LM_PrintToChat(plyClient, "Usage: !render/!rd <fx amount> <fx> <R> <G> <B>")
-		LM_PrintToChat(plyClient, "Ex. Flashing Green: !render 150 4 15 255 0")
+	if (args < 1) {
+		LM_PrintToChat(plyClient, "Usage: !fx <fx>")
+		LM_PrintToChat(plyClient, "Ex. Flashing effect: !fx 4")
 		return Plugin_Handled
 	}
 	
@@ -279,36 +280,27 @@ public Action Command_Render(plyClient, args) {
 		return Plugin_Handled
 	
 	if (LM_IsEntityOwner(plyClient, entProp)) {
-		char szRenderAlpha[20], szRenderFX[20], szColorRGB[20][3], szColors[128]
+		char szRenderFX[20]
 
-		GetCmdArg(1, szRenderAlpha, sizeof(szRenderAlpha))
-		GetCmdArg(2, szRenderFX, sizeof(szRenderFX))
-		GetCmdArg(3, szColorRGB[0], sizeof(szColorRGB))
-		GetCmdArg(4, szColorRGB[1], sizeof(szColorRGB))
-		GetCmdArg(5, szColorRGB[2], sizeof(szColorRGB))
+		GetCmdArg(1, szRenderFX, sizeof(szRenderFX))
 		
-		Format(szColors, sizeof(szColors), "%s %s %s", szColorRGB[0], szColorRGB[1], szColorRGB[2])
-		if (StringToInt(szRenderAlpha) < 1)
-			szRenderAlpha = "1"
 		DispatchKeyValue(entProp, "rendermode", "5")
-		DispatchKeyValue(entProp, "renderamt", szRenderAlpha)
 		DispatchKeyValue(entProp, "renderfx", szRenderFX)
-		DispatchKeyValue(entProp, "rendercolor", szColors)
 	}
 	
 	char szArgs[128]
 	GetCmdArgString(szArgs, sizeof(szArgs))
-	LM_LogCmd(plyClient, "sm_render", szArgs)
+	LM_LogCmd(plyClient, "sm_fx", szArgs)
 	return Plugin_Handled
 }
 
-public Action Command_Color(plyClient, args) {
+public Action Command_RenderColor(plyClient, args) {
 	if (!LM_AllowToLazMod(plyClient) || LM_IsBlacklisted(plyClient) || !LM_IsClientValid(plyClient, plyClient, true))
 		return Plugin_Handled
 	
-	if (args < 3) {
-		LM_PrintToChat(plyClient, "Usage: !color <R> <G> <B>")
-		LM_PrintToChat(plyClient, "Ex: Green: !color 0 255 0")
+	if (args < 1) {
+		LM_PrintToChat(plyClient, "Usage: !color <R> [G] [B]")
+		LM_PrintToChat(plyClient, "Ex: Green color: !color 0 255 0")
 		
 		return Plugin_Handled
 	}
@@ -325,9 +317,36 @@ public Action Command_Color(plyClient, args) {
 		
 		Format(szColors, sizeof(szColors), "%s %s %s", szColorRGB[0], szColorRGB[1], szColorRGB[2])
 		DispatchKeyValue(entProp, "rendermode", "5")
-		DispatchKeyValue(entProp, "renderamt", "255")
-		DispatchKeyValue(entProp, "renderfx", "0")
 		DispatchKeyValue(entProp, "rendercolor", szColors)
+	}
+	
+	char szArgs[128]
+	GetCmdArgString(szArgs, sizeof(szArgs))
+	LM_LogCmd(plyClient, "sm_color", szArgs)
+	return Plugin_Handled
+}
+
+public Action Command_RenderAlpha(plyClient, args) {
+	if (!LM_AllowToLazMod(plyClient) || LM_IsBlacklisted(plyClient) || !LM_IsClientValid(plyClient, plyClient, true))
+		return Plugin_Handled
+	
+	if (args < 1) {
+		LM_PrintToChat(plyClient, "Usage: !alpha <amount>")
+		LM_PrintToChat(plyClient, "Ex: Translucent: !alpha 150")
+		
+		return Plugin_Handled
+	}
+	
+	int entProp = LM_GetClientAimEntity(plyClient)
+	if (entProp == -1) 
+		return Plugin_Handled
+	
+	if (LM_IsEntityOwner(plyClient, entProp)) {
+		char szAlpha[4]
+		GetCmdArg(1, szAlpha, sizeof(szAlpha))
+		
+		DispatchKeyValue(entProp, "rendermode", "5")
+		DispatchKeyValue(entProp, "renderamt", szAlpha)
 	}
 	
 	char szArgs[128]
