@@ -10,6 +10,10 @@
 
 
 
+Handle g_hHudTimer = INVALID_HANDLE
+Handle g_hCvarPropInfo = INVALID_HANDLE
+int g_iCvarPropInfo
+
 
 public Plugin myinfo = {
 	name = "LazMod - PropInfo",
@@ -21,9 +25,26 @@ public Plugin myinfo = {
 
 public OnPluginStart() {
 	LoadTranslations("common.phrases")
-	CreateTimer(0.1, Display_Msgs, 0, TIMER_REPEAT)
+	g_hHudTimer = CreateTimer(0.1, Display_Msgs, 0, TIMER_REPEAT)
 	
+	g_hCvarPropInfo	= CreateConVar("lm_propinfo", "1", "Enable the hud to display propinfo", FCVAR_NOTIFY, true, 0.0, true, 1.0)
+	HookConVarChange(g_hCvarPropInfo, Hook_CvarPropInfo)
+
 	PrintToServer( "LazMod PropInfo loaded!" )
+}
+
+public Hook_CvarPropInfo(Handle convar, const char[] oldValue, const char[] newValue) {
+	g_iCvarPropInfo = GetConVarBool(g_hCvarPropInfo)
+
+	if (StrEqual(newValue, "0")) {
+		if (g_hHudTimer != INVALID_HANDLE)
+			KillTimer(g_hHudTimer)
+			
+	} else {
+		if (g_hHudTimer == INVALID_HANDLE)
+			g_hHudTimer = CreateTimer(0.1, Display_Msgs, 0, TIMER_REPEAT)
+	}
+
 }
 
 public Action Display_Msgs(Handle timer) {	
@@ -37,7 +58,11 @@ public Action Display_Msgs(Handle timer) {
 	return Plugin_Handled
 }
 
-public EntityInfo(Client, entTarget) {
+void EntityInfo(plyClient, entTarget) {
+
+	if (!g_iCvarPropInfo)
+		return
+
 	if (LM_IsFuncProp(entTarget))
 		return
 	
@@ -47,12 +72,12 @@ public EntityInfo(Client, entTarget) {
 		if (iHealth <= 1)
 			iHealth = 0
 
-		if (LM_IsAdmin(Client)) {
+		if (LM_IsAdmin(plyClient)) {
 			char szSteamId[32]
 			GetClientAuthId(entTarget, AuthId_Steam2, szSteamId, sizeof(szSteamId))
-			ShowHudText(Client, -1, "Player: %N\nHealth: %i\nUserID: %i\nSteamID:%s", entTarget, iHealth, GetClientUserId(entTarget), szSteamId)
+			ShowHudText(plyClient, -1, "Player: %N\nHealth: %i\nUserID: %i\nSteamID:%s", entTarget, iHealth, GetClientUserId(entTarget), szSteamId)
 		} else {
-			ShowHudText(Client, -1, "Player: %N\nHealth: %i", entTarget, iHealth)
+			ShowHudText(plyClient, -1, "Player: %N\nHealth: %i", entTarget, iHealth)
 		}
 		return
 	}
@@ -63,7 +88,7 @@ public EntityInfo(Client, entTarget) {
 		int iHealth = GetEntProp(entTarget, Prop_Data, "m_iHealth")
 		if (iHealth <= 1)
 			iHealth = 0
-		ShowHudText(Client, -1, "Classname: %s\nHealth: %i", szClass, iHealth)
+		ShowHudText(plyClient, -1, "Classname: %s\nHealth: %i", szClass, iHealth)
 		return
 	}
 	
@@ -81,9 +106,9 @@ public EntityInfo(Client, entTarget) {
 	GetEntPropString(entTarget, Prop_Data, "m_ModelName", szModel, sizeof(szModel))
 	
 	if (Phys_IsPhysicsObject(entTarget)) 
-		ShowHudText(Client, -1, "Classname: %s\nIndex: %i\nModel: %s\nOwner: %s\nMass:%f", szClass, entTarget, szModel, szOwner, Phys_GetMass(entTarget))
+		ShowHudText(plyClient, -1, "Classname: %s\nIndex: %i\nModel: %s\nOwner: %s\nMass:%f", szClass, entTarget, szModel, szOwner, Phys_GetMass(entTarget))
 	else 
-		ShowHudText(Client, -1, "Classname: %s\nIndex: %i\nModel: %s\nOwner: %s", szClass, entTarget, szModel, szOwner)
+		ShowHudText(plyClient, -1, "Classname: %s\nIndex: %i\nModel: %s\nOwner: %s", szClass, entTarget, szModel, szOwner)
 	
 	return
 }
