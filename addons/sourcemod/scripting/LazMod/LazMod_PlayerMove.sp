@@ -8,7 +8,7 @@
 
 public Plugin myinfo =
 {
-	name		= "LazMod - Movement",
+	name		= "LazMod - PlayerMove",
 	author		= "LaZycAt, hjkwe654",
 	description = "Noclip, sprint, teleport, etc.",
 	version		= LAZMOD_VER,
@@ -26,7 +26,7 @@ public OnPluginStart()
 	// Admin commands
 	{
 		RegAdminCmd("sm_fly", Command_AdminFly, ADMFLAG_CUSTOM2, "WTF.")
-		RegAdminCmd("sm_tele", Command_AdminTeleport, ADMFLAG_GENERIC, "Teleport player.")
+		RegAdminCmd("sm_tp", Command_AdminTeleport, ADMFLAG_GENERIC, "Teleport player.")
 	}
 	
 	PrintToServer( "LazMod PlayerMove loaded!" )
@@ -84,66 +84,74 @@ public Action Command_AdminFly(Client, args)
 	return Plugin_Handled
 }
 
-public Action Command_AdminTeleport(Client, args)
+public Action Command_AdminTeleport(plyClient, args)
 {
 	if (args < 1)
 	{
-		LM_PrintToChat(Client, "Usage: !tele <player to> [player sent]")
-		LM_PrintToChat(Client, "Ex: !tele cat dog  = Send dog to cat")
-		LM_PrintToChat(Client, "Ex: !tele cat  = Send yourself to cat")
+		LM_PrintToChat(plyClient, "Usage: !tp <player to> [player sent]")
+		LM_PrintToChat(plyClient, "Ex: !tp cat dog  = Send dog to cat")
+		LM_PrintToChat(plyClient, "Ex: !tp cat  = Send yourself to cat")
 		return Plugin_Handled
 	}
 
 	char szClientTo[33], szClientSent[33]
-	char target_name[MAX_TARGET_LENGTH]
-	int target_list[1], target_count
-	bool tn_is_ml
-
 	GetCmdArg(1, szClientTo, sizeof(szClientTo))
-	if ((target_count = ProcessTargetString(szClientTo, Client, target_list, 1, 0, target_name, sizeof(target_name), tn_is_ml)) <= 0)
-	{
-		ReplyToTargetError(Client, target_count)
-		return Plugin_Handled
-	}
 
-	for (int i = 0; i < target_count; i++)
-	{
-		new target = target_list[i]
+	if (args == 1) {
+		char szClientToName[MAX_TARGET_LENGTH]
+		int plyClientToList[1], iClientToCount
+		bool bClientToNameML
 
-		if (LM_IsBlacklisted(target))
-		{
-			LM_PrintToChat(Client, "%s is already blacklisted!", target_name)
+		if ((iClientToCount = ProcessTargetString(szClientTo, plyClient, plyClientToList, 1, 0, szClientToName, sizeof(szClientToName), bClientToNameML)) <= 0) {
+			ReplyToTargetError(plyClient, iClientToCount)
 			return Plugin_Handled
 		}
-		else
-			LM_AddBlacklist(target)
+
+		for (int i = 0; i < iClientToCount; i++) {
+			int plyClientTo = plyClientToList[i]
+			TeleportPlayerToPlayer(plyClientTo, plyClient)
+		}
+
+	} else {
+		GetCmdArg(2, szClientSent, sizeof(szClientSent))
+
+		char szClientToName[MAX_TARGET_LENGTH], szClientSentName[MAX_TARGET_LENGTH]
+		int plyClientToList[1], iClientToCount, plyClientSentList[1], iClientSentCount
+		bool bClientToNameML, bClientSentNameML
+
+		if ((iClientToCount = ProcessTargetString(szClientTo, plyClient, plyClientToList, 1, 0, szClientToName, sizeof(szClientToName), bClientToNameML)) <= 0) {
+			ReplyToTargetError(plyClient, iClientToCount)
+			return Plugin_Handled
+		}
+
+		if ((iClientSentCount = ProcessTargetString(szClientSent, plyClient, plyClientSentList, 1, 0, szClientSentName, sizeof(szClientSentName), bClientSentNameML)) <= 0) {
+			ReplyToTargetError(plyClient, iClientSentCount)
+			return Plugin_Handled
+		}
+
+		for (int i = 0; i < iClientToCount; i++) {
+			int plyClientTo = plyClientToList[i]
+			for (int j = 0; j < iClientSentCount; j++) {
+				int plyClientSent = plyClientSentList[j]
+				TeleportPlayerToPlayer(plyClientTo, plyClientSent)
+			}
+		}
+
+
 	}
 
-	if (args == 1)
-	{
-	}
-	else {
-	}
 
-	GetCmdArg(2, szClientSent, sizeof(szClientSent))
-
-	FakeClientCommand(Client, "admin_send \"%s\" \"%s\"", szClientTo, szClientSent)
-
-	char szTemp[33], szArgs[128]
-	for (int i = 1; i <= GetCmdArgs(); i++)
-	{
-		GetCmdArg(i, szTemp, sizeof(szTemp))
-		Format(szArgs, sizeof(szArgs), "%s %s", szArgs, szTemp)
-	}
-	LM_LogCmd(Client, "sm_tele", szArgs)
+	char szArgs[128]
+	GetCmdArgString(szArgs, sizeof(szArgs))
+	LM_LogCmd(plyClient, "sm_tp", szArgs)
 	return Plugin_Handled
 }
-TeleportPlayer(int plyTo, int plySent)
+TeleportPlayerToPlayer(int plyTo, int plySent)
 {
-	float fOriginTo[3], fAimTo[3]
-	GetClientAbsOrigin(plyTo, fOriginTo)
-	GetClientEyeAngles(plyTo, fAimTo)
-	fOriginTo[2] += 75
+	float vToPos[3], vToAngles[3]
+	GetClientAbsOrigin(plyTo, vToPos)
+	GetClientEyeAngles(plyTo, vToAngles)
+	vToPos[2] += 75
 
-	TeleportEntity(plySent, fOriginTo, fAimTo)
+	TeleportEntity(plySent, vToPos, vToAngles)
 }
