@@ -4,6 +4,7 @@
 #include <sourcemod>
 #include <sdktools>
 #include <lazmod>
+#include <lazmod_stocks>
 #include <vphysics>
 
 
@@ -15,6 +16,9 @@ Handle g_hPropTypeArray
 
 Handle g_hWheelNameArray
 Handle g_hWheelModelPathArray
+
+Handle g_hCvarSpawnInFront = INVALID_HANDLE
+int g_iCvarSpawnInFront
 
 char g_szFile[128]
 
@@ -40,7 +44,17 @@ public OnPluginStart() {
 	g_hWheelModelPathArray = CreateArray(128, 32);	// Max Wheel List is 32
 	ReadWheels()
 	
+
+
+	g_hCvarSpawnInFront	= CreateConVar("lm_spawn_infront", "1", "Spawn props in front of player instead at aimed position.", FCVAR_NOTIFY, true, 0.0, true, 1.0)
+	HookConVarChange(g_hCvarSpawnInFront, Hook_CvarSpawnInFront)
+
+
 	PrintToServer( "LazMod Creator loaded!" )
+}
+
+public Hook_CvarSpawnInFront(Handle convar, const char[] oldValue, const char[] newValue) {
+	g_iCvarSpawnInFront = GetConVarBool(g_hCvarSpawnInFront)
 }
 
 public Action Command_SpawnF(plyClient, args) {
@@ -91,15 +105,19 @@ public Action Command_SpawnProp(plyClient, args) {
 		if (LM_SetEntityOwner(entProp, plyClient, bIsDoll)) {
 			float vClientEyePos[3], vSpawnOrigin[3], vClientEyeAngles[3], fRadiansX, fRadiansY
 			
-			GetClientEyePosition(plyClient, vClientEyePos)
-			GetClientEyeAngles(plyClient, vClientEyeAngles)
-			
-			fRadiansX = DegToRad(vClientEyeAngles[0])
-			fRadiansY = DegToRad(vClientEyeAngles[1])
-			
-			vSpawnOrigin[0] = vClientEyePos[0] + (100 * Cosine(fRadiansY) * Cosine(fRadiansX))
-			vSpawnOrigin[1] = vClientEyePos[1] + (100 * Sine(fRadiansY) * Cosine(fRadiansX))
-			vSpawnOrigin[2] = vClientEyePos[2] - 20
+			if (g_iCvarSpawnInFront) {
+				GetClientEyePosition(plyClient, vClientEyePos)
+				GetClientEyeAngles(plyClient, vClientEyeAngles)
+				
+				fRadiansX = DegToRad(vClientEyeAngles[0])
+				fRadiansY = DegToRad(vClientEyeAngles[1])
+				
+				vSpawnOrigin[0] = vClientEyePos[0] + (100 * Cosine(fRadiansY) * Cosine(fRadiansX))
+				vSpawnOrigin[1] = vClientEyePos[1] + (100 * Sine(fRadiansY) * Cosine(fRadiansX))
+				vSpawnOrigin[2] = vClientEyePos[2] - 20
+			} else {
+				LM_ClientAimPos(plyClient, vSpawnOrigin)
+			}
 			
 			GetArrayString(g_hPropModelPathArray, iPropIndex, szModelPath, sizeof(szModelPath))
 			
@@ -286,7 +304,7 @@ public Action Command_Wheel(plyClient, args) {
 		LM_PrintToChat(plyClient, "Wheel not found.")
 	}
 
-	
+
 	char szArgs[128]
 	GetCmdArgString(szArgs, sizeof(szArgs))
 	LM_LogCmd(plyClient, "sm_wheel", szArgs)
