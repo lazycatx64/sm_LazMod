@@ -191,19 +191,15 @@ public Action Command_Rotate(plyClient, args) {
 		return Plugin_Handled
 	
 	if (LM_IsEntityOwner(plyClient, entProp)) {
-		char szAngleX[8], szAngleY[8], szAngleZ[8]
-		float fEntityOrigin[3], fEntityAngle[3]
-		GetCmdArg(1, szAngleX, sizeof(szAngleX))
-		GetCmdArg(2, szAngleY, sizeof(szAngleY))
-		GetCmdArg(3, szAngleZ, sizeof(szAngleZ))
+		float vPropAngles[3], vAddAngles[3], vNewAngles[3]
+		vAddAngles[0] = GetCmdArgFloat(1)
+		vAddAngles[1] = GetCmdArgFloat(2)
+		vAddAngles[2] = GetCmdArgFloat(3)
 		
-		GetEntPropVector(entProp, Prop_Data, "m_vecOrigin", fEntityOrigin)
-		GetEntPropVector(entProp, Prop_Data, "m_angRotation", fEntityAngle)
-		fEntityAngle[0] += StringToFloat(szAngleX)
-		fEntityAngle[1] += StringToFloat(szAngleY)
-		fEntityAngle[2] += StringToFloat(szAngleZ)
+		GetEntPropVector(entProp, Prop_Data, "m_angRotation", vPropAngles)
+		AddVectors(vPropAngles, vAddAngles, vNewAngles)
 		
-		TeleportEntity(entProp, fEntityOrigin, fEntityAngle, NULL_VECTOR)
+		TeleportEntity(entProp, NULL_VECTOR, vNewAngles, NULL_VECTOR)
 	}
 	
 	char szArgs[128]
