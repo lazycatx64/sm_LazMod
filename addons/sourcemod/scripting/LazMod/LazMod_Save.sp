@@ -107,10 +107,9 @@ public Action Command_SaveSpawn(plyClient, args) {
 			} else {
 				LM_PrintToChat(plyClient, "Loading the content. Please Wait...")
 				g_bIsRunning[plyClient] = true
-				g_iTryCount[plyClient] = 0
 
 				Handle hLoadPack
-				CreateDataTimer(1.0, Timer_Load, hLoadPack)
+				CreateDataTimer(0.01, Timer_Load, hLoadPack)
 				WritePackCell(hLoadPack, plyClient)
 				WritePackString(hLoadPack, szSteamID)
 				WritePackString(hLoadPack, "0")
@@ -318,7 +317,7 @@ public Action Timer_Load(Handle hTimer, Handle hDataPack) {
 				ExplodeString(szLoadString, "\t", szBuffer, sizeof(szBuffer), sizeof(szBuffer[]))
 				String_Trim(szBuffer[1], szBuffer[1], sizeof(szBuffer[]))
 				if (String_StartsWith(szBuffer[0], "propcount"))
-					LM_PrintToChat(plyClient, "Found %s props in save.", szBuffer[1] )
+					LM_PrintToChat(plyClient, "Found %s props in save, start loading...", szBuffer[1] )
 
 			} else if (StrContains(szLoadString, "classname") != -1 && StrContains(szLoadString, "origin") != -1) {
 				// Makes sure data loaded in correct order
@@ -349,6 +348,8 @@ public Action Timer_Load(Handle hTimer, Handle hDataPack) {
 						vAngles[1] = StringToFloat(szAngles[1])
 						vAngles[2] = StringToFloat(szAngles[2])
 					} else if (StrEqual(szHeaderBuffer[i], "rendercolor")) {
+						if (strlen(szDataBuffer[i]) < 1)
+							szDataBuffer[i] = "255 255 255"
 						Format(szColor, sizeof(szColor), "%s", szDataBuffer[i])
 					} else if (StrEqual(szHeaderBuffer[i], "alpha")) {
 						if (strlen(szDataBuffer[i]) < 1)
@@ -398,12 +399,17 @@ public Action Timer_Load(Handle hTimer, Handle hDataPack) {
 						// AcceptEntityInput(entLoadEntity, "sethealth", -1)
 						AcceptEntityInput(entLoadEntity, "disablemotion", -1)
 						g_iCount[plyClient]++
+						if (g_iCount[plyClient] % 100 == 0)
+							LM_PrintToChat(plyClient, "Loaded %d props, still going...", g_iCount[plyClient])
+
 					} else {
+						if (!LM_CheckMaxEdict()) {
+							LM_PrintToChat(plyClient, "Server has no more room for new props, current loading will be terminated!")
+						}
 						RemoveEdict(entLoadEntity)
 						bRegOwnerError = true
 					}
 				}
-
 			}
 		}
 		if (!IsEndOfFile(g_hFile[plyClient]) && !bRegOwnerError) {
