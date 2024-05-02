@@ -20,7 +20,7 @@ int g_iMissileTarget[MAXPLAYERS]
 public Plugin myinfo = {
 	name = "LazMod - Misc",
 	author = "LaZycAt, hjkwe654",
-	description = "Various uncategorized commands.",
+	description = "Various uncategorized and experimental commands.",
 	version = LAZMOD_VER,
 	url = ""
 }
@@ -58,6 +58,7 @@ public OnPluginStart() {
 		// RegAdminCmd("sm_ball", Command_Ball, ADMFLAG_GENERIC, "Spawn a energy ball.")
 		
 		RegAdminCmd("sm_setowner", Command_AdminSetOwner, ADMFLAG_BAN, "WTF.")
+		RegAdminCmd("sm_delay", Command_AdminDelay, ADMFLAG_BAN, "Fire a command that will execute later")
 		RegAdminCmd("sm_team", Command_AdminTeam, ADMFLAG_GENERIC, "Force a player join a team.")
 		RegAdminCmd("sm_hurt", Command_AdminHurt, ADMFLAG_BAN, "To hurt you.")
 		RegAdminCmd("sm_shoot", Command_AdminShoot, ADMFLAG_BAN, "WTF.")
@@ -71,8 +72,7 @@ public OnPluginStart() {
 		RegAdminCmd("sm_atest", Command_Test, ADMFLAG_ROOT, "test.")
 	}
 	
-	RegConsoleCmd("sm_delay", Command_Delay)
-	RegConsoleCmd("kill", Command_kill, "")
+	RegConsoleCmd("kill", Command_Suicide, "")
 	
 	PrintToServer( "LazMod Misc loaded!" )
 }
@@ -770,7 +770,7 @@ public Action Command_Test(Client, args) {
 
 
 // Misc
-public Action Command_kill(Client, Args) {
+public Action Command_Suicide(Client, Args) {
 	if (!LM_IsClientValid(Client, Client, true))
 		return Plugin_Handled
 	
@@ -779,35 +779,36 @@ public Action Command_kill(Client, Args) {
 	return Plugin_Handled
 }
 
-public Action Command_Delay(Client, args) {
-	if (args != 2) {
-		ReplyToCommand(Client, "[SM] Usage: sm_future <Time in minutes> \"Command CmdArgs\"")
+public Action Command_AdminDelay(plyClient, args) {
+	if (args < 2) {
+		ReplyToCommand(plyClient, "Usage: sm_delay <time in sec> \"command to run later\"")
 		return Plugin_Handled;	
 	}
-	char szCommand[255], szTime[12]
-	GetCmdArg(1, szTime, sizeof(szTime))
+	char szCommand[255]
+	float fTime
+	fTime = GetCmdArgFloat(1)
 	GetCmdArg(2, szCommand, sizeof(szCommand))
-	
-	float fTime = StringToFloat(szTime)
-	
-	ShowActivity2(Client, "[SM] ","Executing \"%s\" in %s seconds", szCommand, szTime)
+
+	LM_PrintToChat(plyClient, "Command will execute after %f seconds: %s", fTime, szCommand )
 	
 	Handle hExcute
 	CreateDataTimer(fTime, Timer_Delay, hExcute)
-	WritePackString(hExcute,szTime)
-	WritePackString(hExcute,szCommand)
+	WritePackCell(hExcute, plyClient)
+	WritePackString(hExcute, szCommand)
 	return Plugin_Handled
 }
 
 // Timers
 public Action Timer_Delay(Handle Timer, Handle hExcute) {
-	char szCommand[255], szTime[25]
+	char szCommand[255]
+	int plyClient
 	
 	ResetPack(hExcute)
-	ReadPackString(hExcute, szTime, sizeof(szTime))
+	plyClient = ReadPackCell(hExcute)
 	ReadPackString(hExcute, szCommand, sizeof(szCommand))
 	
-	ServerCommand("%s", szCommand)
+	if (LM_IsClientValid(plyClient, plyClient))
+		FakeClientCommand(plyClient, "%s", szCommand)
 	
 	return Plugin_Stop
 }
