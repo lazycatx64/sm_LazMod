@@ -43,30 +43,32 @@ public OnPluginStart() {
 	PrintToServer( "LazMod Creator loaded!" )
 }
 
-public Action Command_SpawnF(Client, args) {
-	if (!LM_AllowToLazMod(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
+public Action Command_SpawnF(plyClient, args) {
+	if (!LM_AllowToLazMod(plyClient) || LM_IsBlacklisted(plyClient) || !LM_IsClientValid(plyClient, plyClient, true))
 		return Plugin_Handled
 	
 	if (args < 1) {
-		LM_PrintToChat(Client, "Usage: !spawnf <Prop name> ")
+		LM_PrintToChat(plyClient, "Usage: !spawnf <Prop name> ")
+		LM_PrintToChat(plyClient, "Ex: !spawnf goldbar")
+		LM_PrintToChat(plyClient, "Ex: !spawnf alyx")
 		return Plugin_Handled
 	}
 	
 	char spwansf[33]
 	GetCmdArg(1, spwansf, sizeof(spwansf))
 	
-	FakeClientCommand(Client, "sm_spawn %s yes", spwansf)
+	FakeClientCommand(plyClient, "sm_spawn %s yes", spwansf)
 	return Plugin_Handled
 }
 
-public Action Command_SpawnProp(Client, args) {
-	if (!LM_AllowToLazMod(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
+public Action Command_SpawnProp(plyClient, args) {
+	if (!LM_AllowToLazMod(plyClient) || LM_IsBlacklisted(plyClient) || !LM_IsClientValid(plyClient, plyClient, true))
 		return Plugin_Handled
 	
 	if (args < 1) {
-		LM_PrintToChat(Client, "Usage: !spawn <Prop name>")
-		LM_PrintToChat(Client, "Ex: !spawn goldbar")
-		LM_PrintToChat(Client, "Ex: !spawn alyx")
+		LM_PrintToChat(plyClient, "Usage: !spawn <Prop name>")
+		LM_PrintToChat(plyClient, "Ex: !spawn goldbar")
+		LM_PrintToChat(plyClient, "Ex: !spawn alyx")
 		return Plugin_Handled
 	}
 	
@@ -74,32 +76,32 @@ public Action Command_SpawnProp(Client, args) {
 	GetCmdArg(1, szPropName, sizeof(szPropName))
 	GetCmdArg(2, szPropFrozen, sizeof(szPropFrozen))
 	
-	new IndexInArray = FindStringInArray(g_hPropNameArray, szPropName)
+	int iPropIndex = FindStringInArray(g_hPropNameArray, szPropName)
 	
-	if (IndexInArray != -1) {
+	if (iPropIndex != -1) {
 		bool bIsDoll = false
 		char szEntType[33]
-		GetArrayString(g_hPropTypeArray, IndexInArray, szEntType, sizeof(szEntType))
+		GetArrayString(g_hPropTypeArray, iPropIndex, szEntType, sizeof(szEntType))
 		
 		if (StrEqual(szEntType, "prop_ragdoll"))
 			bIsDoll = true
 		
 		int entProp = CreateEntityByName(szEntType)
 
-		if (LM_SetEntityOwner(entProp, Client, bIsDoll)) {
-			float fOriginWatching[3], fOriginFront[3], fAngles[3], fRadiansX, fRadiansY
+		if (LM_SetEntityOwner(entProp, plyClient, bIsDoll)) {
+			float vClientEyePos[3], vSpawnOrigin[3], vClientEyeAngles[3], fRadiansX, fRadiansY
 			
-			GetClientEyePosition(Client, fOriginWatching)
-			GetClientEyeAngles(Client, fAngles)
+			GetClientEyePosition(plyClient, vClientEyePos)
+			GetClientEyeAngles(plyClient, vClientEyeAngles)
 			
-			fRadiansX = DegToRad(fAngles[0])
-			fRadiansY = DegToRad(fAngles[1])
+			fRadiansX = DegToRad(vClientEyeAngles[0])
+			fRadiansY = DegToRad(vClientEyeAngles[1])
 			
-			fOriginFront[0] = fOriginWatching[0] + (100 * Cosine(fRadiansY) * Cosine(fRadiansX))
-			fOriginFront[1] = fOriginWatching[1] + (100 * Sine(fRadiansY) * Cosine(fRadiansX))
-			fOriginFront[2] = fOriginWatching[2] - 20
+			vSpawnOrigin[0] = vClientEyePos[0] + (100 * Cosine(fRadiansY) * Cosine(fRadiansX))
+			vSpawnOrigin[1] = vClientEyePos[1] + (100 * Sine(fRadiansY) * Cosine(fRadiansX))
+			vSpawnOrigin[2] = vClientEyePos[2] - 20
 			
-			GetArrayString(g_hPropModelPathArray, IndexInArray, szModelPath, sizeof(szModelPath))
+			GetArrayString(g_hPropModelPathArray, iPropIndex, szModelPath, sizeof(szModelPath))
 			
 			if (!IsModelPrecached(szModelPath))
 				PrecacheModel(szModelPath)
@@ -110,7 +112,7 @@ public Action Command_SpawnProp(Client, args) {
 				SetEntProp(entProp, Prop_Send, "m_nSolidType", 6)
 			
 			DispatchSpawn(entProp)
-			TeleportEntity(entProp, fOriginFront, NULL_VECTOR, NULL_VECTOR)
+			TeleportEntity(entProp, vSpawnOrigin, NULL_VECTOR, NULL_VECTOR)
 			
 			if (!StrEqual(szPropFrozen, "")) {
 				if (Phys_IsPhysicsObject(entProp))
@@ -119,15 +121,12 @@ public Action Command_SpawnProp(Client, args) {
 		} else
 			RemoveEdict(entProp)
 	} else {
-		LM_PrintToChat(Client, "Prop not found: %s", szPropName)
+		LM_PrintToChat(plyClient, "Prop not found: %s", szPropName)
 	}
 
-	char szTemp[33], szArgs[128]
-	for (int i = 1; i <= GetCmdArgs(); i++) {
-		GetCmdArg(i, szTemp, sizeof(szTemp))
-		Format(szArgs, sizeof(szArgs), "%s %s", szArgs, szTemp)
-	}
-	LM_LogCmd(Client, "sm_spawn", szArgs)
+	char szArgs[128]
+	GetCmdArgString(szArgs, sizeof(szArgs))
+	LM_LogCmd(plyClient, "sm_spawn", szArgs)
 
 	return Plugin_Handled
 }
@@ -139,7 +138,7 @@ ReadProps() {
 	if (iFile == INVALID_HANDLE)
 		return
 	
-	new iCountProps = 0
+	int iCountProps = 0
 	while (!IsEndOfFile(iFile))
 	{
 		char szLine[255]
@@ -147,7 +146,7 @@ ReadProps() {
 			break
 		
 		/* 略過註解 */
-		new iLen = strlen(szLine)
+		int iLen = strlen(szLine)
 		bool bIgnore = false
 		
 		for (int i = 0; i < iLen; i++) {
@@ -194,13 +193,14 @@ ReadPropsLine(const char[] szLine, iCountProps) {
 
 
 
-public Action Command_Wheel(Client, args) {
-	if (!LM_AllowToLazMod(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
+public Action Command_Wheel(plyClient, args) {
+	if (!LM_AllowToLazMod(plyClient) || LM_IsBlacklisted(plyClient) || !LM_IsClientValid(plyClient, plyClient, true))
 		return Plugin_Handled
 	
 	if (args < 1) {
-		LM_PrintToChat(Client, "Usage: !wheel <type>")
-		LM_PrintToChat(Client, "Ex: !wheel 3")
+		LM_PrintToChat(plyClient, "Usage: !wheel <type>")
+		LM_PrintToChat(plyClient, "Ex: !wheel 3")
+		LM_PrintToChat(plyClient, "Note: Some wheel does not work properly that was broken by game updates, may or may not be fixed in the future")
 		
 		return Plugin_Handled
 	}
@@ -208,27 +208,27 @@ public Action Command_Wheel(Client, args) {
 	char szWheelName[33], szModelPath[128]
 	GetCmdArg(1, szWheelName, sizeof(szWheelName))
 	
-	new IndexInArray = FindStringInArray(g_hWheelNameArray, szWheelName)
-	if (IndexInArray != -1) {
-		float eyePos[3]
-		float eyeAng[3]
+	int iPropIndex = FindStringInArray(g_hWheelNameArray, szWheelName)
+	if (iPropIndex != -1) {
+		float vClientEyePos[3]
+		float vClientEyeAngles[3]
 		
-		GetClientEyePosition(Client, eyePos)
-		GetClientEyeAngles(Client, eyeAng)
+		GetClientEyePosition(plyClient, vClientEyePos)
+		GetClientEyeAngles(plyClient, vClientEyeAngles)
 		
-		Handle trace = TR_TraceRayFilterEx(eyePos, eyeAng, MASK_SHOT, RayType_Infinite, TraceEntityFilterOnlyVPhysics)
+		Handle trace = TR_TraceRayFilterEx(vClientEyePos, vClientEyeAngles, MASK_SHOT, RayType_Infinite, TraceEntityFilterOnlyVPhysics)
 		
 		if (TR_DidHit(trace) && TR_GetEntityIndex(trace)) {
 			int entIndex = TR_GetEntityIndex(trace)
-			if (LM_IsEntityOwner(Client, entIndex)) {	
+			if (LM_IsEntityOwner(plyClient, entIndex)) {	
 				int entWheel = CreateEntityByName("prop_physics_override")
-				if (LM_SetEntityOwner(entWheel, Client)) {
-					float hitPos[3]
-					float hitNormal[3]
-					TR_GetEndPosition(hitPos, trace)
-					TR_GetPlaneNormal(trace, hitNormal)
+				if (LM_SetEntityOwner(entWheel, plyClient)) {
+					float vHitPos[3]
+					float vHitNormal[3]
+					TR_GetEndPosition(vHitPos, trace)
+					TR_GetPlaneNormal(trace, vHitNormal)
 					
-					GetArrayString(g_hWheelModelPathArray, IndexInArray, szModelPath, sizeof(szModelPath))
+					GetArrayString(g_hWheelModelPathArray, iPropIndex, szModelPath, sizeof(szModelPath))
 					
 					if (!IsModelPrecached(szModelPath))
 						PrecacheModel(szModelPath)
@@ -242,55 +242,54 @@ public Action Command_Wheel(Client, args) {
 					DispatchSpawn(entWheel)
 					ActivateEntity(entWheel)
 					
-					float surfaceAng[3];					
-					GetVectorAngles(hitNormal, surfaceAng)
+					float vSurfaceAngles[3];					
+					GetVectorAngles(vHitNormal, vSurfaceAngles)
 					
-					float wheelCenter[3]; // Should be calculating the width of the model for this.
-					float vecToAdd[3]
+					float vWheelPos[3]; // Should be calculating the width of the model for this.
+					float vVecToAdd[3]
 					
-					vecToAdd[0] = hitNormal[0]
-					vecToAdd[1] = hitNormal[1]
-					vecToAdd[2] = hitNormal[2]
+					vVecToAdd[0] = vHitNormal[0]
+					vVecToAdd[1] = vHitNormal[1]
+					vVecToAdd[2] = vHitNormal[2]
 					
 					switch(StringToInt(szWheelName)) {
 						case 1:
-							ScaleVector(vecToAdd, 5.0)
+							ScaleVector(vVecToAdd, 5.0)
 						case 2:
-							ScaleVector(vecToAdd, 10.0)
+							ScaleVector(vVecToAdd, 10.0)
 						case 3:
-							ScaleVector(vecToAdd, 7.5)
+							ScaleVector(vVecToAdd, 7.5)
 						case 4:
-							ScaleVector(vecToAdd, 12.5)
+							ScaleVector(vVecToAdd, 12.5)
 						case 5:
-							ScaleVector(vecToAdd, 11.0)
+							ScaleVector(vVecToAdd, 11.0)
 						case 6:
-							ScaleVector(vecToAdd, 40.0)
+							ScaleVector(vVecToAdd, 40.0)
 						case 7:
-							ScaleVector(vecToAdd, 40.0)
+							ScaleVector(vVecToAdd, 40.0)
 					}
 					
-					AddVectors(hitPos, vecToAdd, wheelCenter)
-					TeleportEntity(entWheel, wheelCenter, surfaceAng, NULL_VECTOR)
+					AddVectors(vHitPos, vVecToAdd, vWheelPos)
+					TeleportEntity(entWheel, vWheelPos, vSurfaceAngles, NULL_VECTOR)
 					
-					Phys_CreateHingeConstraint(entIndex, entWheel, INVALID_HANDLE, hitPos, hitNormal)
-					LM_PrintToChat(Client, "Added wheel to target")
+					Phys_CreateHingeConstraint(entIndex, entWheel, INVALID_HANDLE, vHitPos, vHitNormal)
+					LM_PrintToChat(plyClient, "Added wheel to target")
 				} else
 					RemoveEdict(entWheel)
 			}
 		} else {
-			LM_PrintToChat(Client, "Target not found.")
+			LM_PrintToChat(plyClient, "Target not found.")
 		}
 		
 		CloseHandle(trace)
 	} else {
-		LM_PrintToChat(Client, "Wheel not found.")
+		LM_PrintToChat(plyClient, "Wheel not found.")
 	}
-	char szTemp[33], szArgs[128]
-	for (int i = 1; i <= GetCmdArgs(); i++) {
-		GetCmdArg(i, szTemp, sizeof(szTemp))
-		Format(szArgs, sizeof(szArgs), "%s %s", szArgs, szTemp)
-	}
-	LM_LogCmd(Client, "sm_wheel", szArgs)
+
+	
+	char szArgs[128]
+	GetCmdArgString(szArgs, sizeof(szArgs))
+	LM_LogCmd(plyClient, "sm_wheel", szArgs)
 	return Plugin_Handled
 }
 
