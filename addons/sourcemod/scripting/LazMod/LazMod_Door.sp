@@ -23,19 +23,24 @@ public Plugin myinfo = {
 
 public OnPluginStart() {	
 	RegAdminCmd("sm_door", Command_SpawnDoor, 0, "Doors creator.")
+
+
 	g_hCookieSDoorTarget = RegClientCookie("cookie_SDoorTarget", "For SDoor.", CookieAccess_Private)
 	g_hCookieSDoorModel = RegClientCookie("cookie_SDoorModel", "For SDoor.", CookieAccess_Private)
 	
 	PrintToServer( "LazMod Door loaded!" )
 }
 
-public Action Command_SpawnDoor(Client, args) {
-	if(!LM_AllowToLazMod(Client) || LM_IsBlacklisted(Client))
+/**
+ * TODO: Use sourcemod to hook button outputs instead of built-in
+ */
+public Action Command_SpawnDoor(plyClient, args) {
+	if(!LM_AllowToLazMod(plyClient) || LM_IsBlacklisted(plyClient))
 		return Plugin_Handled
 	
-	char szDoorTarget[16], szType[4], szFormatStr[64], szNameStr[8]
-	float fAimPos[3]
-	LM_ClientAimPos(Client, fAimPos)
+	char szDoorTarget[16], szType[4], szFormatStr[64]
+	float vAimPos[3]
+	LM_ClientAimPos(plyClient, vAimPos)
 	GetCmdArg(1, szType, sizeof(szType))
 	static entEntity
 	char szModel[128]
@@ -55,31 +60,29 @@ public Action Command_SpawnDoor(Client, args) {
 		
 		DispatchKeyValue(entDoor, "model", szModel)
 		SetEntProp(entDoor, Prop_Send, "m_nSolidType", 6)
-		LM_SetEntityOwner(entDoor, Client)
+		LM_SetEntityOwner(entDoor, plyClient)
 		
-		TeleportEntity(entDoor, fAimPos, NULL_VECTOR, NULL_VECTOR)
+		TeleportEntity(entDoor, vAimPos, NULL_VECTOR, NULL_VECTOR)
 		DispatchSpawn(entDoor)
 	} else if (StrEqual(szType[0], "a") || StrEqual(szType[0], "b") || StrEqual(szType[0], "c")) {
 	
-		entEntity = LM_GetClientAimEntity(Client)
+		entEntity = LM_GetClientAimEntity(plyClient)
 		if (entEntity == -1)
 			return Plugin_Handled
 		
 		switch(szType[0]) {
 			case 'a': {
-				new iName = GetRandomInt(1000, 5000)
 				
-				IntToString(iName, szNameStr, sizeof(szNameStr))
-				Format(szFormatStr, sizeof(szFormatStr), "door%s", szNameStr)
+				Format(szFormatStr, sizeof(szFormatStr), "door%d", GetRandomInt(1000, 5000))
 				DispatchKeyValue(entEntity, "targetname", szFormatStr)
 				
 				GetEntPropString(entEntity, Prop_Data, "m_ModelName", szModel, sizeof(szModel))
-				SetClientCookie(Client, g_hCookieSDoorTarget, szFormatStr)
-				SetClientCookie(Client, g_hCookieSDoorModel, szModel)
+				SetClientCookie(plyClient, g_hCookieSDoorTarget, szFormatStr)
+				SetClientCookie(plyClient, g_hCookieSDoorModel, szModel)
 			}
 			case 'b': {
-				GetClientCookie(Client, g_hCookieSDoorTarget, szDoorTarget, sizeof(szDoorTarget))
-				GetClientCookie(Client, g_hCookieSDoorModel, szModel, sizeof(szModel))
+				GetClientCookie(plyClient, g_hCookieSDoorTarget, szDoorTarget, sizeof(szDoorTarget))
+				GetClientCookie(plyClient, g_hCookieSDoorModel, szModel, sizeof(szModel))
 				
 				if (StrEqual(szModel, "models/props_lab/blastdoor001c.mdl")) {
 					Format(szFormatStr, sizeof(szFormatStr), "%s,setanimation,dog_open,0", szDoorTarget)
@@ -103,8 +106,8 @@ public Action Command_SpawnDoor(Client, args) {
 				}
 			}
 			case 'c': {
-				GetClientCookie(Client, g_hCookieSDoorTarget, szDoorTarget, sizeof(szDoorTarget))
-				GetClientCookie(Client, g_hCookieSDoorModel, szModel, sizeof(szModel))
+				GetClientCookie(plyClient, g_hCookieSDoorTarget, szDoorTarget, sizeof(szDoorTarget))
+				GetClientCookie(plyClient, g_hCookieSDoorModel, szModel, sizeof(szModel))
 				DispatchKeyValue(entEntity, "spawnflags", "258")
 				
 				if (StrEqual(szModel, "models/props_lab/blastdoor001c.mdl")) {
@@ -130,11 +133,11 @@ public Action Command_SpawnDoor(Client, args) {
 			}
 		}
 	} else {
-		LM_PrintToChat(Client, "Usage: !door <type/option>")
-		LM_PrintToChat(Client, "!door 1~7 = Spawn door")
-		LM_PrintToChat(Client, "!door a = Select door")
-		LM_PrintToChat(Client, "!door b = Select button (Shoot to open)")
-		LM_PrintToChat(Client, "!door c = Select button (Press to open)")
+		LM_PrintToChat(plyClient, "Usage: !door <type/option>")
+		LM_PrintToChat(plyClient, "!door 1~7 = Spawn door")
+		LM_PrintToChat(plyClient, "!door a = Select door")
+		LM_PrintToChat(plyClient, "!door b = Set button (Shoot to open)")
+		LM_PrintToChat(plyClient, "!door c = Set button (Press to open)")
 	}
 	return Plugin_Handled
 }
