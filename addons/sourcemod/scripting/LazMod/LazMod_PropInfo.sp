@@ -69,32 +69,61 @@ void EntityInfo(plyClient, entTarget) {
 	if (LM_IsFuncProp(entTarget))
 		return
 	
-	SetHudTextParams(0.015, 0.08, 0.1, 255, 255, 255, 255, 0, 6.0, 0.1, 0.2)
 	if (LM_IsPlayer(entTarget)) {
-		int iHealth = GetClientHealth(entTarget)
-		if (iHealth <= 1)
-			iHealth = 0
-
-		if (LM_IsAdmin(plyClient)) {
-			char szSteamId[32]
-			GetClientAuthId(entTarget, AuthId_Steam2, szSteamId, sizeof(szSteamId))
-			ShowHudText(plyClient, -1, "Player: %N\nHealth: %i\nUserID: %i\nSteamID:%s", entTarget, iHealth, GetClientUserId(entTarget), szSteamId)
-		} else {
-			ShowHudText(plyClient, -1, "Player: %N\nHealth: %i", entTarget, iHealth)
-		}
+		Display_Player(plyClient, entTarget)
 		return
 	}
 
-	char szClass[32]
-	GetEdictClassname(entTarget, szClass, sizeof(szClass))
 	if (LM_IsNpc(entTarget)) {
-		int iHealth = GetEntProp(entTarget, Prop_Data, "m_iHealth")
-		if (iHealth <= 1)
-			iHealth = 0
-		ShowHudText(plyClient, -1, "Classname: %s\nHealth: %i", szClass, iHealth)
+		Display_Npc(plyClient, entTarget)
 		return
 	}
 	
+	Display_Prop(plyClient, entTarget)
+	
+	return
+}
+
+
+stock void Display_Player(int plyClient, int entTarget) {
+
+	SetHudTextParams(0.015, 0.08, 0.1, 255, 255, 255, 255, 0, 6.0, 0.1, 0.2)
+
+	int iHealth = GetClientHealth(entTarget)
+	// I forgor why, maybe prevent something stupid due to game engine
+	if (iHealth <= 1) iHealth = 0
+
+	if (LM_IsAdmin(plyClient)) {
+		char szSteamId[32]
+		GetClientAuthId(entTarget, AuthId_Steam2, szSteamId, sizeof(szSteamId))
+		ShowHudText(plyClient, -1, "Player: %N\nHealth: %i\nUserID: %i\nSteamID:%s", entTarget, iHealth, GetClientUserId(entTarget), szSteamId)
+	} else {
+		ShowHudText(plyClient, -1, "Player: %N\nHealth: %i", entTarget, iHealth)
+	}
+	return
+
+}
+
+stock void Display_Npc(int plyClient, int entTarget) {
+
+	SetHudTextParams(0.015, 0.08, 0.1, 255, 255, 255, 255, 0, 6.0, 0.1, 0.2)
+
+	char szClass[32]
+	GetEdictClassname(entTarget, szClass, sizeof(szClass))
+
+	int iHealth = GetEntProp(entTarget, Prop_Data, "m_iHealth")
+	if (iHealth <= 1)
+		iHealth = 0
+		
+	ShowHudText(plyClient, -1, "Classname: %s\nHealth: %i", szClass, iHealth)
+	return
+
+}
+
+stock void Display_Prop(int plyClient, int entTarget) {
+
+	SetHudTextParams(0.015, 0.08, 0.1, 255, 255, 255, 255, 0, 6.0, 0.1, 0.2)
+
 	char szOwner[32]
 	int plyOwner = LM_GetEntityOwner(entTarget)
 	if (plyOwner != -1)
@@ -105,16 +134,16 @@ void EntityInfo(plyClient, entTarget) {
 		szOwner = "*None"
 	}
 
+	char szClass[32]
+	GetEdictClassname(entTarget, szClass, sizeof(szClass))
 	char szModel[128] 
 	GetEntPropString(entTarget, Prop_Data, "m_ModelName", szModel, sizeof(szModel))
-	
+
 	if (Phys_IsPhysicsObject(entTarget)) 
 		ShowHudText(plyClient, -1, "Classname: %s\nIndex: %i\nModel: %s\nOwner: %s\nMass:%f", szClass, entTarget, szModel, szOwner, Phys_GetMass(entTarget))
 	else 
 		ShowHudText(plyClient, -1, "Classname: %s\nIndex: %i\nModel: %s\nOwner: %s", szClass, entTarget, szModel, szOwner)
 	
 	return
+
 }
-
-
-
