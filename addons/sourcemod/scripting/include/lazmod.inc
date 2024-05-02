@@ -106,22 +106,6 @@ native LM_PrintToChat(int plyClient, const char[] format, any ...)
 native LM_PrintToAll(const char[] format, any ...)
 
 /**
- * Add client to blacklist.
- *
- * @param plyClient			Client index.
- * @return					True on success. False on failure.
- */
-native LM_AddBlacklist(int plyClient)
-
-/**
- * Remove client from blacklist.
- *
- * @param plyClient			Client index.
- * @return					True on success. False on failure.
- */
-native LM_RemoveBlacklist(int plyClient)
-
-/**
  * Check if client is blacklisted.
  *
  * @param plyClient			Client index.
