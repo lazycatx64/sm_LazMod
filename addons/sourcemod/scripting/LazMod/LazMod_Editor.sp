@@ -18,6 +18,8 @@ int g_iCenterIsRunning[MAXPLAYERS]
 int g_entCenterMain[MAXPLAYERS]
 int g_entCenterFirst[MAXPLAYERS]
 
+int g_entSetParent[MAXPLAYERS] = {-1,...}
+
 
 public Plugin myinfo = {
 	name = "LazMod - Editor",
@@ -58,6 +60,10 @@ public OnPluginStart() {
 		RegAdminCmd("sm_setmass", Command_SetMass, 0, "Set the mass of a prop.")
 		// RegAdminCmd("sm_mass", Command_GetMass, 0, "Get the mass of a prop.")
 		RegAdminCmd("sm_weld", Command_Weld, 0, "Weld a prop.")
+
+		RegAdminCmd("sm_setparent", Command_SetParent, 0, "Set parent.")
+		RegAdminCmd("sm_parent", Command_DoParent, 0, "Parent a prop.")
+		RegAdminCmd("sm_clearparent", Command_ClearParent, 0, "Clear parent a prop.")
 	}
 
 	// Admin commands
@@ -677,7 +683,7 @@ public Action Command_Weld(plyClient, args) {
 	if (entProp == -1) 
 		return Plugin_Handled
 	
-	if (LM_IsEntityOwner(plyClient, entProp, true)) {
+	if (LM_IsEntityOwner(plyClient, entProp)) {
 		static iTempEnt = 0
 		if (!iTempEnt) {
 			if (IsValidEntity(entProp) && Phys_IsPhysicsObject(entProp)) {
@@ -700,6 +706,75 @@ public Action Command_Weld(plyClient, args) {
 	char szArgs[128]
 	GetCmdArgString(szArgs, sizeof(szArgs))
 	LM_LogCmd(plyClient, "sm_weld", szArgs)
+	return Plugin_Handled
+}
+
+public Action Command_SetParent(plyClient, args) {
+	if (!LM_AllowToLazMod(plyClient) || LM_IsBlacklisted(plyClient) || !LM_IsClientValid(plyClient, plyClient, true))
+		return Plugin_Handled
+	
+	int entProp = LM_GetClientAimEntity(plyClient)
+	if (entProp == -1) 
+		return Plugin_Handled
+	
+	if (LM_IsEntityOwner(plyClient, entProp)) {
+		g_entSetParent[plyClient] = entProp
+	}
+
+	char szArgs[128]
+	GetCmdArgString(szArgs, sizeof(szArgs))
+	LM_LogCmd(plyClient, "sm_setparent", szArgs)
+	return Plugin_Handled
+}
+
+public Action Command_DoParent(plyClient, args) {
+	if (!LM_AllowToLazMod(plyClient) || LM_IsBlacklisted(plyClient) || !LM_IsClientValid(plyClient, plyClient, true))
+		return Plugin_Handled
+	
+	int entProp = LM_GetClientAimEntity(plyClient)
+	if (entProp == -1) 
+		return Plugin_Handled
+	
+	if (LM_IsEntityOwner(plyClient, entProp)) {
+		if (!IsValidEntity(g_entSetParent[plyClient])) {
+			LM_PrintToChat(plyClient, "You have to !setparent on a target prop first!")
+			return Plugin_Handled
+		}
+		if (entProp == g_entSetParent[plyClient]) {
+			LM_PrintToChat(plyClient, "You cannot parent to same prop itself, !setparent on another prop!")
+			return Plugin_Handled
+		}
+
+		char szRandName[16]
+		Format(szRandName, sizeof(szRandName), "parenttarget%d", GetRandomInt(1000,5000))
+		DispatchKeyValue(g_entSetParent[plyClient], "targetname", szRandName)
+
+		SetVariantString(szRandName)
+		AcceptEntityInput(entProp, "SetParent")
+	}
+
+	char szArgs[128]
+	GetCmdArgString(szArgs, sizeof(szArgs))
+	LM_LogCmd(plyClient, "sm_parent", szArgs)
+	return Plugin_Handled
+}
+
+public Action Command_ClearParent(plyClient, args) {
+	if (!LM_AllowToLazMod(plyClient) || LM_IsBlacklisted(plyClient) || !LM_IsClientValid(plyClient, plyClient, true))
+		return Plugin_Handled
+	
+	int entProp = LM_GetClientAimEntity(plyClient)
+	if (entProp == -1) 
+		return Plugin_Handled
+	
+	if (LM_IsEntityOwner(plyClient, entProp)) {
+		SetVariantString("")
+		AcceptEntityInput(entProp, "ClearParent")
+	}
+
+	char szArgs[128]
+	GetCmdArgString(szArgs, sizeof(szArgs))
+	LM_LogCmd(plyClient, "sm_clearparent", szArgs)
 	return Plugin_Handled
 }
 
