@@ -97,10 +97,14 @@ public OnPluginStart() {
 	HookConVarChange(g_hCvarClDollLimit, Hook_CvarClDollLimit)
 	HookConVarChange(g_hCvarServerLimit, Hook_CvarServerLimit)
 	
-	ServerCommand("gamedesc_override \"BuildMod %s\"", LAZMOD_VER)
+
+	// ServerCommand("gamedesc_override \"BuildMod %s\"", LAZMOD_VER)
 	g_hBlackListArray = CreateArray(33, 128);	// 33 arrays, every array size is 128
 	ReadBlackList()
 	PrintToServer( "LazMod Core loaded!" )
+	PrintToServer( "Max Entities %d", GetMaxEntities() )
+
+	
 }
 
 public OnMapStart() {
