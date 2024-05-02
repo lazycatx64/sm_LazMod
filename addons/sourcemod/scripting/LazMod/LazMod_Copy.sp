@@ -11,9 +11,12 @@ int g_iCopyTarget[MAXPLAYERS]
 float g_fCopyPlayerOrigin[MAXPLAYERS][3]
 bool g_bCopyIsRunning[MAXPLAYERS] = {false, ...}
 
-int g_Beam
-int g_Halo
-int g_PBeam
+bool g_bExtendIsRunning[MAXPLAYERS]
+int g_entExtendTarget[MAXPLAYERS]
+
+int g_mdlLaserBeam
+int g_mdlHalo
+int g_mdlPhysBeam
 
 bool g_bStackIsRunning[MAXPLAYERS] = { false,...}
 int g_iCurrent[MAXPLAYERS] = { 0,...}
@@ -40,6 +43,7 @@ public Plugin myinfo = {
 
 public OnPluginStart() {
 	RegAdminCmd("sm_stack", Command_Stack, 0, "Stack a prop.")
+	RegAdminCmd("sm_extend", Command_Extend, 0, "Create a third prop based on the position and angle of first two props.")
 
 	RegAdminCmd("+copyent", Command_Copyent, 0, "Copy a prop.")
 	RegAdminCmd("-copyent", Command_Paste, 0, "Paste a copied prop.")
@@ -48,9 +52,9 @@ public OnPluginStart() {
 }
 
 public OnMapStart() {
-	g_Halo = PrecacheModel("materials/sprites/halo01.vmt")
-	g_Beam = PrecacheModel("materials/sprites/laser.vmt")
-	g_PBeam = PrecacheModel("materials/sprites/physbeam.vmt")
+	g_mdlHalo = PrecacheModel("materials/sprites/halo01.vmt")
+	g_mdlLaserBeam = PrecacheModel("materials/sprites/laser.vmt")
+	g_mdlPhysBeam = PrecacheModel("materials/sprites/physbeam.vmt")
 }
 
 public Action Command_Stack(Client, args) {
@@ -201,6 +205,65 @@ public Action Timer_Stack(Handle Timer, Handle hDataPack) {
 	return Plugin_Handled
 }
 
+public Action Command_Extend(plyClient, args) {
+	if (!LM_AllowToLazMod(plyClient) || LM_IsBlacklisted(plyClient) || !LM_IsClientValid(plyClient, plyClient, true))
+		return Plugin_Handled
+	
+	int entProp = LM_GetClientAimEntity(plyClient)
+	if (entProp == -1) 
+		return Plugin_Handled
+	
+	char szClass[33]
+	GetEdictClassname(entProp, szClass, sizeof(szClass))
+	if (LM_IsEntityOwner(plyClient, entProp)) {
+		int entThirdProp
+		if (StrContains(szClass, "prop_dynamic") >= 0) {
+			entThirdProp = CreateEntityByName("prop_dynamic_override")
+			SetEntProp(entThirdProp, Prop_Send, "m_nSolidType", 6)
+			SetEntProp(entThirdProp, Prop_Data, "m_nSolidType", 6)
+		} else
+			entThirdProp = CreateEntityByName(szClass)
+			
+		if (LM_SetEntityOwner(entThirdProp, plyClient)) {
+			if (!g_bExtendIsRunning[plyClient]) {
+				g_entExtendTarget[plyClient] = entProp
+				g_bExtendIsRunning[plyClient] = true
+				LM_PrintToChat(plyClient, "Extend #1 set, use !ex again on #2 prop.")
+			} else {
+				char szModel[255]
+				float fOriginProp1[3], fAngle[3], fOriginProp2[3], fOriginProp3[3]
+				
+				GetEntPropVector(g_entExtendTarget[plyClient], Prop_Data, "m_vecOrigin", fOriginProp1)
+				GetEntPropVector(g_entExtendTarget[plyClient], Prop_Data, "m_angRotation", fAngle)
+				GetEntPropString(g_entExtendTarget[plyClient], Prop_Data, "m_ModelName", szModel, sizeof(szModel))
+				GetEntPropVector(entProp, Prop_Data, "m_vecOrigin", fOriginProp2)
+				
+				for (int i = 0; i < 3; i++)
+					fOriginProp3[i] = (fOriginProp2[i] + fOriginProp2[i] - fOriginProp1[i])
+				
+				DispatchKeyValue(entThirdProp, "model", szModel)
+				DispatchSpawn(entThirdProp)
+				TeleportEntity(entThirdProp, fOriginProp3, fAngle, NULL_VECTOR)
+				
+				if(Phys_IsPhysicsObject(entThirdProp))
+					Phys_EnableMotion(entThirdProp, false)
+				
+				g_bExtendIsRunning[plyClient] = false
+				LM_PrintToChat(plyClient, "Extended a prop.")
+			}
+		} else
+			RemoveEdict(entThirdProp)
+	}
+	
+	char szTemp[33], szArgs[128]
+	for (int i = 1; i <= GetCmdArgs(); i++) {
+		GetCmdArg(i, szTemp, sizeof(szTemp))
+		Format(szArgs, sizeof(szArgs), "%s %s", szArgs, szTemp)
+	}
+	LM_LogCmd(plyClient, "sm_extend", szArgs)
+	return Plugin_Handled
+}
+
 
 
 public Action Command_Copyent(plyClient, args) {
@@ -323,7 +386,7 @@ public Action Timer_CopyBeam(Handle Timer, any Client) {
 		iColor[2] = GetRandomInt(50, 255)
 		iColor[3] = GetRandomInt(255, 255)
 		
-		TE_SetupBeamPoints(fOriginEntity, fOriginPlayer, g_PBeam, g_Halo, 0, 66, 0.1, 2.0, 2.0, 0, 0.0, iColor, 20)
+		TE_SetupBeamPoints(fOriginEntity, fOriginPlayer, g_mdlPhysBeam, g_mdlHalo, 0, 66, 0.1, 2.0, 2.0, 0, 0.0, iColor, 20)
 		TE_SendToAll()
 		
 		if (g_bCopyIsRunning[Client])
@@ -344,9 +407,9 @@ public Action Timer_CopyRing(Handle Timer, any Client) {
 		iColor[2] = GetRandomInt(254, 255)
 		iColor[3] = GetRandomInt(250, 255)
 		
-		TE_SetupBeamRingPoint(fOriginEntity, 10.0, 15.0, g_Beam, g_Halo, 0, 10, 0.6, 3.0, 0.5, iColor, 5, 0)
+		TE_SetupBeamRingPoint(fOriginEntity, 10.0, 15.0, g_mdlLaserBeam, g_mdlHalo, 0, 10, 0.6, 3.0, 0.5, iColor, 5, 0)
 		TE_SendToAll()
-		TE_SetupBeamRingPoint(fOriginEntity, 80.0, 100.0, g_Beam, g_Halo, 0, 10, 0.6, 3.0, 0.5, iColor, 5, 0)
+		TE_SetupBeamRingPoint(fOriginEntity, 80.0, 100.0, g_mdlLaserBeam, g_mdlHalo, 0, 10, 0.6, 3.0, 0.5, iColor, 5, 0)
 		TE_SendToAll()
 		
 		if (g_bCopyIsRunning[Client])

@@ -14,9 +14,6 @@
 
 float g_vAlignOrigin[MAXPLAYERS][3]
 
-bool g_bExtendIsRunning[MAXPLAYERS]
-int g_entExtendTarget[MAXPLAYERS]
-
 int g_iCenterIsRunning[MAXPLAYERS]
 int g_entCenterMain[MAXPLAYERS]
 int g_entCenterFirst[MAXPLAYERS]
@@ -48,7 +45,6 @@ public OnPluginStart() {
 
 		RegAdminCmd("sm_move", Command_Move, 0, "Moves a props by coordinates.")
 		RegAdminCmd("sm_align", Command_Align, 0, "Align a prop using the position of another prop as a reference.")
-		RegAdminCmd("sm_extend", Command_Extend, 0, "Create a third prop based on the position and angle of first two props.")
 		RegAdminCmd("sm_center", Command_Center, 0, "Moves a prop to the exact middle of the other two props.")
 
 		RegAdminCmd("sm_nobreak", Command_NoBreakProp, 0, "Set a prop wont break.")
@@ -450,65 +446,6 @@ public Action Command_Align(plyClient, args) {
 		Format(szArgs, sizeof(szArgs), "%s %s", szArgs, szTemp)
 	}
 	LM_LogCmd(plyClient, "sm_align", szArgs)
-	return Plugin_Handled
-}
-
-public Action Command_Extend(plyClient, args) {
-	if (!LM_AllowToLazMod(plyClient) || LM_IsBlacklisted(plyClient) || !LM_IsClientValid(plyClient, plyClient, true))
-		return Plugin_Handled
-	
-	int entProp = LM_GetClientAimEntity(plyClient)
-	if (entProp == -1) 
-		return Plugin_Handled
-	
-	char szClass[33]
-	GetEdictClassname(entProp, szClass, sizeof(szClass))
-	if (LM_IsEntityOwner(plyClient, entProp)) {
-		int entThirdProp
-		if (StrContains(szClass, "prop_dynamic") >= 0) {
-			entThirdProp = CreateEntityByName("prop_dynamic_override")
-			SetEntProp(entThirdProp, Prop_Send, "m_nSolidType", 6)
-			SetEntProp(entThirdProp, Prop_Data, "m_nSolidType", 6)
-		} else
-			entThirdProp = CreateEntityByName(szClass)
-			
-		if (LM_SetEntityOwner(entThirdProp, plyClient)) {
-			if (!g_bExtendIsRunning[plyClient]) {
-				g_entExtendTarget[plyClient] = entProp
-				g_bExtendIsRunning[plyClient] = true
-				LM_PrintToChat(plyClient, "Extend #1 set, use !ex again on #2 prop.")
-			} else {
-				char szModel[255]
-				float fOriginProp1[3], fAngle[3], fOriginProp2[3], fOriginProp3[3]
-				
-				GetEntPropVector(g_entExtendTarget[plyClient], Prop_Data, "m_vecOrigin", fOriginProp1)
-				GetEntPropVector(g_entExtendTarget[plyClient], Prop_Data, "m_angRotation", fAngle)
-				GetEntPropString(g_entExtendTarget[plyClient], Prop_Data, "m_ModelName", szModel, sizeof(szModel))
-				GetEntPropVector(entProp, Prop_Data, "m_vecOrigin", fOriginProp2)
-				
-				for (int i = 0; i < 3; i++)
-					fOriginProp3[i] = (fOriginProp2[i] + fOriginProp2[i] - fOriginProp1[i])
-				
-				DispatchKeyValue(entThirdProp, "model", szModel)
-				DispatchSpawn(entThirdProp)
-				TeleportEntity(entThirdProp, fOriginProp3, fAngle, NULL_VECTOR)
-				
-				if(Phys_IsPhysicsObject(entThirdProp))
-					Phys_EnableMotion(entThirdProp, false)
-				
-				g_bExtendIsRunning[plyClient] = false
-				LM_PrintToChat(plyClient, "Extended a prop.")
-			}
-		} else
-			RemoveEdict(entThirdProp)
-	}
-	
-	char szTemp[33], szArgs[128]
-	for (int i = 1; i <= GetCmdArgs(); i++) {
-		GetCmdArg(i, szTemp, sizeof(szTemp))
-		Format(szArgs, sizeof(szArgs), "%s %s", szArgs, szTemp)
-	}
-	LM_LogCmd(plyClient, "sm_extend", szArgs)
 	return Plugin_Handled
 }
 
