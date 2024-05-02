@@ -226,14 +226,12 @@ public Action Command_SetAngles(plyClient, args) {
 		return Plugin_Handled
 	
 	if (LM_IsEntityOwner(plyClient, entProp)) {
-		float vEntityOrigin[3], vEntityAngle[3]
+		float vEntityAngle[3]
 		vEntityAngle[0] = GetCmdArgFloat(1)
 		vEntityAngle[1] = GetCmdArgFloat(2)
 		vEntityAngle[2] = GetCmdArgFloat(3)
 		
-		GetEntPropVector(entProp, Prop_Data, "m_vecOrigin", vEntityOrigin)
-		
-		TeleportEntity(entProp, vEntityOrigin, vEntityAngle, NULL_VECTOR)
+		TeleportEntity(entProp, NULL_VECTOR, vEntityAngle, NULL_VECTOR)
 	}
 	
 	char szArgs[128]
