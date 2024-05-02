@@ -450,7 +450,7 @@ Native_IsClientValid(Handle hPlugin, iNumParams) {
 	if (iNumParams == 4)
 		ReplyTarget = GetNativeCell(4)
 	
-	if (plyTarget < 1 || plyTarget > 32)
+	if (plyTarget < 1 || plyTarget > MAXPLAYERS)
 		return false
 	if (!IsClientInGame(plyTarget))
 		return false
