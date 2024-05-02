@@ -7,8 +7,11 @@
 #include <vphysics>
 
 
-int g_iCopyTarget[MAXPLAYERS]
-float g_fCopyPlayerOrigin[MAXPLAYERS][3]
+Handle g_hCvarStackMax = INVALID_HANDLE
+int g_iCvarStackMax
+
+int g_entCopyTarget[MAXPLAYERS]
+float g_vCopyPlayerOrigin[MAXPLAYERS][3]
 bool g_bCopyIsRunning[MAXPLAYERS] = {false, ...}
 
 bool g_bExtendIsRunning[MAXPLAYERS]
@@ -45,9 +48,12 @@ public OnPluginStart() {
 	RegAdminCmd("sm_stack", Command_Stack, 0, "Stack a prop.")
 	RegAdminCmd("sm_extend", Command_Extend, 0, "Create a third prop based on the position and angle of first two props.")
 
-	RegAdminCmd("+copyent", Command_Copyent, 0, "Copy a prop.")
-	RegAdminCmd("-copyent", Command_Paste, 0, "Paste a copied prop.")
+	RegAdminCmd("+copyent", Command_CopyentOn, 0, "Copy a prop.")
+	RegAdminCmd("-copyent", Command_CopyentOff, 0, "Paste a copied prop.")
 	
+	g_hCvarStackMax	= CreateConVar("lm_stack_max", "10", "How much prop you can stack in one time", FCVAR_NOTIFY, true, 0.0, true, 50.0)
+	HookConVarChange(g_hCvarStackMax, Hook_CvarStackMax)
+
 	PrintToServer( "LazMod Copy loaded!" )
 }
 
@@ -57,72 +63,66 @@ public OnMapStart() {
 	g_mdlPhysBeam = PrecacheModel("materials/sprites/physbeam.vmt")
 }
 
-public Action Command_Stack(Client, args) {
-	if (!LM_AllowToLazMod(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client, true))
+public Hook_CvarStackMax(Handle convar, const char[] oldValue, const char[] newValue) {
+	g_iCvarStackMax = GetConVarBool(g_hCvarStackMax)
+}
+
+public Action Command_Stack(plyClient, args) {
+	if (!LM_AllowToLazMod(plyClient) || LM_IsBlacklisted(plyClient) || !LM_IsClientValid(plyClient, plyClient, true))
 		return Plugin_Handled
 	
-	if (g_bStackIsRunning[Client]) {
-		LM_PrintToChat(Client, "Already stacking a prop, wait for it to finish!")
+	if (g_bStackIsRunning[plyClient]) {
+		LM_PrintToChat(plyClient, "Already stacking a prop, wait for it to finish!")
 		return Plugin_Handled
 	}	
 	
 	if (args < 1) {
-		LM_PrintToChat(Client, "Usage: !stack <amount> [X] [Y] [Z] [unfreeze]")
+		LM_PrintToChat(plyClient, "Usage: !stack <amount> [X] [Y] [Z] [unfreeze]")
 		return Plugin_Handled
 	}
 	
-	int entProp = LM_GetClientAimEntity(Client)
+	int entProp = LM_GetClientAimEntity(plyClient)
 	if (entProp == -1) 
 		return Plugin_Handled
 	
-	if (!LM_IsEntityOwner(Client, entProp))
+	if (!LM_IsEntityOwner(plyClient, entProp))
 		return Plugin_Handled
 	
-	char szAmount[5], szMoveX[8], szMoveY[8], szMoveZ[8], szFreeze[5], szModel[128], szClass[33]
-	int iFreeze = 0
+	char szModel[128], szClass[33]
+	int iUnFreeze = 0, iAmount
 	float vMove[3]
 	
-	GetCmdArg(1, szAmount, sizeof(szAmount))
-	GetCmdArg(2, szMoveX, sizeof(szMoveX))
-	GetCmdArg(3, szMoveY, sizeof(szMoveY))
-	GetCmdArg(4, szMoveZ, sizeof(szMoveZ))
-	GetCmdArg(5, szFreeze, sizeof(szFreeze))
+	iAmount = GetCmdArgInt(1)
+	vMove[0] = GetCmdArgFloat(2)
+	vMove[1] = GetCmdArgFloat(3)
+	vMove[2] = GetCmdArgFloat(4)
+	iUnFreeze = GetCmdArgInt(5)
 	
-	vMove[0] = StringToFloat(szMoveX)
-	vMove[1] = StringToFloat(szMoveY)
-	vMove[2] = StringToFloat(szMoveZ)
 	
-	if (!StrEqual(szFreeze, ""))
-		iFreeze = 1
-	
-	int iAmount = StringToInt(szAmount)
-	if (!LM_IsAdmin(Client) && iAmount > 10) {
-		LM_PrintToChat(Client, "Max stack limit is 10")
+	if (!LM_IsAdmin(plyClient) && iAmount > g_iCvarStackMax) {
+		LM_PrintToChat(plyClient, "Max stack limit is %d", g_iCvarStackMax)
 		return Plugin_Handled
 	}
 	
 	GetEdictClassname(entProp, szClass, sizeof(szClass))
-	if ((StrEqual(szClass, "prop_ragdoll") || StrEqual(szModel, "models/props_c17/oildrum001_explosive.mdl")) && !LM_IsAdmin(Client)) {
-		LM_PrintToChat(Client, "Restricted to prevent griefing!")
+	if ((StrEqual(szClass, "prop_ragdoll") || StrEqual(szModel, "models/props_c17/oildrum001_explosive.mdl")) && !LM_IsAdmin(plyClient)) {
+		LM_PrintToChat(plyClient, "Restricted to prevent griefing!")
 		return Plugin_Handled
 	}
 	
 	Handle hDataPack
 	CreateDataTimer(0.001, Timer_Stack, hDataPack)
-	WritePackCell(hDataPack, Client)
+	WritePackCell(hDataPack, plyClient)
 	WritePackCell(hDataPack, entProp)
 	WritePackCell(hDataPack, iAmount)
 	WritePackFloat(hDataPack, vMove[0])
 	WritePackFloat(hDataPack, vMove[1])
 	WritePackFloat(hDataPack, vMove[2])
-	WritePackCell(hDataPack, iFreeze)
+	WritePackCell(hDataPack, iUnFreeze)
 	
-	char szTemp[33], szArgs[128]
-	for (int i = 1; i <= GetCmdArgs(); i++) {
-		GetCmdArg(i, szTemp, sizeof(szTemp))
-		Format(szArgs, sizeof(szArgs), "%s %s", szArgs, szTemp)
-	}
-	LM_LogCmd(Client, "sm_stack", szArgs)
+	char szArgs[128]
+	GetCmdArgString(szArgs, sizeof(szArgs))
+	LM_LogCmd(plyClient, "sm_stack", szArgs)
 	return Plugin_Handled
 }
 
@@ -209,64 +209,61 @@ public Action Command_Extend(plyClient, args) {
 	if (!LM_AllowToLazMod(plyClient) || LM_IsBlacklisted(plyClient) || !LM_IsClientValid(plyClient, plyClient, true))
 		return Plugin_Handled
 	
-	int entProp = LM_GetClientAimEntity(plyClient)
-	if (entProp == -1) 
+	int entProp1 = LM_GetClientAimEntity(plyClient)
+	if (entProp1 == -1) 
 		return Plugin_Handled
 	
 	char szClass[33]
-	GetEdictClassname(entProp, szClass, sizeof(szClass))
-	if (LM_IsEntityOwner(plyClient, entProp)) {
-		int entThirdProp
+	GetEdictClassname(entProp1, szClass, sizeof(szClass))
+	if (LM_IsEntityOwner(plyClient, entProp1)) {
+		int entProp3
 		if (StrContains(szClass, "prop_dynamic") >= 0) {
-			entThirdProp = CreateEntityByName("prop_dynamic_override")
-			SetEntProp(entThirdProp, Prop_Send, "m_nSolidType", 6)
-			SetEntProp(entThirdProp, Prop_Data, "m_nSolidType", 6)
+			entProp3 = CreateEntityByName("prop_dynamic_override")
+			SetEntProp(entProp3, Prop_Send, "m_nSolidType", 6)
+			SetEntProp(entProp3, Prop_Data, "m_nSolidType", 6)
 		} else
-			entThirdProp = CreateEntityByName(szClass)
+			entProp3 = CreateEntityByName(szClass)
 			
-		if (LM_SetEntityOwner(entThirdProp, plyClient)) {
+		if (LM_SetEntityOwner(entProp3, plyClient)) {
 			if (!g_bExtendIsRunning[plyClient]) {
-				g_entExtendTarget[plyClient] = entProp
+				g_entExtendTarget[plyClient] = entProp1
 				g_bExtendIsRunning[plyClient] = true
 				LM_PrintToChat(plyClient, "Extend #1 set, use !ex again on #2 prop.")
 			} else {
 				char szModel[255]
-				float fOriginProp1[3], fAngle[3], fOriginProp2[3], fOriginProp3[3]
+				float vProp1Origin[3], vProp1Angles[3], vProp2Origin[3], vProp3Origin[3]
 				
-				GetEntPropVector(g_entExtendTarget[plyClient], Prop_Data, "m_vecOrigin", fOriginProp1)
-				GetEntPropVector(g_entExtendTarget[plyClient], Prop_Data, "m_angRotation", fAngle)
+				GetEntPropVector(g_entExtendTarget[plyClient], Prop_Data, "m_vecOrigin", vProp1Origin)
+				GetEntPropVector(g_entExtendTarget[plyClient], Prop_Data, "m_angRotation", vProp1Angles)
 				GetEntPropString(g_entExtendTarget[plyClient], Prop_Data, "m_ModelName", szModel, sizeof(szModel))
-				GetEntPropVector(entProp, Prop_Data, "m_vecOrigin", fOriginProp2)
+				GetEntPropVector(entProp1, Prop_Data, "m_vecOrigin", vProp2Origin)
 				
 				for (int i = 0; i < 3; i++)
-					fOriginProp3[i] = (fOriginProp2[i] + fOriginProp2[i] - fOriginProp1[i])
+					vProp3Origin[i] = (vProp2Origin[i] + vProp2Origin[i] - vProp1Origin[i])
 				
-				DispatchKeyValue(entThirdProp, "model", szModel)
-				DispatchSpawn(entThirdProp)
-				TeleportEntity(entThirdProp, fOriginProp3, fAngle, NULL_VECTOR)
+				DispatchKeyValue(entProp3, "model", szModel)
+				DispatchSpawn(entProp3)
+				TeleportEntity(entProp3, vProp3Origin, vProp1Angles, NULL_VECTOR)
 				
-				if(Phys_IsPhysicsObject(entThirdProp))
-					Phys_EnableMotion(entThirdProp, false)
+				if(Phys_IsPhysicsObject(entProp3))
+					Phys_EnableMotion(entProp3, false)
 				
 				g_bExtendIsRunning[plyClient] = false
 				LM_PrintToChat(plyClient, "Extended a prop.")
 			}
 		} else
-			RemoveEdict(entThirdProp)
+			RemoveEdict(entProp3)
 	}
 	
-	char szTemp[33], szArgs[128]
-	for (int i = 1; i <= GetCmdArgs(); i++) {
-		GetCmdArg(i, szTemp, sizeof(szTemp))
-		Format(szArgs, sizeof(szArgs), "%s %s", szArgs, szTemp)
-	}
+	char szArgs[128]
+	GetCmdArgString(szArgs, sizeof(szArgs))
 	LM_LogCmd(plyClient, "sm_extend", szArgs)
 	return Plugin_Handled
 }
 
 
 
-public Action Command_Copyent(plyClient, args) {
+public Action Command_CopyentOn(plyClient, args) {
 	if (!LM_AllowToLazMod(plyClient) || LM_IsBlacklisted(plyClient) || !LM_IsClientValid(plyClient, plyClient, true))
 		return Plugin_Handled
 	
@@ -297,14 +294,14 @@ public Action Command_Copyent(plyClient, args) {
 	
 	bool IsDoll = false
 	if (StrEqual(szClass, "prop_ragdoll") || StrEqual(szClass, "player")) {
-		g_iCopyTarget[plyClient] = CreateEntityByName("prop_ragdoll")
+		g_entCopyTarget[plyClient] = CreateEntityByName("prop_ragdoll")
 		IsDoll = true
 		
 	} else {
-		g_iCopyTarget[plyClient] = CreateEntityByName(szClass)
+		g_entCopyTarget[plyClient] = CreateEntityByName(szClass)
 	}
 	
-	if (LM_SetEntityOwner(g_iCopyTarget[plyClient], plyClient, IsDoll)) {
+	if (LM_SetEntityOwner(g_entCopyTarget[plyClient], plyClient, IsDoll)) {
 		if (bCanCopy) {
 			float fEntityOrigin[3], fEntityAngle[3]
 			char szModelName[128]
@@ -313,37 +310,37 @@ public Action Command_Copyent(plyClient, args) {
 			GetEntPropVector(entProp, Prop_Data, "m_vecOrigin", fEntityOrigin)
 			GetEntPropVector(entProp, Prop_Data, "m_angRotation", fEntityAngle)
 			GetEntPropString(entProp, Prop_Data, "m_ModelName", szModelName, sizeof(szModelName))
-			DispatchKeyValue(g_iCopyTarget[plyClient], "model", szModelName)
+			DispatchKeyValue(g_entCopyTarget[plyClient], "model", szModelName)
 			
 			
-			GetEdictClassname(g_iCopyTarget[plyClient], szClass, sizeof(szClass))
+			GetEdictClassname(g_entCopyTarget[plyClient], szClass, sizeof(szClass))
 			if (StrEqual(szClass, "prop_dynamic")) {
-				SetEntProp(g_iCopyTarget[plyClient], Prop_Send, "m_nSolidType", 6)
-				SetEntProp(g_iCopyTarget[plyClient], Prop_Data, "m_nSolidType", 6)
+				SetEntProp(g_entCopyTarget[plyClient], Prop_Send, "m_nSolidType", 6)
+				SetEntProp(g_entCopyTarget[plyClient], Prop_Data, "m_nSolidType", 6)
 			}
 			
-			DispatchSpawn(g_iCopyTarget[plyClient])
-			TeleportEntity(g_iCopyTarget[plyClient], fEntityOrigin, fEntityAngle, NULL_VECTOR)
+			DispatchSpawn(g_entCopyTarget[plyClient])
+			TeleportEntity(g_entCopyTarget[plyClient], fEntityOrigin, fEntityAngle, NULL_VECTOR)
 			
-			if (Phys_IsPhysicsObject(g_iCopyTarget[plyClient]))
-				Phys_EnableMotion(g_iCopyTarget[plyClient], false)
+			if (Phys_IsPhysicsObject(g_entCopyTarget[plyClient]))
+				Phys_EnableMotion(g_entCopyTarget[plyClient], false)
 			
 			GetCmdArg(1, szColorR, sizeof(szColorR))
 			GetCmdArg(2, szColorG, sizeof(szColorG))
 			GetCmdArg(3, szColorB, sizeof(szColorB))
 			
-			DispatchKeyValue(g_iCopyTarget[plyClient], "rendermode", "5")
-			DispatchKeyValue(g_iCopyTarget[plyClient], "renderamt", "150")
-			DispatchKeyValue(g_iCopyTarget[plyClient], "renderfx", "4")
+			DispatchKeyValue(g_entCopyTarget[plyClient], "rendermode", "5")
+			DispatchKeyValue(g_entCopyTarget[plyClient], "renderamt", "150")
+			DispatchKeyValue(g_entCopyTarget[plyClient], "renderfx", "4")
 			
 			if (args > 1) {
 				szColor[0] = szColorR
 				szColor[1] = szColorG
 				szColor[2] = szColorB
 				ImplodeStrings(szColor, 3, " ", szColor2, 255)
-				DispatchKeyValue(g_iCopyTarget[plyClient], "rendercolor", szColor2)
+				DispatchKeyValue(g_entCopyTarget[plyClient], "rendercolor", szColor2)
 			} else {
-				DispatchKeyValue(g_iCopyTarget[plyClient], "rendercolor", "50 255 255")
+				DispatchKeyValue(g_entCopyTarget[plyClient], "rendercolor", "50 255 255")
 			}
 			g_bCopyIsRunning[plyClient] = true
 			
@@ -356,13 +353,13 @@ public Action Command_Copyent(plyClient, args) {
 			return Plugin_Handled
 		}
 	} else {
-		RemoveEdict(g_iCopyTarget[plyClient])
+		RemoveEdict(g_entCopyTarget[plyClient])
 		return Plugin_Handled
 	}
 	// return Plugin_Handled
 }
 
-public Action Command_Paste(Client, args) {
+public Action Command_CopyentOff(Client, args) {
 	if (!LM_AllowToLazMod(Client) || LM_IsBlacklisted(Client))
 		return Plugin_Handled
 		
@@ -371,13 +368,13 @@ public Action Command_Paste(Client, args) {
 }
 
 public Action Timer_CopyBeam(Handle Timer, any Client) {
-	if(IsValidEntity(g_iCopyTarget[Client]) && LM_IsClientValid(Client, Client)) {
+	if(IsValidEntity(g_entCopyTarget[Client]) && LM_IsClientValid(Client, Client)) {
 		float fOriginPlayer[3], fOriginEntity[3]
 		
-		GetClientAbsOrigin(Client, g_fCopyPlayerOrigin[Client])
+		GetClientAbsOrigin(Client, g_vCopyPlayerOrigin[Client])
 		GetClientAbsOrigin(Client, fOriginPlayer)
 		
-		GetEntPropVector(g_iCopyTarget[Client], Prop_Data, "m_vecOrigin", fOriginEntity)
+		GetEntPropVector(g_entCopyTarget[Client], Prop_Data, "m_vecOrigin", fOriginEntity)
 		fOriginPlayer[2] += 50
 		
 		new iColor[4]
@@ -396,10 +393,10 @@ public Action Timer_CopyBeam(Handle Timer, any Client) {
 }
 
 public Action Timer_CopyRing(Handle Timer, any Client) {
-	if(IsValidEntity(g_iCopyTarget[Client]) && LM_IsClientValid(Client, Client)) {
+	if(IsValidEntity(g_entCopyTarget[Client]) && LM_IsClientValid(Client, Client)) {
 		float fOriginEntity[3]
 		
-		GetEntPropVector(g_iCopyTarget[Client], Prop_Data, "m_vecOrigin", fOriginEntity)
+		GetEntPropVector(g_entCopyTarget[Client], Prop_Data, "m_vecOrigin", fOriginEntity)
 		
 		new iColor[4]
 		iColor[0] = GetRandomInt(50, 255)
@@ -418,37 +415,37 @@ public Action Timer_CopyRing(Handle Timer, any Client) {
 	return Plugin_Handled
 }
 
-public Action Timer_CopyMain(Handle Timer, any Client) {
-	if(IsValidEntity(g_iCopyTarget[Client]) && LM_IsClientValid(Client, Client)) {
-		float fOriginEntity[3], fOriginPlayer[3]
+public Action Timer_CopyMain(Handle Timer, any plyClient) {
+	if(IsValidEntity(g_entCopyTarget[plyClient]) && LM_IsClientValid(plyClient, plyClient)) {
+		float vPropOrigin[3], vPlayerOrigin[3]
 		
-		GetEntPropVector(g_iCopyTarget[Client], Prop_Data, "m_vecOrigin", fOriginEntity)
-		GetClientAbsOrigin(Client, fOriginPlayer)
+		GetEntPropVector(g_entCopyTarget[plyClient], Prop_Data, "m_vecOrigin", vPropOrigin)
+		GetClientAbsOrigin(plyClient, vPlayerOrigin)
 		
-		fOriginEntity[0] += fOriginPlayer[0] - g_fCopyPlayerOrigin[Client][0]
-		fOriginEntity[1] += fOriginPlayer[1] - g_fCopyPlayerOrigin[Client][1]
-		fOriginEntity[2] += fOriginPlayer[2] - g_fCopyPlayerOrigin[Client][2]
+		vPropOrigin[0] += vPlayerOrigin[0] - g_vCopyPlayerOrigin[plyClient][0]
+		vPropOrigin[1] += vPlayerOrigin[1] - g_vCopyPlayerOrigin[plyClient][1]
+		vPropOrigin[2] += vPlayerOrigin[2] - g_vCopyPlayerOrigin[plyClient][2]
 		
-		if(Phys_IsPhysicsObject(g_iCopyTarget[Client])) {
-			Phys_EnableMotion(g_iCopyTarget[Client], false)
-			Phys_Sleep(g_iCopyTarget[Client])
+		if(Phys_IsPhysicsObject(g_entCopyTarget[plyClient])) {
+			Phys_EnableMotion(g_entCopyTarget[plyClient], false)
+			Phys_Sleep(g_entCopyTarget[plyClient])
 		}
-		SetEntityMoveType(g_iCopyTarget[Client], MOVETYPE_NONE)
-		TeleportEntity(g_iCopyTarget[Client], fOriginEntity, NULL_VECTOR, NULL_VECTOR)
+		SetEntityMoveType(g_entCopyTarget[plyClient], MOVETYPE_NONE)
+		TeleportEntity(g_entCopyTarget[plyClient], vPropOrigin, NULL_VECTOR, NULL_VECTOR)
 
-		if (g_bCopyIsRunning[Client])
-			CreateTimer(0.001, Timer_CopyMain, Client)
+		if (g_bCopyIsRunning[plyClient])
+			CreateTimer(0.001, Timer_CopyMain, plyClient)
 		else {
-			if(Phys_IsPhysicsObject(g_iCopyTarget[Client])) {
-				Phys_EnableMotion(g_iCopyTarget[Client], true)
-				Phys_Sleep(g_iCopyTarget[Client])
+			if(Phys_IsPhysicsObject(g_entCopyTarget[plyClient])) {
+				Phys_EnableMotion(g_entCopyTarget[plyClient], true)
+				Phys_Sleep(g_entCopyTarget[plyClient])
 			}
-			SetEntityMoveType(g_iCopyTarget[Client], MOVETYPE_VPHYSICS)
+			SetEntityMoveType(g_entCopyTarget[plyClient], MOVETYPE_VPHYSICS)
 			
-			DispatchKeyValue(g_iCopyTarget[Client], "rendermode", "5")
-			DispatchKeyValue(g_iCopyTarget[Client], "renderamt", "255")
-			DispatchKeyValue(g_iCopyTarget[Client], "renderfx", "0")
-			DispatchKeyValue(g_iCopyTarget[Client], "rendercolor", "255 255 255")
+			DispatchKeyValue(g_entCopyTarget[plyClient], "rendermode", "5")
+			DispatchKeyValue(g_entCopyTarget[plyClient], "renderamt", "255")
+			DispatchKeyValue(g_entCopyTarget[plyClient], "renderfx", "0")
+			DispatchKeyValue(g_entCopyTarget[plyClient], "rendercolor", "255 255 255")
 		}
 	}
 	return Plugin_Handled
