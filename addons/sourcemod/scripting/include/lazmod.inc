@@ -71,10 +71,10 @@ native LM_GetClientAimEntity(int plyClient, bool show_message = true, bool inclu
  * 
  * @param plyClient			Client index.
  * @param entProp			Entity index.
- * @param bIngoreCvar		Ingore 'bm_nonowner' cvar?
+ * @param bIgnoreCvar		Ignore 'lm_nonowner' cvar?
  * @return					True on owner. False on not.
  */
-native bool LM_IsEntityOwner(int plyClient, entProp, bool bIngoreCvar = false)
+native bool LM_IsEntityOwner(int plyClient, entProp, bool bIgnoreCvar = false)
 
 /**
  * Logging commands and args.
