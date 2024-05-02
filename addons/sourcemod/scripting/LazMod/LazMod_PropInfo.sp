@@ -38,8 +38,10 @@ public Hook_CvarPropInfo(Handle convar, const char[] oldValue, const char[] newV
 	g_iCvarPropInfo = GetConVarBool(g_hCvarPropInfo)
 
 	if (StrEqual(newValue, "0")) {
-		if (g_hHudTimer != INVALID_HANDLE)
+		if (g_hHudTimer != INVALID_HANDLE) {
 			KillTimer(g_hHudTimer)
+			g_hHudTimer = INVALID_HANDLE
+		}
 			
 	} else {
 		if (g_hHudTimer == INVALID_HANDLE)
