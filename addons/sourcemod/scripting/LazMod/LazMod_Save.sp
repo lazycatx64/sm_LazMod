@@ -3,55 +3,40 @@
 #include <clientprefs>
 #include <sourcemod>
 #include <sdktools>
+#include <regex>
+
+#include <vphysics>
+#include <smlib>
+
 #include <lazmod>
 #include <lazmod_stocks>
-#include <vphysics>
-
 
 
 Handle g_hFile[MAXPLAYERS]
 char g_szFileName[128][MAXPLAYERS]
 char g_szListName[128]
 
-bool g_bListExist = true
 bool g_bIsRunning[MAXPLAYERS] = {false, ...}
 int g_iCount[MAXPLAYERS]
 int g_iError[MAXPLAYERS]
 int g_iTryCount[MAXPLAYERS]
 
-new Symbol[] = {
-	'	',
-	'\\',
-	'/',
-	' ',
-	'~',
-	'`',
-	'?',
-	'!',
-	'@',
-	'#',
-	'$',
-	'%',
-	'^',
-	'&',
-	'*',
-	'|',
-	':',
-	';',
-	',',
-	'.',
-	'<',
-	'>',
-	'(',
-	')',
-	'{',
-	'}',
-	'[',
-	']'
+char g_szDataTypes[9][16] = {
+    "classname",
+    "model",
+    "origin",
+    "angles",
+    "rendercolor",
+    "alpha",
+    "ncself",
+    "health",
+    "moveable"
 }
 
+
+
 public Plugin myinfo = {
-	name = "LazMod - SaveSystem",
+	name = "LazMod - SaveSpawn",
 	author = "LaZy cAt",
 	description = "Saves the building progress.",
 	version = LAZMOD_VER,
@@ -59,23 +44,16 @@ public Plugin myinfo = {
 }
 
 public OnPluginStart() {
-	RegAdminCmd("sm_ss", Command_SaveSystem, ADMFLAG_CUSTOM1, "Save system ftw.")
-	BuildPath(Path_SM, g_szListName, sizeof(g_szListName), "data/lazmodsaves/list.txt")
-	if (!FileExists(g_szListName)) {
-		g_bListExist = false
-		LogError("list.txt is not exist!")
-	}
-	
+	RegAdminCmd("sm_ss", Command_SaveSpawn, ADMFLAG_CUSTOM1, "Save system ftw.")
+
+
 	PrintToServer( "LazMod Save loaded!" )
 }
 
-public Action Command_SaveSystem(plyClient, args) {
-	if (!g_bListExist) {
-		LogError("list.txt is not exist!")
-		LM_PrintToChat(plyClient, "Error: 0x00005E")
-		LM_PrintToChat(plyClient, "Something went wrong! Please contact the admin")
-		return Plugin_Handled
-	}
+public Action Command_SaveSpawn(plyClient, args) {
+
+
+
 	
 	if (g_bIsRunning[plyClient]) {
 		LM_PrintToChat(plyClient, "Process is already running. Please Wait...")
@@ -84,19 +62,22 @@ public Action Command_SaveSystem(plyClient, args) {
 	if (!LM_AllowToUse(plyClient) || LM_IsBlacklisted(plyClient) && LM_IsClientValid(plyClient, plyClient))
 		return Plugin_Handled
 	
-	char szMode[16], szSaveName[32], szSteamID[32]
+	char szMode[8], szSaveName[32], szSteamID[32]
 	GetCmdArg(1, szMode, sizeof(szMode))
 	GetCmdArg(2, szSaveName, sizeof(szSaveName))
 	GetClientAuthId(plyClient, AuthId_Steam2, szSteamID, sizeof(szSteamID))
 	ReplaceString(szSteamID, sizeof(szSteamID), ":", "-")
-	ReplaceString(szSteamID, sizeof(szSteamID), "STEAM_", "")
+	// ReplaceString(szSteamID, sizeof(szSteamID), "STEAM_", "")
 	g_szFileName[plyClient] = ""
-	BuildPath(Path_SM, g_szFileName[plyClient], sizeof(g_szFileName), "data/lazmodsaves/%s@%s", szSteamID, szSaveName)
+	BuildPath(Path_SM, g_szFileName[plyClient], sizeof(g_szFileName), "data/lazmodsaves/%s#%s.csv", szSteamID, szSaveName)
+	LM_PrintToChat(plyClient, "%s", g_szFileName[plyClient])
 	g_hFile[plyClient] = INVALID_HANDLE
 	g_iTryCount[plyClient] = 0
 	g_iCount[plyClient] = 0
 	g_iError[plyClient] = 0
 	
+	String_ToLower(szMode, szMode, sizeof(szMode))
+
 	if ((StrEqual(szMode, "save") || StrEqual(szMode, "load") || StrEqual(szMode, "delete")) && args > 1) {
 		if (!Save_CheckSaveName(plyClient, szSaveName))
 			return Plugin_Handled
@@ -128,9 +109,10 @@ public Action Command_SaveSystem(plyClient, args) {
 				g_bIsRunning[plyClient] = true
 				
 				Handle hLoadPack
-				CreateDataTimer(0.01, Timer_Load, hLoadPack)
+				CreateDataTimer(1.0, Timer_Load, hLoadPack)
 				WritePackCell(hLoadPack, plyClient)
 				WritePackString(hLoadPack, szSteamID)
+				WritePackString(hLoadPack, "0")
 			}
 			return Plugin_Handled
 		} else if (StrEqual(szMode, "delete")) {
@@ -148,22 +130,79 @@ public Action Command_SaveSystem(plyClient, args) {
 		}
 		return Plugin_Handled
 	} else if (StrEqual(szMode, "list")) {
-		Handle hListPack
-		CreateDataTimer(0.01, Timer_List, hListPack)
-		WritePackCell(hListPack, plyClient)
-		WritePackString(hListPack, szSteamID)
+		SaveSpawn_List(plyClient)
 		return Plugin_Handled
 	}
 
-	LM_PrintToChat(plyClient, " Usage:")
-	LM_PrintToChat(plyClient, " !ss save <SaveName>")
-	LM_PrintToChat(plyClient, " !ss load <SaveName>")
-	LM_PrintToChat(plyClient, " !ss delete <SaveName>")
-	LM_PrintToChat(plyClient, " !ss list")
+	SaveSpawn_Usage(plyClient)
+
 	return Plugin_Handled
 }
 
-public Action Timer_Save(Handle Timer, Handle hDataPack) {
+void SaveSpawn_Usage(int plyClient) {
+	LM_PrintToChat(plyClient, " Usage:")
+	LM_PrintToChat(plyClient, " Save name can only be letters and numbers.")
+	LM_PrintToChat(plyClient, " !ss save <SaveName>")
+	LM_PrintToChat(plyClient, " !ss load <SaveName>")
+	LM_PrintToChat(plyClient, " !ss info <SaveName>")
+	LM_PrintToChat(plyClient, " !ss delete <SaveName>")
+	LM_PrintToChat(plyClient, " !ss list")
+	
+}
+
+void SaveSpawn_Save(int plyClient, char[] szSaveName) {
+	// Handle hListPack
+	// char szSteamID[32]
+	// GetClientAuthId(plyClient, AuthId_Steam2, szSteamID, sizeof(szSteamID))
+	// ReplaceString(szSteamID, sizeof(szSteamID), ":", "-")
+
+}
+
+void SaveSpawn_Load(int plyClient, char[] szSaveName) {
+	// Handle hListPack
+	// char szSteamID[32]
+	// GetClientAuthId(plyClient, AuthId_Steam2, szSteamID, sizeof(szSteamID))
+	// ReplaceString(szSteamID, sizeof(szSteamID), ":", "-")
+	
+}
+
+void SaveSpawn_Info(int plyClient, char[] szSaveName) {
+	// char[] input = "[1,2,3,4,5]";
+	// JSON_Array original = view_as<JSON_Array>(json_decode(input));
+	// PrintToServer("write to file %b ", original.WriteToFile(szListName));
+
+	// JSON_Object read = json_read_from_file(szListName);
+	// PrintToServer("read from file %b", read != null);
+	
+	// // _json_encode(read);
+
+	// // Test_AssertStringsEqual("input matches output", input, json_encode_output);
+
+	// json_cleanup_and_delete(original);
+	// json_cleanup_and_delete(read);
+	
+}
+
+void SaveSpawn_Delete(int plyClient, char[] szSaveName) {
+	// Handle hListPack
+	// char szSteamID[32]
+	// GetClientAuthId(plyClient, AuthId_Steam2, szSteamID, sizeof(szSteamID))
+	// ReplaceString(szSteamID, sizeof(szSteamID), ":", "-")
+	
+}
+
+void SaveSpawn_List(int plyClient) {
+	// Handle hListPack
+	// char szSteamID[32]
+	// GetClientAuthId(plyClient, AuthId_Steam2, szSteamID, sizeof(szSteamID))
+	// ReplaceString(szSteamID, sizeof(szSteamID), ":", "-")
+	// CreateDataTimer(0.01, Timer_List, hListPack)
+	// WritePackCell(hListPack, plyClient)
+	// WritePackString(hListPack, szSteamID)
+}
+
+
+public Action Timer_Save(Handle hTimer, Handle hDataPack) {
 	ResetPack(hDataPack)
 	char szMode[16], szSaveName[32], szSteamID[32]
 	ResetPack(hDataPack)
@@ -238,210 +277,258 @@ public Action Timer_Save(Handle Timer, Handle hDataPack) {
 	return Plugin_Handled
 }
 
-public Action Timer_Load(Handle Timer, Handle hDataPack) {
+public Action Timer_Load(Handle hTimer, Handle hDataPack) {
 	ResetPack(hDataPack)
-	char szSteamID[32]
-	int Client = ReadPackCell(hDataPack)
+	char szSteamID[32], szDataHeader[255]
 	bool bRegOwnerError = false
+	int plyClient = ReadPackCell(hDataPack)
 	ReadPackString(hDataPack, szSteamID, sizeof(szSteamID))
+	ReadPackString(hDataPack, szDataHeader, sizeof(szDataHeader))
 	
-	if (!LM_IsClientValid(Client, Client))
+	if (!LM_IsClientValid(plyClient, plyClient))
 		return Plugin_Handled
 	
-	if (g_hFile[Client] == INVALID_HANDLE) {
-		g_hFile[Client] = OpenFile(g_szFileName[Client], "r")
-		g_iTryCount[Client]++
-		if (g_iTryCount[Client] < 3) {
+	if (g_hFile[plyClient] == INVALID_HANDLE) {
+		g_hFile[plyClient] = OpenFile(g_szFileName[plyClient], "r")
+		g_iTryCount[plyClient]++
+		if (g_iTryCount[plyClient] < 3) {
 			Handle hNewPack
 			CreateDataTimer(0.2, Timer_Load, hNewPack)
-			WritePackCell(hNewPack, Client)
+			WritePackCell(hNewPack, plyClient)
 			WritePackString(hNewPack, szSteamID)
+			WritePackString(hNewPack, szDataHeader)
 		} else {
-			LM_PrintToChat(Client, "Save found but unable to load! Contact admins!")
-			g_hFile[Client] = INVALID_HANDLE
-			g_iTryCount[Client] = 0
+			LM_PrintToChat(plyClient, "Save found but unable to load! Contact admins!")
+			g_hFile[plyClient] = INVALID_HANDLE
+			g_iTryCount[plyClient] = 0
 			return Plugin_Handled
 		}
 	} else {
 		char szLoadString[255]
-		if (ReadFileLine(g_hFile[Client], szLoadString, sizeof(szLoadString))) {
-			if (StrContains(szLoadString, "ent") != -1) {
+		if (ReadFileLine(g_hFile[plyClient], szLoadString, sizeof(szLoadString))) {
+			
+			if (String_StartsWith(szLoadString, "###")) {
+				// pass
+
+			} else if (String_StartsWith(szLoadString, "#")) {
+				// pass
+
+			} else if (StrContains(szLoadString, "classname") != -1 && StrContains(szLoadString, "origin") != -1) {
+				// Makes sure data loaded in correct order
+				szDataHeader = szLoadString
+				
+			} else if (StrContains(szLoadString, "prop_physics") != -1 || StrContains(szLoadString, "prop_dynamic") != -1) {
+				
 				int entLoadEntity = -1
-				char szBuffer[10][255], szClass[32], szModel[128]
-				float fOrigin[3], fAngles[3]
-				int iHealth
-				ExplodeString(szLoadString, " ", szBuffer, 10, 255)
-				Format(szClass, sizeof(szClass), "%s", szBuffer[1])
-				Format(szModel, sizeof(szModel), "%s", szBuffer[2])
-				fOrigin[0] = StringToFloat(szBuffer[3])
-				fOrigin[1] = StringToFloat(szBuffer[4])
-				fOrigin[2] = StringToFloat(szBuffer[5])
-				fAngles[0] = StringToFloat(szBuffer[6])
-				fAngles[1] = StringToFloat(szBuffer[7])
-				fAngles[2] = StringToFloat(szBuffer[8])
-				iHealth = StringToInt(szBuffer[9])
-				if (iHealth == 2)
-					iHealth = 999999999
-				if (iHealth == 1)
-					iHealth = 50
-				if (StrContains(szClass, "prop_dynamic") >= 0) {
+				char szDataBuffer[9][255], szHeaderBuffer[9][255], szClass[32], szModel[128], szColor[16], szAlpha[4]
+				char szOrigin[3][16], szAngles[3][16]
+				float vOrigin[3], vAngles[3]
+				int iNCself, iHealth, iMoveable
+				ExplodeString(szDataHeader, "\t", szHeaderBuffer, 9, 255)
+				ExplodeString(szLoadString, "\t", szDataBuffer, 9, 255)
+
+				for (new i = 0; i < sizeof(szDataBuffer); i++) {
+					if (StrEqual(szHeaderBuffer[i], "classname")) {
+						Format(szClass, sizeof(szClass), "%s", szDataBuffer[i])
+					} else if (StrEqual(szHeaderBuffer[i], "model")) {
+						Format(szModel, sizeof(szModel), "%s", szDataBuffer[i])
+					} else if (StrEqual(szHeaderBuffer[i], "origin")) {
+						ExplodeString(szDataBuffer[i], ",", szOrigin, sizeof(szOrigin), sizeof(szOrigin[]))
+						vOrigin[0] = StringToFloat(szOrigin[0])
+						vOrigin[1] = StringToFloat(szOrigin[1])
+						vOrigin[2] = StringToFloat(szOrigin[2])
+					} else if (StrEqual(szHeaderBuffer[i], "angles")) {
+						ExplodeString(szDataBuffer[i], ",", szAngles, sizeof(szAngles), sizeof(szAngles[]))
+						vAngles[0] = StringToFloat(szAngles[0])
+						vAngles[1] = StringToFloat(szAngles[1])
+						vAngles[2] = StringToFloat(szAngles[2])
+					} else if (StrEqual(szHeaderBuffer[i], "rendercolor")) {
+						Format(szColor, sizeof(szColor), "%s", szDataBuffer[i])
+					} else if (StrEqual(szHeaderBuffer[i], "alpha")) {
+						if (strlen(szDataBuffer[i]) < 1)
+							szDataBuffer[i] = "255"
+						Format(szAlpha, sizeof(szAlpha), "%s", szDataBuffer[i])
+					} else if (StrEqual(szHeaderBuffer[i], "ncself")) {
+						if (strlen(szDataBuffer[i]) < 1)
+							szDataBuffer[i] = "0"
+						iNCself = StringToInt(szDataBuffer[i])
+					} else if (StrEqual(szHeaderBuffer[i], "health")) {
+						if (strlen(szDataBuffer[i]) < 1)
+							szDataBuffer[i] = "0"
+						iHealth = StringToInt(szDataBuffer[i])
+					} else if (StrEqual(szHeaderBuffer[i], "moveable")) {
+						if (strlen(szDataBuffer[i]) < 1)
+							szDataBuffer[i] = "0"
+						iMoveable = StringToInt(szDataBuffer[i])
+					}
+				}
+				
+				// if (iHealth == 2)
+				// 	iHealth = 999999999
+				// if (iHealth == 1)
+				// 	iHealth = 50
+				
+				if (StrEqual(szClass, "prop_dynamic")) {
 					entLoadEntity = CreateEntityByName("prop_dynamic_override")
 					SetEntProp(entLoadEntity, Prop_Send, "m_nSolidType", 6)
 					SetEntProp(entLoadEntity, Prop_Data, "m_nSolidType", 6)
-				} else if (StrEqual(szClass, "prop_physics"))
+				} else if (StrEqual(szClass, "prop_physics")) {
 					entLoadEntity = CreateEntityByName("prop_physics_override")
-				else if (StrContains(szClass, "prop_physics") >= 0)
-					entLoadEntity = CreateEntityByName(szClass)
-				else
-					g_iError[Client]++
+				} else {
+					g_iError[plyClient]++
+				}
 				
 				if (entLoadEntity != -1) {
-					if (LM_SetEntityOwner(entLoadEntity, Client)) {
+					if (LM_SetEntityOwner(entLoadEntity, plyClient)) {
 						if (!IsModelPrecached(szModel))
 							PrecacheModel(szModel)
 						DispatchKeyValue(entLoadEntity, "model", szModel)
-						TeleportEntity(entLoadEntity, fOrigin, fAngles, NULL_VECTOR)
+						DispatchKeyValue(entLoadEntity, "rendermode", "5")
+						DispatchKeyValue(entLoadEntity, "rendercolor", szColor)
+						DispatchKeyValue(entLoadEntity, "renderamt", szAlpha)
+						TeleportEntity(entLoadEntity, vOrigin, vAngles, NULL_VECTOR)
 						DispatchSpawn(entLoadEntity)
-						SetVariantInt(iHealth)
-						AcceptEntityInput(entLoadEntity, "sethealth", -1)
+						// SetVariantInt(iHealth)
+						// AcceptEntityInput(entLoadEntity, "sethealth", -1)
 						AcceptEntityInput(entLoadEntity, "disablemotion", -1)
-						g_iCount[Client]++
+						g_iCount[plyClient]++
 					} else {
 						RemoveEdict(entLoadEntity)
 						bRegOwnerError = true
 					}
 				}
+
 			}
 		}
 	}
-	if (!IsEndOfFile(g_hFile[Client]) && !bRegOwnerError) {
+	if (!IsEndOfFile(g_hFile[plyClient]) && !bRegOwnerError) {
 		Handle hNewPack
 		CreateDataTimer(0.05, Timer_Load, hNewPack)
-		WritePackCell(hNewPack, Client)
+		WritePackCell(hNewPack, plyClient)
 		WritePackString(hNewPack, szSteamID)
+		WritePackString(hNewPack, szDataHeader)
 	} else {
-		CloseHandle(g_hFile[Client])
-		g_bIsRunning[Client] = false
-		LM_PrintToChat(Client, "Loaded %i props, failed to load %i props", g_iCount[Client], g_iError[Client])
-		g_iCount[Client] = 0
-		g_iError[Client] = 0
+		CloseHandle(g_hFile[plyClient])
+		g_bIsRunning[plyClient] = false
+		LM_PrintToChat(plyClient, "Loaded %i props, failed to load %i props", g_iCount[plyClient], g_iError[plyClient])
+		g_iCount[plyClient] = 0
+		g_iError[plyClient] = 0
 	}
 	return Plugin_Handled
 }
 
-public Action Timer_List(Handle Timer, Handle hDataPack) {
+public Action Timer_List(Handle hTimer, Handle hDataPack) {
 	ResetPack(hDataPack)
 	char szSteamID[32]
-	new Client = ReadPackCell(hDataPack)
+	int plyClient = ReadPackCell(hDataPack)
 	ReadPackString(hDataPack, szSteamID, sizeof(szSteamID))
 	
-	if (!LM_IsClientValid(Client, Client))
+	if (!LM_IsClientValid(plyClient, plyClient))
 		return Plugin_Handled
 	
-	if (g_hFile[Client] == INVALID_HANDLE) {
-		g_hFile[Client] = OpenFile(g_szListName, "r")
-		g_iTryCount[Client]++
-		if (g_iTryCount[Client] < 3) {
+	if (g_hFile[plyClient] == INVALID_HANDLE) {
+		g_hFile[plyClient] = OpenFile(g_szListName, "r")
+		g_iTryCount[plyClient]++
+		if (g_iTryCount[plyClient] < 3) {
 			Handle hNewPack
 			CreateDataTimer(0.2, Timer_List, hNewPack)
-			WritePackCell(hNewPack, Client)
+			WritePackCell(hNewPack, plyClient)
 			WritePackString(hNewPack, szSteamID)
 		} else {
-			LM_PrintToChat(Client, "Unable to list the save! Contact admins!")
-			g_hFile[Client] = INVALID_HANDLE
-			g_iTryCount[Client] = 0
+			LM_PrintToChat(plyClient, "Unable to list the save! Contact admins!")
+			g_hFile[plyClient] = INVALID_HANDLE
+			g_iTryCount[plyClient] = 0
 			return Plugin_Handled
 		}
 	} else {
 		char szListString[255], szBuffer[3][128], szSaveName[32], szTime[16]
-		PrintToChat(Client, "|| [SaveName] | [Date]")
+		PrintToChat(plyClient, "|| [SaveName] | [Date]")
 		
-		while (!IsEndOfFile(g_hFile[Client])) {
-			if (ReadFileLine(g_hFile[Client], szListString, sizeof(szListString))) {
+		while (!IsEndOfFile(g_hFile[plyClient])) {
+			if (ReadFileLine(g_hFile[plyClient], szListString, sizeof(szListString))) {
 				if (StrContains(szListString, szSteamID) != -1) {
 					ExplodeString(szListString, " ", szBuffer, 3, 128)
 					Format(szSaveName, sizeof(szSaveName), "%s", szBuffer[1])
 					Format(szTime, sizeof(szTime), "%s", szBuffer[2])
-					PrintToChat(Client, "|| %s | %s", szSaveName, szTime)
-					g_iCount[Client]++
+					PrintToChat(plyClient, "|| %s | %s", szSaveName, szTime)
+					g_iCount[plyClient]++
 				}
 			}
 		}
-		CloseHandle(g_hFile[Client])
-		g_bIsRunning[Client] = false
-		if (g_iCount[Client] == 0) {
-			LM_PrintToChat(Client, "You don't have any save.")
+		CloseHandle(g_hFile[plyClient])
+		g_bIsRunning[plyClient] = false
+		if (g_iCount[plyClient] == 0) {
+			LM_PrintToChat(plyClient, "You don't have any save.")
 		} else {
-			LM_PrintToChat(Client, "You have %i save(s).", g_iCount[Client])
-			g_iCount[Client] = 0
+			LM_PrintToChat(plyClient, "You have %i save(s).", g_iCount[plyClient])
+			g_iCount[plyClient] = 0
 		}
 	}
 	return Plugin_Handled
 }
 
-stock Save_CheckSaveName(Client, char Check[32]) {
-	if (strlen(Check) > 32) {
-		LM_PrintToChat(Client, "The max SaveName length is 32!")
+stock Save_CheckSaveName(plyClient, char szSaveName[32]) {
+	if (strlen(szSaveName) > 32) {
+		LM_PrintToChat(plyClient, "The max SaveName length is 32!")
 		return false
 	}
-		
-	for (int i = 0; i < sizeof(Symbol); i++) {
-		if (FindCharInString(Check, Symbol[i]) != -1) {
-			LM_PrintToChat(Client, "Symbols is not allowed in SaveName!")
-			return false
-		}
-	}
-	return true
+	
+	Regex hRegex = new Regex("^[A-Za-z0-9]+$")
+	if (hRegex.Match(szSaveName))
+		return true
+
+	
+	return false
 }
 
-public CheckSaveList(Client, char[] szMode, char[] szSaveName, char[] szSteamID) {
-	g_hFile[Client] = OpenFile(g_szListName, "a+")
-	if (g_hFile[Client] == INVALID_HANDLE)
+public CheckSaveList(plyClient, char[] szMode, char[] szSaveName, char[] szSteamID) {
+	g_hFile[plyClient] = OpenFile(g_szListName, "a+")
+	if (g_hFile[plyClient] == INVALID_HANDLE)
 		return -1
 	if (StrEqual(szMode, "save")) {
 		char szListString[255], szBuffer[3][255]
-		while (!IsEndOfFile(g_hFile[Client]))	{
-			if (ReadFileLine(g_hFile[Client], szListString, sizeof(szListString))) {
+		while (!IsEndOfFile(g_hFile[plyClient]))	{
+			if (ReadFileLine(g_hFile[plyClient], szListString, sizeof(szListString))) {
 				ExplodeString(szListString, " ", szBuffer, 3, 255)
 				if (StrEqual(szSteamID, szBuffer[0]) && StrEqual(szSaveName, szBuffer[1])) {
-					CloseHandle(g_hFile[Client])
+					CloseHandle(g_hFile[plyClient])
 					return true
 				}
 			}
 		}
 		char szTime[64]
 		FormatTime(szTime, sizeof(szTime), "%Y/%m/%d")
-		WriteFileLine(g_hFile[Client], "%s %s %s \t\t//%N", szSteamID, szSaveName, szTime, Client)
-		PrintToConsole(Client, "%s %s %s \t\t//%N", szSteamID, szSaveName, szTime, Client)
-		FlushFile(g_hFile[Client])
-		CloseHandle(g_hFile[Client])
+		WriteFileLine(g_hFile[plyClient], "%s %s %s \t\t//%N", szSteamID, szSaveName, szTime, plyClient)
+		PrintToConsole(plyClient, "%s %s %s \t\t//%N", szSteamID, szSaveName, szTime, plyClient)
+		FlushFile(g_hFile[plyClient])
+		CloseHandle(g_hFile[plyClient])
 		return false
 	} else if (StrEqual(szMode, "delete")) {
 		char szArrayString[64][128], szArrayBuffer[64][3][128]
 		for (int i = 0; i < 64; i++) {
-			ReadFileLine(g_hFile[Client], szArrayString[i], sizeof(szArrayString))
+			ReadFileLine(g_hFile[plyClient], szArrayString[i], sizeof(szArrayString))
 			ExplodeString(szArrayString[i], " ", szArrayBuffer[i], 3, sizeof(szArrayBuffer))
 			if (StrEqual(szSteamID, szArrayBuffer[i][0]) && StrEqual(szSaveName, szArrayBuffer[i][1]))
 				szArrayString[i] = ""
 				
-			if (IsEndOfFile(g_hFile[Client]))
+			if (IsEndOfFile(g_hFile[plyClient]))
 				break
 		}
-		CloseHandle(g_hFile[Client])
+		CloseHandle(g_hFile[plyClient])
 		if (!DeleteFile(g_szListName))
 			return -1
 		
 		SortStrings(szArrayString, sizeof(szArrayString))
-		g_hFile[Client] = OpenFile(g_szListName, "w+")
+		g_hFile[plyClient] = OpenFile(g_szListName, "w+")
 		for (int i = 0; i < 64; i++) {
 			if (StrContains(szArrayString[i], "0-") == 0)
-				WriteFileLine(g_hFile[Client], "%s", szArrayString[i])
+				WriteFileLine(g_hFile[plyClient], "%s", szArrayString[i])
 		}
-		FlushFile(g_hFile[Client])
-		CloseHandle(g_hFile[Client])
+		FlushFile(g_hFile[plyClient])
+		CloseHandle(g_hFile[plyClient])
 		return true
 	}
-	CloseHandle(g_hFile[Client])
+	CloseHandle(g_hFile[plyClient])
 	return -1
 }
 
