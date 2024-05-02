@@ -3,10 +3,12 @@
 #include <clientprefs>
 #include <sourcemod>
 #include <sdktools>
-#include <lazmod>
-#include <lazmod_stocks>
+
+#include <smlib>
 #include <vphysics>
 
+#include <lazmod>
+#include <lazmod_stocks>
 
 
 
@@ -31,8 +33,9 @@ public Plugin myinfo = {
 }
 
 public OnPluginStart() {
-	RegAdminCmd("sm_spawn", Command_SpawnProp, 0, "Spawn Props.")
-	RegAdminCmd("sm_spawnf", Command_SpawnF, 0, "Spawn and freeze the prop instantly so it dosen't go anywhere.")
+	RegAdminCmd("sm_spawn", Command_SpawnProp, 0, "Spawn physics props.")
+	RegAdminCmd("sm_spawnf", Command_SpawnFrozen, 0, "Spawn and freeze the prop instantly so it dosen't go anywhere.")
+	RegAdminCmd("sm_spawnd", Command_SpawnDynamic, 0, "Spawn dynamic props.")
 	
 	g_hPropNameArray = CreateArray(33, 2048);		// Max Prop List is 1024-->2048
 	g_hPropModelPathArray = CreateArray(128, 2048);	// Max Prop List is 1024-->2048
@@ -46,7 +49,7 @@ public OnPluginStart() {
 	
 
 
-	g_hCvarSpawnInFront	= CreateConVar("lm_spawn_infront", "1", "Spawn props in front of player instead at aimed position.", FCVAR_NOTIFY, true, 0.0, true, 1.0)
+	g_hCvarSpawnInFront	= CreateConVar("lm_spawn_infront", "0", "Spawn props in front of player instead at aimed position.", FCVAR_NOTIFY, true, 0.0, true, 1.0)
 	g_iCvarSpawnInFront = GetConVarBool(g_hCvarSpawnInFront)
 	HookConVarChange(g_hCvarSpawnInFront, Hook_CvarSpawnInFront)
 
@@ -58,7 +61,7 @@ public Hook_CvarSpawnInFront(Handle convar, const char[] oldValue, const char[] 
 	g_iCvarSpawnInFront = GetConVarBool(g_hCvarSpawnInFront)
 }
 
-public Action Command_SpawnF(plyClient, args) {
+public Action Command_SpawnFrozen(plyClient, args) {
 	if (!LM_AllowToLazMod(plyClient) || LM_IsBlacklisted(plyClient) || !LM_IsClientValid(plyClient, plyClient, true))
 		return Plugin_Handled
 	
@@ -72,7 +75,25 @@ public Action Command_SpawnF(plyClient, args) {
 	char spwansf[33]
 	GetCmdArg(1, spwansf, sizeof(spwansf))
 	
-	FakeClientCommand(plyClient, "sm_spawn %s yes", spwansf)
+	FakeClientCommand(plyClient, "sm_spawn %s 1", spwansf)
+	return Plugin_Handled
+}
+
+public Action Command_SpawnDynamic(plyClient, args) {
+	if (!LM_AllowToLazMod(plyClient) || LM_IsBlacklisted(plyClient) || !LM_IsClientValid(plyClient, plyClient, true))
+		return Plugin_Handled
+	
+	if (args < 1) {
+		LM_PrintToChat(plyClient, "Usage: !spawnd <Prop name> ")
+		LM_PrintToChat(plyClient, "Ex: !spawnd blastdoor")
+		LM_PrintToChat(plyClient, "Ex: !spawnd support")
+		return Plugin_Handled
+	}
+	
+	char spwansf[33]
+	GetCmdArg(1, spwansf, sizeof(spwansf))
+	
+	FakeClientCommand(plyClient, "sm_spawn %s 2", spwansf)
 	return Plugin_Handled
 }
 
@@ -87,21 +108,26 @@ public Action Command_SpawnProp(plyClient, args) {
 		return Plugin_Handled
 	}
 	
-	char szPropName[32], szPropFrozen[32], szModelPath[128]
+	char szPropName[32], szModelPath[128]
+	int iPropType
 	GetCmdArg(1, szPropName, sizeof(szPropName))
-	GetCmdArg(2, szPropFrozen, sizeof(szPropFrozen))
+	iPropType = GetCmdArgInt(2)
 	
 	int iPropIndex = FindStringInArray(g_hPropNameArray, szPropName)
 	
 	if (iPropIndex != -1) {
 		bool bIsDoll = false
-		char szEntType[33]
-		GetArrayString(g_hPropTypeArray, iPropIndex, szEntType, sizeof(szEntType))
+		char szClass[33]
+		GetArrayString(g_hPropTypeArray, iPropIndex, szClass, sizeof(szClass))
 		
-		if (StrEqual(szEntType, "prop_ragdoll"))
+		if (StrEqual(szClass, "prop_ragdoll"))
 			bIsDoll = true
 		
-		int entProp = CreateEntityByName(szEntType)
+		int entProp = -1
+		if (iPropType == 2)
+			entProp = CreateEntityByName("prop_dynamic_override")
+		else
+			entProp = CreateEntityByName(szClass)
 
 		if (LM_SetEntityOwner(entProp, plyClient, bIsDoll)) {
 			float vClientEyePos[3], vSpawnOrigin[3], vClientEyeAngles[3], fRadiansX, fRadiansY
@@ -127,16 +153,15 @@ public Action Command_SpawnProp(plyClient, args) {
 			
 			DispatchKeyValue(entProp, "model", szModelPath)
 			
-			if (StrEqual(szEntType, "prop_dynamic"))
-				SetEntProp(entProp, Prop_Send, "m_nSolidType", 6)
+			if (iPropType == 2 || String_StartsWith(szClass, "prop_dynami"))
+				SetEntProp(entProp, Prop_Data, "m_nSolidType", 6)
 			
 			DispatchSpawn(entProp)
 			TeleportEntity(entProp, vSpawnOrigin, NULL_VECTOR, NULL_VECTOR)
 			
-			if (!StrEqual(szPropFrozen, "")) {
-				if (Phys_IsPhysicsObject(entProp))
+			if (iPropType == 1 && Phys_IsPhysicsObject(entProp))
 					Phys_EnableMotion(entProp, false)
-			}
+
 		} else
 			RemoveEdict(entProp)
 	} else {
