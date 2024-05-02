@@ -22,7 +22,7 @@ int g_entCenterFirst[MAXPLAYERS]
 public Plugin myinfo = {
 	name = "LazMod - Editor",
 	author = "LaZycAt, hjkwe654",
-	description = "Edit props.",
+	description = "Everything that moves prop or modify prop.",
 	version = LAZMOD_VER,
 	url = ""
 }
@@ -91,11 +91,8 @@ public Action Command_FreezeProp(plyClient, args) {
 			LM_PrintToChat(plyClient, "This isn't a physics prop!")
 	}
 	
-	char szTemp[33], szArgs[128]
-	for (int i = 1; i <= GetCmdArgs(); i++) {
-		GetCmdArg(i, szTemp, sizeof(szTemp))
-		Format(szArgs, sizeof(szArgs), "%s %s", szArgs, szTemp)
-	}
+	char szArgs[128]
+	GetCmdArgString(szArgs, sizeof(szArgs))
 	LM_LogCmd(plyClient, "sm_freeze", szArgs)
 	return Plugin_Handled
 }
@@ -116,11 +113,8 @@ public Action Command_UnFreezeProp(plyClient, args) {
 			LM_PrintToChat(plyClient, "This isn't a physics prop!")
 	}
 	
-	char szTemp[33], szArgs[128]
-	for (int i = 1; i <= GetCmdArgs(); i++) {
-		GetCmdArg(i, szTemp, sizeof(szTemp))
-		Format(szArgs, sizeof(szArgs), "%s %s", szArgs, szTemp)
-	}
+	char szArgs[128]
+	GetCmdArgString(szArgs, sizeof(szArgs))
 	LM_LogCmd(plyClient, "sm_unfreeze", szArgs)
 	return Plugin_Handled
 }
@@ -142,11 +136,8 @@ public Action Command_ForceFreeze(plyClient, args) {
 			LM_PrintToChat(plyClient, "This isn't a physics prop!")
 	}
 	
-	char szTemp[33], szArgs[128]
-	for (int i = 1; i <= GetCmdArgs(); i++) {
-		GetCmdArg(i, szTemp, sizeof(szTemp))
-		Format(szArgs, sizeof(szArgs), "%s %s", szArgs, szTemp)
-	}
+	char szArgs[128]
+	GetCmdArgString(szArgs, sizeof(szArgs))
 	LM_LogCmd(plyClient, "sm_forcefreeze", szArgs)
 	return Plugin_Handled
 }
@@ -169,11 +160,8 @@ public Action Command_UnForceFreeze(plyClient, args) {
 			LM_PrintToChat(plyClient, "This isn't a physics prop!")
 	}
 	
-	char szTemp[33], szArgs[128]
-	for (int i = 1; i <= GetCmdArgs(); i++) {
-		GetCmdArg(i, szTemp, sizeof(szTemp))
-		Format(szArgs, sizeof(szArgs), "%s %s", szArgs, szTemp)
-	}
+	char szArgs[128]
+	GetCmdArgString(szArgs, sizeof(szArgs))
 	LM_LogCmd(plyClient, "sm_unforcefreeze", szArgs)
 	return Plugin_Handled
 }
@@ -186,7 +174,7 @@ public Action Command_Rotate(plyClient, args) {
 		return Plugin_Handled
 	
 	if (args < 1) {
-		LM_PrintToChat(plyClient, "Usage: !rotate/!r <x> <y> <z>")
+		LM_PrintToChat(plyClient, "Usage: !rotate <x> [y] [z]")
 		LM_PrintToChat(plyClient, "Ex: !rotate 0 90 0")
 		return Plugin_Handled
 	}
@@ -211,11 +199,8 @@ public Action Command_Rotate(plyClient, args) {
 		TeleportEntity(entProp, fEntityOrigin, fEntityAngle, NULL_VECTOR)
 	}
 	
-	char szTemp[33], szArgs[128]
-	for (int i = 1; i <= GetCmdArgs(); i++) {
-		GetCmdArg(i, szTemp, sizeof(szTemp))
-		Format(szArgs, sizeof(szArgs), "%s %s", szArgs, szTemp)
-	}
+	char szArgs[128]
+	GetCmdArgString(szArgs, sizeof(szArgs))
 	LM_LogCmd(plyClient, "sm_rotate", szArgs)
 	return Plugin_Handled
 }
@@ -244,11 +229,8 @@ public Action Command_SetAngles(plyClient, args) {
 		TeleportEntity(entProp, vEntityOrigin, vEntityAngle, NULL_VECTOR)
 	}
 	
-	char szTemp[33], szArgs[128]
-	for (int i = 1; i <= GetCmdArgs(); i++) {
-		GetCmdArg(i, szTemp, sizeof(szTemp))
-		Format(szArgs, sizeof(szArgs), "%s %s", szArgs, szTemp)
-	}
+	char szArgs[128]
+	GetCmdArgString(szArgs, sizeof(szArgs))
 	LM_LogCmd(plyClient, "sm_angles", szArgs)
 	return Plugin_Handled
 }
@@ -308,11 +290,8 @@ public Action Command_Render(plyClient, args) {
 		DispatchKeyValue(entProp, "rendercolor", szColors)
 	}
 	
-	char szTemp[33], szArgs[128]
-	for (int i = 1; i <= GetCmdArgs(); i++) {
-		GetCmdArg(i, szTemp, sizeof(szTemp))
-		Format(szArgs, sizeof(szArgs), "%s %s", szArgs, szTemp)
-	}
+	char szArgs[128]
+	GetCmdArgString(szArgs, sizeof(szArgs))
 	LM_LogCmd(plyClient, "sm_render", szArgs)
 	return Plugin_Handled
 }
@@ -345,11 +324,8 @@ public Action Command_Color(plyClient, args) {
 		DispatchKeyValue(entProp, "rendercolor", szColors)
 	}
 	
-	char szTemp[33], szArgs[128]
-	for (int i = 1; i <= GetCmdArgs(); i++) {
-		GetCmdArg(i, szTemp, sizeof(szTemp))
-		Format(szArgs, sizeof(szArgs), "%s %s", szArgs, szTemp)
-	}
+	char szArgs[128]
+	GetCmdArgString(szArgs, sizeof(szArgs))
 	LM_LogCmd(plyClient, "sm_color", szArgs)
 	return Plugin_Handled
 }
@@ -390,11 +366,8 @@ public Action Command_Move(plyClient, args) {
 		TeleportEntity(entProp, fEntityOrigin, fEntityAngle, NULL_VECTOR)
 	}
 	
-	char szTemp[33], szArgs[128]
-	for (int i = 1; i <= GetCmdArgs(); i++) {
-		GetCmdArg(i, szTemp, sizeof(szTemp))
-		Format(szArgs, sizeof(szArgs), "%s %s", szArgs, szTemp)
-	}
+	char szArgs[128]
+	GetCmdArgString(szArgs, sizeof(szArgs))
 	LM_LogCmd(plyClient, "sm_move", szArgs)
 	return Plugin_Handled
 }
@@ -440,11 +413,8 @@ public Action Command_Align(plyClient, args) {
 		TeleportEntity(entProp, fEntityOrigin, fEntityAngle, NULL_VECTOR)
 	}
 	
-	char szTemp[33], szArgs[128]
-	for (int i = 1; i <= GetCmdArgs(); i++) {
-		GetCmdArg(i, szTemp, sizeof(szTemp))
-		Format(szArgs, sizeof(szArgs), "%s %s", szArgs, szTemp)
-	}
+	char szArgs[128]
+	GetCmdArgString(szArgs, sizeof(szArgs))
 	LM_LogCmd(plyClient, "sm_align", szArgs)
 	return Plugin_Handled
 }
@@ -486,11 +456,8 @@ public Action Command_Center(plyClient, args) {
 
 	}
 	
-	char szTemp[33], szArgs[128]
-	for (int i = 1; i <= GetCmdArgs(); i++) {
-		GetCmdArg(i, szTemp, sizeof(szTemp))
-		Format(szArgs, sizeof(szArgs), "%s %s", szArgs, szTemp)
-	}
+	char szArgs[128]
+	GetCmdArgString(szArgs, sizeof(szArgs))
 	LM_LogCmd(plyClient, "sm_center", szArgs)
 	return Plugin_Handled
 }
@@ -511,11 +478,8 @@ public Action Command_NoBreakProp(plyClient, args) {
 		AcceptEntityInput(entProp, "sethealth", -1)
 	}
 	
-	char szTemp[33], szArgs[128]
-	for (int i = 1; i <= GetCmdArgs(); i++) {
-		GetCmdArg(i, szTemp, sizeof(szTemp))
-		Format(szArgs, sizeof(szArgs), "%s %s", szArgs, szTemp)
-	}
+	char szArgs[128]
+	GetCmdArgString(szArgs, sizeof(szArgs))
 	LM_LogCmd(plyClient, "sm_nobreak", szArgs)
 	return Plugin_Handled
 }
@@ -533,11 +497,8 @@ public Action Command_UnNoBreakProp(plyClient, args) {
 		AcceptEntityInput(entProp, "sethealth", -1)
 	}
 	
-	char szTemp[33], szArgs[128]
-	for (int i = 1; i <= GetCmdArgs(); i++) {
-		GetCmdArg(i, szTemp, sizeof(szTemp))
-		Format(szArgs, sizeof(szArgs), "%s %s", szArgs, szTemp)
-	}
+	char szArgs[128]
+	GetCmdArgString(szArgs, sizeof(szArgs))
 	LM_LogCmd(plyClient, "sm_unnobreak", szArgs)
 	return Plugin_Handled
 }
@@ -567,11 +528,8 @@ public Action Command_Skin(plyClient, args) {
 	AcceptEntityInput(entProp, "skin", entProp, plyClient, 0)
 	
 	
-	char szTemp[33], szArgs[128]
-	for (int i = 1; i <= GetCmdArgs(); i++) {
-		GetCmdArg(i, szTemp, sizeof(szTemp))
-		Format(szArgs, sizeof(szArgs), "%s %s", szArgs, szTemp)
-	}
+	char szArgs[128]
+	GetCmdArgString(szArgs, sizeof(szArgs))
 	LM_LogCmd(plyClient, "sm_skin", szArgs)
 	return Plugin_Handled
 }
@@ -581,36 +539,38 @@ public Action Command_LightDynamic(plyClient, args) {
 		return Plugin_Handled
 	
 	if (args < 1) {
-		LM_PrintToChat(plyClient, "Usage: !ld <range> <brightness> <R> <G> <B>")
+		LM_PrintToChat(plyClient, "Usage: !ld <range> [R] [G] [B] [brightness]")
 		return Plugin_Handled
 	}
 	
-	new entLightMelon = CreateEntityByName("prop_physics_multiplayer")
+	int entLightMelon = CreateEntityByName("prop_physics_multiplayer")
 	if (LM_SetEntityOwner(entLightMelon, plyClient)) {
-		char szRange[33], szBrightness[33], szColorR[33], szColorG[33], szColorB[33], szColor[33]
+		char szColor[12]
+		int iRange, iColorR, iColorG, iColorB, iBright 
 		char szNameMelon[64]
-		float fAimPos[3]
-		GetCmdArg(1, szRange, sizeof(szRange))
-		GetCmdArg(2, szBrightness, sizeof(szBrightness))
-		GetCmdArg(3, szColorR, sizeof(szColorR))
-		GetCmdArg(4, szColorG, sizeof(szColorG))
-		GetCmdArg(5, szColorB, sizeof(szColorB))
+		float vAimPos[3]
+		iRange  = GetCmdArgInt(1)==0 ? 200 : GetCmdArgInt(1)
+		iColorR = GetCmdArgInt(2)==0 ? 255 : GetCmdArgInt(2)
+		iColorG = GetCmdArgInt(3)==0 ? 255 : GetCmdArgInt(3)
+		iColorB = GetCmdArgInt(4)==0 ? 255 : GetCmdArgInt(4)
+		iBright = GetCmdArgInt(5)==0 ? 3 : GetCmdArgInt(5)
 		
-		LM_ClientAimPos(plyClient, fAimPos)
-		fAimPos[2] += 50
+		LM_ClientAimPos(plyClient, vAimPos)
+		vAimPos[2] += 50
 		
 		if(!IsModelPrecached("models/props_junk/watermelon01.mdl"))
 			PrecacheModel("models/props_junk/watermelon01.mdl")
 		
-		if (StrEqual(szBrightness, ""))
-			szBrightness = "3"
-		if (StringToInt(szColorR) < 100 || StrEqual(szColorR, ""))
-			szColorR = "100"
-		if (StringToInt(szColorG) < 100 || StrEqual(szColorG, ""))
-			szColorG = "100"
-		if (StringToInt(szColorB) < 100 || StrEqual(szColorB, ""))
-			szColorB = "100"
-		Format(szColor, sizeof(szColor), "%s %s %s", szColorR, szColorG, szColorB)
+		if (iRange < 10)	iRange = 10
+		if (iRange > 1500)	iRange = 1500
+		if (iColorR < 50)	iColorR = 50
+		if (iColorR > 255)	iColorR = 255
+		if (iColorG < 50)	iColorG = 50
+		if (iColorB < 50)	iColorB = 50
+		if (iBright < 1)	iBright = 1
+		if (iBright > 7)	iBright = 7
+
+		Format(szColor, sizeof(szColor), "%d %d %d", iColorR, iColorG, iColorB)
 		
 		DispatchKeyValue(entLightMelon, "model", "models/props_junk/watermelon01.mdl")
 		DispatchKeyValue(entLightMelon, "rendermode", "5")
@@ -619,17 +579,9 @@ public Action Command_LightDynamic(plyClient, args) {
 		DispatchKeyValue(entLightMelon, "rendercolor", szColor)
 		
 		int entLightDynamic = CreateEntityByName("light_dynamic")
-		if (StringToInt(szRange) > 1500) {
-			LM_PrintToChat(plyClient, "Max range is 1500!")
-			return Plugin_Handled
-		}
-		if (StringToInt(szBrightness) > 7) {
-			LM_PrintToChat(plyClient, "Max brightness is 7!")
-			return Plugin_Handled
-		}
-		SetVariantString(szRange)
+		SetVariantInt(iRange)
 		AcceptEntityInput(entLightDynamic, "distance", -1)
-		SetVariantString(szBrightness)
+		SetVariantInt(iBright)
 		AcceptEntityInput(entLightDynamic, "brightness", -1)
 		SetVariantString("2")
 		AcceptEntityInput(entLightDynamic, "style", -1)
@@ -637,9 +589,9 @@ public Action Command_LightDynamic(plyClient, args) {
 		AcceptEntityInput(entLightDynamic, "color", -1)
 		
 		DispatchSpawn(entLightMelon)
-		TeleportEntity(entLightMelon, fAimPos, NULL_VECTOR, NULL_VECTOR)
+		TeleportEntity(entLightMelon, vAimPos, NULL_VECTOR, NULL_VECTOR)
 		DispatchSpawn(entLightDynamic)
-		TeleportEntity(entLightDynamic, fAimPos, NULL_VECTOR, NULL_VECTOR)
+		TeleportEntity(entLightDynamic, vAimPos, NULL_VECTOR, NULL_VECTOR)
 		
 		Format(szNameMelon, sizeof(szNameMelon), "entLightDMelon%i", GetRandomInt(1000, 5000))
 		DispatchKeyValue(entLightMelon, "targetname", szNameMelon)
@@ -649,12 +601,9 @@ public Action Command_LightDynamic(plyClient, args) {
 	} else
 		RemoveEdict(entLightMelon)
 	
-	char szTemp[33], szArgs[128]
-	for (int i = 1; i <= GetCmdArgs(); i++) {
-		GetCmdArg(i, szTemp, sizeof(szTemp))
-		Format(szArgs, sizeof(szArgs), "%s %s", szArgs, szTemp)
-	}
-	LM_LogCmd(plyClient, "sm_ld", szArgs)
+	char szArgs[128]
+	GetCmdArgString(szArgs, sizeof(szArgs))
+	LM_LogCmd(plyClient, "sm_light", szArgs)
 	return Plugin_Handled
 }
 
@@ -693,12 +642,9 @@ public Action Command_SetMass(plyClient, args) {
 	} else
 		LM_PrintToChat(plyClient, "This isn't a physics prop!")
 	
-	char szTemp[33], szArgs[128]
-	for (int i = 1; i <= GetCmdArgs(); i++) {
-		GetCmdArg(i, szTemp, sizeof(szTemp))
-		Format(szArgs, sizeof(szArgs), "%s %s", szArgs, szTemp)
-	}
-	LM_LogCmd(plyClient, "sm_mass", szArgs)
+	char szArgs[128]
+	GetCmdArgString(szArgs, sizeof(szArgs))
+	LM_LogCmd(plyClient, "sm_setmass", szArgs)
 	return Plugin_Handled
 }
 
@@ -717,11 +663,8 @@ public Action Command_Drop(plyClient, args) {
 	// if (LM_IsEntityOwner(Client, entProp))
 		// FakeClientCommand(Client, "e_drop")	// SourceOP Dead
 	
-	char szTemp[33], szArgs[128]
-	for (int i = 1; i <= GetCmdArgs(); i++) {
-		GetCmdArg(i, szTemp, sizeof(szTemp))
-		Format(szArgs, sizeof(szArgs), "%s %s", szArgs, szTemp)
-	}
+	char szArgs[128]
+	GetCmdArgString(szArgs, sizeof(szArgs))
 	LM_LogCmd(plyClient, "sm_drop", szArgs)
 	return Plugin_Handled
 }
@@ -753,6 +696,10 @@ public Action Command_Weld(plyClient, args) {
 			iTempEnt = 0
 		}
 	}
+
+	char szArgs[128]
+	GetCmdArgString(szArgs, sizeof(szArgs))
+	LM_LogCmd(plyClient, "sm_weld", szArgs)
 	return Plugin_Handled
 }
 
