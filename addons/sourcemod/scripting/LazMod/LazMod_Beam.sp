@@ -12,7 +12,12 @@ static int COLOR_RED[4]	= {255,50,50,255}
 // static int COLOR_GREEN[4]	= {50,255,50,255}
 static int COLOR_BLUE[4]	= {50,50,255,255}
 
-// Global definions
+Handle g_hCvarDRayRandClr = INVALID_HANDLE
+int g_iCvarDRayRandClr
+
+Handle g_hCvarDRayDmg = INVALID_HANDLE
+int g_iCvarDRayDmg
+
 int g_mdlLaserBeam
 int g_mdlHalo
 int g_mdlBeam
@@ -27,7 +32,13 @@ public Plugin myinfo = {
 
 public OnPluginStart() {
 	RegAdminCmd("sm_deathray", Command_Deathray, 0, "boom boom.")
-	RegAdminCmd("sm_droct", Command_DrOct, 0, "Can also add range parameter but you shouldn't.")
+	RegAdminCmd("sm_droct", Command_DrOct, 0, "Will pull everything in the range, then push them away.")
+
+	g_hCvarDRayRandClr	= CreateConVar("lm_deathray_randcolor", "1", "Should the beam use random color", FCVAR_NOTIFY, true, 0.0, true, 1.0)
+	HookConVarChange(g_hCvarDRayRandClr, Hook_CvarDRayRandClr)
+
+	g_hCvarDRayDmg	= CreateConVar("lm_deathray_damage", "200", "Damage of deathray", FCVAR_NOTIFY, true, 0.0)
+	HookConVarChange(g_hCvarDRayDmg, Hook_CvarDRayDmg)
 
 	PrintToServer( "LazMod Beam loaded!" )
 }
@@ -41,6 +52,14 @@ public OnMapStart() {
 	PrecacheSound("npc/strider/fire.wav", true)
 }
 
+
+public Hook_CvarDRayRandClr(Handle convar, const char[] oldValue, const char[] newValue) {
+	g_iCvarDRayRandClr = GetConVarBool(g_hCvarDRayRandClr)
+}
+
+public Hook_CvarDRayDmg(Handle convar, const char[] oldValue, const char[] newValue) {
+	g_iCvarDRayDmg = GetConVarBool(g_hCvarDRayDmg)
+}
 
 
 public Action Command_Deathray(Client, args) {
@@ -61,14 +80,22 @@ public Action Command_Deathray(Client, args) {
 	fClientPos[2] = (fClientPos[2] + 50)
 	
 	TeleportEntity(entExplosion, fAimPos, NULL_VECTOR, NULL_VECTOR)
-	DispatchKeyValue(entExplosion, "iMagnitude", "200")
-	DispatchKeyValue(entExplosion, "iRadiusOverride", "200")
+	char szDmg[8], szRadius[8]
+	int iRadius = RoundToNearest( 200+(g_iCvarDRayDmg*0.1) )
+	IntToString(g_iCvarDRayDmg, szDmg, sizeof(szDmg))
+	IntToString(iRadius, szRadius, sizeof(szRadius))
+	DispatchKeyValue(entExplosion, "iMagnitude", szDmg)
+	DispatchKeyValue(entExplosion, "iRadiusOverride", szRadius)
 	DispatchSpawn(entExplosion)
 	
-	iColor[0] = GetRandomInt(50, 255)
-	iColor[1] = GetRandomInt(50, 255)
-	iColor[2] = GetRandomInt(50, 255)
-	iColor[3] = GetRandomInt(250, 255)
+	if (g_iCvarDRayRandClr) {
+		iColor[0] = GetRandomInt(50, 255)
+		iColor[1] = GetRandomInt(50, 255)
+		iColor[2] = GetRandomInt(50, 255)
+		iColor[3] = 250
+	} else {
+		iColor = {50,50,250,250}
+	}
 	
 	TE_SetupBeamPoints(fAimPos, fClientPos, g_mdlLaserBeam, g_mdlHalo, 0, 66, 0.1, 3.0, 3.0, 0, 0.0, iColor, 20)
 	TE_SendToAll()
