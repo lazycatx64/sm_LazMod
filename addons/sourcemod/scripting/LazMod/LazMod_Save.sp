@@ -107,7 +107,8 @@ public Action Command_SaveSpawn(plyClient, args) {
 			} else {
 				LM_PrintToChat(plyClient, "Loading the content. Please Wait...")
 				g_bIsRunning[plyClient] = true
-				
+				g_iTryCount[plyClient] = 0
+
 				Handle hLoadPack
 				CreateDataTimer(1.0, Timer_Load, hLoadPack)
 				WritePackCell(hLoadPack, plyClient)
@@ -309,16 +310,21 @@ public Action Timer_Load(Handle hTimer, Handle hDataPack) {
 			
 			if (String_StartsWith(szLoadString, "###")) {
 				// pass
-
+				
 			} else if (String_StartsWith(szLoadString, "#")) {
-				// pass
+				char szBuffer[2][255]
+				ReplaceString(szLoadString, sizeof(szLoadString), "# ", "")
+
+				ExplodeString(szLoadString, "\t", szBuffer, sizeof(szBuffer), sizeof(szBuffer[]))
+				String_Trim(szBuffer[1], szBuffer[1], sizeof(szBuffer[]))
+				if (String_StartsWith(szBuffer[0], "propcount"))
+					LM_PrintToChat(plyClient, "Found %s props in save.", szBuffer[1] )
 
 			} else if (StrContains(szLoadString, "classname") != -1 && StrContains(szLoadString, "origin") != -1) {
 				// Makes sure data loaded in correct order
 				szDataHeader = szLoadString
 				
 			} else if (StrContains(szLoadString, "prop_physics") != -1 || StrContains(szLoadString, "prop_dynamic") != -1) {
-				
 				int entLoadEntity = -1
 				char szDataBuffer[9][255], szHeaderBuffer[9][255], szClass[32], szModel[128], szColor[16], szAlpha[4]
 				char szOrigin[3][16], szAngles[3][16]
@@ -400,19 +406,19 @@ public Action Timer_Load(Handle hTimer, Handle hDataPack) {
 
 			}
 		}
-	}
-	if (!IsEndOfFile(g_hFile[plyClient]) && !bRegOwnerError) {
-		Handle hNewPack
-		CreateDataTimer(0.05, Timer_Load, hNewPack)
-		WritePackCell(hNewPack, plyClient)
-		WritePackString(hNewPack, szSteamID)
-		WritePackString(hNewPack, szDataHeader)
-	} else {
-		CloseHandle(g_hFile[plyClient])
-		g_bIsRunning[plyClient] = false
-		LM_PrintToChat(plyClient, "Loaded %i props, failed to load %i props", g_iCount[plyClient], g_iError[plyClient])
-		g_iCount[plyClient] = 0
-		g_iError[plyClient] = 0
+		if (!IsEndOfFile(g_hFile[plyClient]) && !bRegOwnerError) {
+			Handle hNewPack
+			CreateDataTimer(0.05, Timer_Load, hNewPack)
+			WritePackCell(hNewPack, plyClient)
+			WritePackString(hNewPack, szSteamID)
+			WritePackString(hNewPack, szDataHeader)
+		} else {
+			CloseHandle(g_hFile[plyClient])
+			g_bIsRunning[plyClient] = false
+			LM_PrintToChat(plyClient, "Loaded %i props, failed to load %i props", g_iCount[plyClient], g_iError[plyClient])
+			g_iCount[plyClient] = 0
+			g_iError[plyClient] = 0
+		}
 	}
 	return Plugin_Handled
 }
