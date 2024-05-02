@@ -10,22 +10,22 @@
 
 bool g_bGodMode[MAXPLAYERS]
 int g_iGodModeLock[MAXPLAYERS] = {0, ...}
-int g_entDfilter = -1
+int g_entDmgFilter = -1
 Handle g_hLock[MAXPLAYERS]
 
 public Plugin myinfo = {
 	name = "LazMod - NoKill",
 	author = "LaZycAt, hjkwe654",
-	description = "Protect clients.",
+	description = "Protect player from DMers, works based on filter_damage_type entity.",
 	version = LAZMOD_VER,
 	url = ""
 }
 
 public OnPluginStart() {	
 	RegAdminCmd("sm_nokill", Command_NoKill, 0, "Enable/Disable protector.")
-	RegAdminCmd("sm_nk", Command_NoKill, 0, "Enable/Disable protector.")
-	HookEvent("player_hurt", OnDamage, EventHookMode_Post)
-	HookEvent("player_death", OnDeath, EventHookMode_Post)
+
+	HookEvent("player_hurt", OnPlyDamaged, EventHookMode_Post)
+	HookEvent("player_death", OnPlyDeath, EventHookMode_Post)
 	
 	PrintToServer( "LazMod NoKill loaded!" )
 }
@@ -42,9 +42,10 @@ public Action Command_NoKill(Client, args) {
 	
 	CheckDfilterExist()
 	
-	char szPlayer[64], szSwitch[8]
+	char szPlayer[64]
+	int iSwitch
 	GetCmdArg(1, szPlayer, sizeof(szPlayer))
-	GetCmdArg(2, szSwitch, sizeof(szSwitch))
+	iSwitch = GetCmdArgInt(2)
 	
 	if (args > 0 && LM_IsAdmin(Client)) {
 		char target_name[MAX_TARGET_LENGTH]
@@ -57,9 +58,9 @@ public Action Command_NoKill(Client, args) {
 		}
 
 		for (int i = 0; i < target_count; i++) {
-			new iTarget = target_list[i]
+			int iTarget = target_list[i]
 			if (args > 1) {
-				if (StrEqual(szSwitch, "1")) {
+				if (iSwitch) {
 					if (!g_bGodMode[iTarget]) {
 						g_bGodMode[iTarget] = true
 						SetVariantString("cat_dfilter_dmg")
@@ -68,7 +69,7 @@ public Action Command_NoKill(Client, args) {
 						LM_PrintToChat(Client, "Turned %N NoKill ON", iTarget)
 					} else 
 						LM_PrintToChat(Client, "%N NoKill is already ON", iTarget)
-				} else if (StrEqual(szSwitch, "0")) {
+				} else {
 					if (g_bGodMode[iTarget]) {
 						g_bGodMode[iTarget] = false
 						SetVariantString("0")
@@ -124,80 +125,80 @@ public Action Command_NoKill(Client, args) {
 	return Plugin_Handled
 }
 
-public OnDeath(Handle hEvent, const char[] szName, bool bBroadcast) {
-	new iVictem = GetClientOfUserId(GetEventInt(hEvent, "userid"))
-	new iAttacker = GetClientOfUserId(GetEventInt(hEvent, "attacker"))
+OnPlyDeath(Handle hEvent, const char[] szName, bool bBroadcast) {
+	int plyVictem = GetClientOfUserId(GetEventInt(hEvent, "userid"))
+	int plyAttacker = GetClientOfUserId(GetEventInt(hEvent, "attacker"))
 	
-	if (g_bGodMode[iVictem]) {
-		g_bGodMode[iVictem] = false
+	if (g_bGodMode[plyVictem]) {
+		g_bGodMode[plyVictem] = false
 		
-		LM_PrintToChat(iVictem, "Off")
+		LM_PrintToChat(plyVictem, "Off")
 		SetVariantString("0")
-		AcceptEntityInput(iVictem, "setdamagefilter", -1)
+		AcceptEntityInput(plyVictem, "setdamagefilter", -1)
 	}
 	
-	if (iAttacker != iVictem && LM_IsClientValid(iAttacker, iAttacker)) {
+	if (plyAttacker != plyVictem && LM_IsClientValid(plyAttacker, plyAttacker)) {
 		SetVariantString("0")
-		AcceptEntityInput(iAttacker, "setdamagefilter", -1)
-		if (g_bGodMode[iAttacker]) {
-			LM_PrintToChat(iAttacker, "NoKill auto disabled because attacking players.")
+		AcceptEntityInput(plyAttacker, "setdamagefilter", -1)
+		if (g_bGodMode[plyAttacker]) {
+			LM_PrintToChat(plyAttacker, "NoKill auto disabled because attacking players.")
 		}
-		if (g_iGodModeLock[iAttacker] == 0)
-			LM_PrintToChat(iAttacker, "Locked")
+		if (g_iGodModeLock[plyAttacker] == 0)
+			LM_PrintToChat(plyAttacker, "Locked")
 			
-		g_iGodModeLock[iAttacker] += 60
-		if (g_hLock[iAttacker] != INVALID_HANDLE) {
-			KillTimer(g_hLock[iAttacker])
-			g_hLock[iAttacker] = INVALID_HANDLE
+		g_iGodModeLock[plyAttacker] += 60
+		if (g_hLock[plyAttacker] != INVALID_HANDLE) {
+			KillTimer(g_hLock[plyAttacker])
+			g_hLock[plyAttacker] = INVALID_HANDLE
 		}
-		g_hLock[iAttacker] = CreateTimer(0.0, Timer_Lock, iAttacker)
+		g_hLock[plyAttacker] = CreateTimer(0.0, Timer_Lock, plyAttacker)
 	}
 }
 
-public OnDamage(Handle hEvent, const char[] szName, bool bBroadcast) {
-	new iVictem = GetClientOfUserId(GetEventInt(hEvent, "userid"))
-	new iAttacker = GetClientOfUserId(GetEventInt(hEvent, "attacker"))
+OnPlyDamaged(Handle hEvent, const char[] szName, bool bBroadcast) {
+	int plyVictem = GetClientOfUserId(GetEventInt(hEvent, "userid"))
+	int plyAttacker = GetClientOfUserId(GetEventInt(hEvent, "attacker"))
 	
-	if (g_bGodMode[iAttacker] && iAttacker != iVictem && LM_IsClientValid(iAttacker, iAttacker)) {
-		g_bGodMode[iAttacker] = false
+	if (g_bGodMode[plyAttacker] && plyAttacker != plyVictem && LM_IsClientValid(plyAttacker, plyAttacker)) {
+		g_bGodMode[plyAttacker] = false
 		SetVariantString("0")
-		AcceptEntityInput(iAttacker, "setdamagefilter", -1)
-		LM_PrintToChat(iAttacker, "NoKill auto disabled because attacking players.")
-		LM_PrintToChat(iAttacker, "Off")
+		AcceptEntityInput(plyAttacker, "setdamagefilter", -1)
+		LM_PrintToChat(plyAttacker, "NoKill auto disabled because attacking players.")
+		LM_PrintToChat(plyAttacker, "Off")
 	}
 }
 
-public Action Timer_Lock(Handle Timer, any Client) {
-	if (Client > 0) {
-		if (LM_IsClientValid(Client, Client)) {
-			if (g_iGodModeLock[Client] > 0) {
-				g_iGodModeLock[Client]--
-				PrintCenterText(Client, "NoKill Locked, Time Left: %i", g_iGodModeLock[Client])
-				g_hLock[Client] = CreateTimer(1.0, Timer_Lock, Client)
+public Action Timer_Lock(Handle Timer, any plyAttacker) {
+	if (plyAttacker > 0) {
+		if (LM_IsClientValid(plyAttacker, plyAttacker)) {
+			if (g_iGodModeLock[plyAttacker] > 0) {
+				g_iGodModeLock[plyAttacker]--
+				PrintCenterText(plyAttacker, "NoKill Locked, Time Left: %i", g_iGodModeLock[plyAttacker])
+				g_hLock[plyAttacker] = CreateTimer(1.0, Timer_Lock, plyAttacker)
 			} else {
-				LM_PrintToChat(Client, "Unlocked")
-				KillTimer(g_hLock[Client])
-				g_hLock[Client] = INVALID_HANDLE
+				LM_PrintToChat(plyAttacker, "Unlocked")
+				KillTimer(g_hLock[plyAttacker])
+				g_hLock[plyAttacker] = INVALID_HANDLE
 			}
 		} else {
-			g_iGodModeLock[Client] = 0
-			KillTimer(g_hLock[Client])
-			g_hLock[Client] = INVALID_HANDLE
+			g_iGodModeLock[plyAttacker] = 0
+			KillTimer(g_hLock[plyAttacker])
+			g_hLock[plyAttacker] = INVALID_HANDLE
 		}
 	}
 	return Plugin_Handled
 }
 
-public CheckDfilterExist() {
-	g_entDfilter = -1
-	g_entDfilter = FindEntityByClassname(0, "cat_dfilter_dmg")
-	if (g_entDfilter == -1) {
-		g_entDfilter = CreateEntityByName("filter_damage_type")
-		DispatchKeyValue(g_entDfilter, "targetname", "cat_dfilter_dmg")
-		DispatchKeyValue(g_entDfilter, "classname", "cat_dfilter_dmg")
-		DispatchKeyValue(g_entDfilter, "Negated", "0")
-		DispatchKeyValue(g_entDfilter, "damagetype", "16384")
-		DispatchSpawn(g_entDfilter)
+CheckDfilterExist() {
+	g_entDmgFilter = -1
+	g_entDmgFilter = FindEntityByClassname(0, "cat_dfilter_dmg")
+	if (g_entDmgFilter == -1 || !IsValidEntity(g_entDmgFilter)) {
+		g_entDmgFilter = CreateEntityByName("filter_damage_type")
+		DispatchKeyValue(g_entDmgFilter, "targetname", "cat_dfilter_dmg")
+		DispatchKeyValue(g_entDmgFilter, "classname", "cat_dfilter_dmg")
+		DispatchKeyValue(g_entDmgFilter, "Negated", "0")
+		DispatchKeyValue(g_entDmgFilter, "damagetype", "16384")
+		DispatchSpawn(g_entDmgFilter)
 	}
 }
 
