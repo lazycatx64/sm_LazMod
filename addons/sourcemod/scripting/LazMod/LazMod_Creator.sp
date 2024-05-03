@@ -11,18 +11,21 @@
 #include <lazmod_stocks>
 
 
-
+int g_iMaxPropArray = 2048
 Handle g_hPropNameArray
 Handle g_hPropModelPathArray
 Handle g_hPropTypeArray
 
+int g_iMaxRagdollArray = 512
+Handle g_hRagdollNameArray
+Handle g_hRagdollModelPathArray
+
+int g_iMaxWheelArray = 32
 Handle g_hWheelNameArray
 Handle g_hWheelModelPathArray
 
 Handle g_hCvarSpawnInFront = INVALID_HANDLE
 int g_iCvarSpawnInFront
-
-char g_szFile[128]
 
 public Plugin myinfo = {
 	name = "LazMod - Creator",
@@ -36,15 +39,19 @@ public OnPluginStart() {
 	RegAdminCmd("sm_spawn", Command_SpawnProp, 0, "Spawn physics props.")
 	RegAdminCmd("sm_spawnf", Command_SpawnFrozen, 0, "Spawn and freeze the prop instantly so it dosen't go anywhere.")
 	RegAdminCmd("sm_spawnd", Command_SpawnDynamic, 0, "Spawn dynamic props.")
-	
-	g_hPropNameArray = CreateArray(33, 2048);		// Max Prop List is 1024-->2048
-	g_hPropModelPathArray = CreateArray(128, 2048);	// Max Prop List is 1024-->2048
-	g_hPropTypeArray = CreateArray(33, 2048);		// Max Prop List is 1024-->2048
+	g_hPropNameArray = CreateArray(32, g_iMaxPropArray);
+	g_hPropModelPathArray = CreateArray(128, g_iMaxPropArray);
+	g_hPropTypeArray = CreateArray(32, g_iMaxPropArray);
 	ReadProps()
 
+	RegAdminCmd("sm_ragdoll", Command_SpawnRagdoll, 0, "Spawn ragdoll props.")
+	g_hRagdollNameArray = CreateArray(32, g_iMaxRagdollArray);
+	g_hRagdollModelPathArray = CreateArray(128, g_iMaxRagdollArray);
+	ReadRagdolls()
+
 	RegAdminCmd("sm_spawnwheel", Command_SpawnWheel, 0, "Place a wheel on your prop.")
-	g_hWheelNameArray = CreateArray(32, 32);		// Max Wheel List is 32
-	g_hWheelModelPathArray = CreateArray(128, 32);	// Max Wheel List is 32
+	g_hWheelNameArray = CreateArray(32, g_iMaxWheelArray);
+	g_hWheelModelPathArray = CreateArray(128, g_iMaxWheelArray);
 	ReadWheels()
 	
 
@@ -67,8 +74,7 @@ public Action Command_SpawnFrozen(plyClient, args) {
 	
 	if (args < 1) {
 		LM_PrintToChat(plyClient, "Usage: !spawnf <Prop name> ")
-		LM_PrintToChat(plyClient, "Ex: !spawnf goldbar")
-		LM_PrintToChat(plyClient, "Ex: !spawnf alyx")
+		LM_PrintToChat(plyClient, "Ex: !spawnf melon")
 		return Plugin_Handled
 	}
 	
@@ -103,8 +109,7 @@ public Action Command_SpawnProp(plyClient, args) {
 	
 	if (args < 1) {
 		LM_PrintToChat(plyClient, "Usage: !spawn <Prop name>")
-		LM_PrintToChat(plyClient, "Ex: !spawn goldbar")
-		LM_PrintToChat(plyClient, "Ex: !spawn alyx")
+		LM_PrintToChat(plyClient, "Ex: !spawn melon")
 		return Plugin_Handled
 	}
 	
@@ -176,17 +181,18 @@ public Action Command_SpawnProp(plyClient, args) {
 }
 
 ReadProps() {
-	BuildPath(Path_SM, g_szFile, sizeof(g_szFile), "configs/lazmod/props.ini")
+	char szFile[128]
+	BuildPath(Path_SM, szFile, sizeof(szFile), "configs/lazmod/props.ini")
 	
-	Handle iFile = OpenFile(g_szFile, "rt")
-	if (iFile == INVALID_HANDLE)
+	Handle hFile = OpenFile(szFile, "rt")
+	if (hFile == INVALID_HANDLE)
 		return
 	
 	int iCountProps = 0
-	while (!IsEndOfFile(iFile))
+	while (!IsEndOfFile(hFile))
 	{
 		char szLine[255]
-		if (!ReadFileLine(iFile, szLine, sizeof(szLine)))
+		if (!ReadFileLine(hFile, szLine, sizeof(szLine)))
 			break
 		
 		/* 略過註解 */
@@ -218,7 +224,7 @@ ReadProps() {
 		ReadPropsLine(szLine, iCountProps++)
 	}
 	PrintToServer( "LazMod Creator - Loaded %i props", iCountProps )
-	CloseHandle(iFile)
+	CloseHandle(hFile)
 }
 
 ReadPropsLine(const char[] szLine, iCountProps) {
@@ -234,6 +240,132 @@ ReadPropsLine(const char[] szLine, iCountProps) {
 	StripQuotes(szPropInfo[2])
 	SetArrayString(g_hPropTypeArray, iCountProps, szPropInfo[2])
 }
+
+
+
+
+
+
+public Action Command_SpawnRagdoll(plyClient, args) {
+	if (!LM_AllowToLazMod(plyClient) || LM_IsBlacklisted(plyClient) || !LM_IsClientValid(plyClient, plyClient, true))
+		return Plugin_Handled
+	
+	if (args < 1) {
+		LM_PrintToChat(plyClient, "Usage: !ragdoll <ragdoll name>")
+		LM_PrintToChat(plyClient, "Ex: !ragdoll alyx")
+		return Plugin_Handled
+	}
+	
+	char szRagdollName[32], szModelPath[128]
+	GetCmdArg(1, szRagdollName, sizeof(szRagdollName))
+	
+	int iRagdollIndex = FindStringInArray(g_hRagdollNameArray, szRagdollName)
+	
+	if (iRagdollIndex != -1) {
+		
+		int entProp = -1
+		entProp = CreateEntityByName("prop_ragdoll")
+		if (LM_SetEntityOwner(entProp, plyClient, true)) {
+			float vClientEyePos[3], vSpawnOrigin[3], vClientEyeAngles[3], fRadiansX, fRadiansY
+			
+			GetClientEyePosition(plyClient, vClientEyePos)
+			GetClientEyeAngles(plyClient, vClientEyeAngles)
+			
+			fRadiansX = DegToRad(vClientEyeAngles[0])
+			fRadiansY = DegToRad(vClientEyeAngles[1])
+			
+			vSpawnOrigin[0] = vClientEyePos[0] + (100 * Cosine(fRadiansY) * Cosine(fRadiansX))
+			vSpawnOrigin[1] = vClientEyePos[1] + (100 * Sine(fRadiansY) * Cosine(fRadiansX))
+			vSpawnOrigin[2] = vClientEyePos[2] - 10
+			
+			GetArrayString(g_hRagdollModelPathArray, iRagdollIndex, szModelPath, sizeof(szModelPath))
+			
+			if (!IsModelPrecached(szModelPath))
+				PrecacheModel(szModelPath)
+			PrintToServer(szModelPath)
+			DispatchKeyValue(entProp, "model", szModelPath)
+			
+			DispatchSpawn(entProp)
+			TeleportEntity(entProp, vSpawnOrigin, NULL_VECTOR, NULL_VECTOR)
+			
+		} else
+			RemoveEdict(entProp)
+	} else {
+		LM_PrintToChat(plyClient, "Prop not found: %s", szRagdollName)
+	}
+
+	char szArgs[128]
+	GetCmdArgString(szArgs, sizeof(szArgs))
+	LM_LogCmd(plyClient, "sm_spawn", szArgs)
+
+	return Plugin_Handled
+}
+
+ReadRagdolls() {
+	char szFile[128]
+	BuildPath(Path_SM, szFile, sizeof(szFile), "configs/lazmod/ragdolls.ini")
+	
+	Handle hFile = OpenFile(szFile, "rt")
+	if (hFile == INVALID_HANDLE)
+		return
+	
+	int iCountRagdolls = 0
+	while (!IsEndOfFile(hFile))
+	{
+		
+		char szLine[255]
+		if (!ReadFileLine(hFile, szLine, sizeof(szLine)))
+			break
+		
+		/* 略過註解 */
+		int iLen = strlen(szLine)
+		bool bIgnore = false
+		
+		for (int i = 0; i < iLen; i++) {
+			if (bIgnore) {
+				if (szLine[i] == '"')
+					bIgnore = false
+			} else {
+				if (szLine[i] == '"')
+					bIgnore = true
+				else if (szLine[i] == ';') {
+					szLine[i] = '\0'
+					break
+				} else if (szLine[i] == '/' && i != iLen - 1 && szLine[i+1] == '/') {
+					szLine[i] = '\0'
+					break
+				}
+			}
+		}
+		
+		TrimString(szLine)
+		
+		if ((szLine[0] == '/' && szLine[1] == '/') || (szLine[0] == ';' || szLine[0] == '\0'))
+			continue
+	
+		ReadRagdollsLine(szLine, iCountRagdolls++)
+	}
+	PrintToServer( "LazMod Creator - Loaded %i ragdolls", iCountRagdolls )
+	CloseHandle(hFile)
+}
+
+ReadRagdollsLine(const char[] szLine, iCountRagdolls) {
+	
+	char szRagdollInfo[2][128]
+	ExplodeString(szLine, ", ", szRagdollInfo, sizeof(szRagdollInfo), sizeof(szRagdollInfo[]))
+	
+	StripQuotes(szRagdollInfo[0])
+	SetArrayString(g_hRagdollNameArray, iCountRagdolls, szRagdollInfo[0])
+	
+	StripQuotes(szRagdollInfo[1])
+	SetArrayString(g_hRagdollModelPathArray, iCountRagdolls, szRagdollInfo[1])
+	
+}
+
+
+
+
+
 
 
 
