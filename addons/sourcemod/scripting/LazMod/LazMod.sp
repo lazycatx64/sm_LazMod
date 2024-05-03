@@ -17,14 +17,14 @@ int g_iDollCurrent[MAXPLAYERS]
 int g_iServerCurrent
 int g_iEntOwner[MAX_HOOK_ENTITIES] = {-1,...}
 
-Handle g_hCvarLazModEnabled		= INVALID_HANDLE
+Handle g_hCvarModEnabled		= INVALID_HANDLE
 Handle g_hCvarNonOwner		= INVALID_HANDLE
 Handle g_hCvarFly			= INVALID_HANDLE
 Handle g_hCvarClPropLimit	= INVALID_HANDLE
 Handle g_hCvarClDollLimit	= INVALID_HANDLE
 Handle g_hCvarServerLimit	= INVALID_HANDLE
 
-int g_iCvarLazModEnabled
+int g_iCvarModEnabled
 int g_iCvarNonOwner
 int g_iCvarFly
 int g_iCvarClPropLimit[MAXPLAYERS]
@@ -67,16 +67,16 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, err_max) {
 }
 
 public OnPluginStart() {	
-	g_hCvarLazModEnabled = CreateConVar("lm_enable", "2", "Enable the LazMod. 2=For All, 1=Admins Only, 0=Disabled.", FCVAR_NOTIFY, true, 0.0, true, 2.0)
-	g_hCvarNonOwner		= CreateConVar("lm_nonowner", "0", "Switch non-admin player can control non-owner props or not", FCVAR_NOTIFY, true, 0.0, true, 1.0)
-	g_hCvarFly			= CreateConVar("lm_fly", "1", "Switch non-admin player can use !fly to noclip or not", FCVAR_NOTIFY, true, 0.0, true, 1.0)
-	g_hCvarClPropLimit	= CreateConVar("lm_props", "500", "Player prop spawn limit.", FCVAR_NOTIFY, true, 0.0)
-	g_hCvarClDollLimit	= CreateConVar("lm_dolls", "10", "Player doll spawn limit.", FCVAR_NOTIFY, true, 0.0)
-	g_hCvarServerLimit	= CreateConVar("lm_maxprops", "2000", "Total prop spawn limit.", FCVAR_NOTIFY, true, 0.0, true, 3000.0)
+	g_hCvarModEnabled	= CreateConVar("lm_enable", 		"2", "Enable the LazMod. 2=For All, 1=Admins Only, 0=Disabled.", FCVAR_NOTIFY, true, 0.0, true, 2.0)
+	g_hCvarNonOwner		= CreateConVar("lm_allow_nonowner",	"0", "Switch non-admin player can control non-owner props (usually map props)", FCVAR_NOTIFY, true, 0.0, true, 1.0)
+	g_hCvarFly			= CreateConVar("lm_allow_fly",		"1", "Switch non-admin player can use !fly to noclip", FCVAR_NOTIFY, true, 0.0, true, 1.0)
+	g_hCvarClPropLimit	= CreateConVar("lm_client_props",	"500", "Player prop spawn limit.", FCVAR_NOTIFY, true, 0.0)
+	g_hCvarClDollLimit	= CreateConVar("lm_client_dolls",	"10", "Player ragdoll spawn limit.", FCVAR_NOTIFY, true, 0.0)
+	g_hCvarServerLimit	= CreateConVar("lm_server_props",	"2000", "Total prop spawn limit. (Cannot exceed engine-defined upper limit)", FCVAR_NOTIFY, true, 0.0)
 	RegAdminCmd("sm_version", Command_Version, 0, "Show Lazmod Core version")
 	RegAdminCmd("sm_count", Command_SpawnCount, 0, "Show how many entities are you spawned.")
 	
-	g_iCvarLazModEnabled = GetConVarInt(g_hCvarLazModEnabled)
+	g_iCvarModEnabled = GetConVarInt(g_hCvarModEnabled)
 	g_iCvarNonOwner = GetConVarBool(g_hCvarNonOwner)
 	g_iCvarFly = GetConVarBool(g_hCvarFly)
 	for (int i = 0; i < MAXPLAYERS; i++)
@@ -84,7 +84,7 @@ public OnPluginStart() {
 	g_iCvarClDollLimit = GetConVarInt(g_hCvarClDollLimit)
 	g_iCvarServerLimit = GetConVarInt(g_hCvarServerLimit)
 
-	HookConVarChange(g_hCvarLazModEnabled, Hook_CvarLazModEnabled)
+	HookConVarChange(g_hCvarModEnabled, Hook_CvarModEnabled)
 	HookConVarChange(g_hCvarNonOwner, Hook_CvarNonOwner)
 	HookConVarChange(g_hCvarFly, Hook_CvarFly)
 	HookConVarChange(g_hCvarClPropLimit, Hook_CvarClPropLimit)
@@ -103,8 +103,8 @@ public OnMapStart() {
 	LM_FirstRun()
 }
 
-public Hook_CvarLazModEnabled(Handle convar, const char[] oldValue, const char[] newValue) {
-	g_iCvarLazModEnabled = GetConVarInt(g_hCvarLazModEnabled)
+public Hook_CvarModEnabled(Handle convar, const char[] oldValue, const char[] newValue) {
+	g_iCvarModEnabled = GetConVarInt(g_hCvarModEnabled)
 }
 
 public Hook_CvarNonOwner(Handle convar, const char[] oldValue, const char[] newValue) {
@@ -259,7 +259,7 @@ Native_AllowToLazMod(Handle hPlugin, iNumParams) {
 		return -1
 	}
 
-	switch (g_iCvarLazModEnabled) {
+	switch (g_iCvarModEnabled) {
 		case 0: {
 			LM_PrintToChat(plyClient, "LazMod is not available or disabled!")
 			return false
