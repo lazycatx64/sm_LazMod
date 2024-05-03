@@ -135,7 +135,7 @@ public Action Command_SpawnProp(plyClient, args) {
 			entProp = CreateEntityByName(szClass)
 
 		if (LM_SetEntityOwner(entProp, plyClient, bIsDoll)) {
-			float vClientEyePos[3], vSpawnOrigin[3], vClientEyeAngles[3], fRadiansX, fRadiansY
+			float vClientEyePos[3], vSpawnOrigin[3], vClientEyeAngles[3], fRadiansX, fRadiansY, vSurfaceAngles[3]
 			
 			if (g_iCvarSpawnInFront) {
 				GetClientEyePosition(plyClient, vClientEyePos)
@@ -147,6 +147,21 @@ public Action Command_SpawnProp(plyClient, args) {
 				vSpawnOrigin[0] = vClientEyePos[0] + (100 * Cosine(fRadiansY) * Cosine(fRadiansX))
 				vSpawnOrigin[1] = vClientEyePos[1] + (100 * Sine(fRadiansY) * Cosine(fRadiansX))
 				vSpawnOrigin[2] = vClientEyePos[2] - 20
+
+
+			} else if (iPropType == 2) {
+
+				GetClientEyePosition(plyClient, vClientEyePos)
+				GetClientEyeAngles(plyClient, vClientEyeAngles)
+				Handle trace = TR_TraceRayFilterEx(vClientEyePos, vClientEyeAngles, MASK_SHOT, RayType_Infinite, TraceEntityFilterOnlyVPhysics)
+				if (TR_DidHit(trace)) {
+					float vHitNormal[3]
+					TR_GetEndPosition(vSpawnOrigin, trace)
+					TR_GetPlaneNormal(trace, vHitNormal)
+					GetVectorAngles(vHitNormal, vSurfaceAngles)
+					vSurfaceAngles[0] += 90
+				}
+			
 			} else {
 				LM_ClientAimPos(plyClient, vSpawnOrigin)
 			}
@@ -162,7 +177,10 @@ public Action Command_SpawnProp(plyClient, args) {
 				SetEntProp(entProp, Prop_Data, "m_nSolidType", 6)
 			
 			DispatchSpawn(entProp)
-			TeleportEntity(entProp, vSpawnOrigin, NULL_VECTOR, NULL_VECTOR)
+			if (iPropType == 2)
+				TeleportEntity(entProp, vSpawnOrigin, vSurfaceAngles, NULL_VECTOR)
+			else
+				TeleportEntity(entProp, vSpawnOrigin, NULL_VECTOR, NULL_VECTOR)
 			
 			if (iPropType == 1 && Phys_IsPhysicsObject(entProp))
 				Phys_EnableMotion(entProp, false)
