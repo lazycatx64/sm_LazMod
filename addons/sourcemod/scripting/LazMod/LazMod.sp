@@ -12,8 +12,6 @@
 
 
 
-
-
 int g_iPropCurrent[MAXPLAYERS]
 int g_iDollCurrent[MAXPLAYERS]
 int g_iServerCurrent
