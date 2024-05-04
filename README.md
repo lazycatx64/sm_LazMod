@@ -1,11 +1,13 @@
 Before you do anything
 =============
+
 This is an old plugin that I made decade ago. I'm currently starting a new repo, and using my free time to rewrite some of the source code to bring it up to date a bit and run more efficiently.
 
 There may be random errors. Please use it with caution.
 
 Features
 -----------
+
 - Spawn props and build houses in source games. (currently dedicated to HL2DM)
 - Realtime prop info on HUD
 - Spawnable ragdolls, wheels, doors
