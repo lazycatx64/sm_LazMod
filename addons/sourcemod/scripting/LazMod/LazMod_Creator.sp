@@ -14,7 +14,6 @@
 int g_iMaxPropArray = 2048
 Handle g_hPropNameArray
 Handle g_hPropModelPathArray
-Handle g_hPropTypeArray
 
 int g_iMaxRagdollArray = 512
 Handle g_hRagdollNameArray
@@ -41,7 +40,6 @@ public OnPluginStart() {
 	RegAdminCmd("sm_spawnd", Command_SpawnDynamic, 0, "Spawn dynamic props.")
 	g_hPropNameArray = CreateArray(32, g_iMaxPropArray);
 	g_hPropModelPathArray = CreateArray(128, g_iMaxPropArray);
-	g_hPropTypeArray = CreateArray(32, g_iMaxPropArray);
 	ReadProps()
 
 	RegAdminCmd("sm_ragdoll", Command_SpawnRagdoll, 0, "Spawn ragdoll props.")
@@ -122,8 +120,7 @@ public Action Command_SpawnProp(plyClient, args) {
 	
 	if (iPropIndex != -1) {
 		bool bIsDoll = false
-		char szClass[33]
-		GetArrayString(g_hPropTypeArray, iPropIndex, szClass, sizeof(szClass))
+		char szClass[32]
 		
 		if (StrEqual(szClass, "prop_ragdoll"))
 			bIsDoll = true
@@ -132,7 +129,7 @@ public Action Command_SpawnProp(plyClient, args) {
 		if (iPropType == 2)
 			entProp = CreateEntityByName("prop_dynamic_override")
 		else
-			entProp = CreateEntityByName(szClass)
+			entProp = CreateEntityByName("prop_physics_override")
 
 		if (LM_SetEntityOwner(entProp, plyClient, bIsDoll)) {
 			float vClientEyePos[3], vSpawnOrigin[3], vClientEyeAngles[3], fRadiansX, fRadiansY, vSurfaceAngles[3]
@@ -246,7 +243,7 @@ ReadProps() {
 }
 
 ReadPropsLine(const char[] szLine, iCountProps) {
-	char szPropInfo[3][128]
+	char szPropInfo[2][128]
 	ExplodeString(szLine, ", ", szPropInfo, sizeof(szPropInfo), sizeof(szPropInfo[]))
 	
 	StripQuotes(szPropInfo[0])
@@ -255,8 +252,6 @@ ReadPropsLine(const char[] szLine, iCountProps) {
 	StripQuotes(szPropInfo[1])
 	SetArrayString(g_hPropModelPathArray, iCountProps, szPropInfo[1])
 	
-	StripQuotes(szPropInfo[2])
-	SetArrayString(g_hPropTypeArray, iCountProps, szPropInfo[2])
 }
 
 
