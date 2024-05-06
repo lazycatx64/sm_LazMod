@@ -172,44 +172,51 @@ Native_SetEntityOwner(Handle hPlugin, iNumParams) {
 		g_iEntOwner[entProp] = -1
 		return true
 	}
-	if (IsValidEntity(entProp) && LM_IsClientValid(plyClient, plyClient)) {
-		if (!LM_CheckMaxEdict()) {
-			LM_PrintToAll("TOO MUCH ENTITIES.")
-			return false
 
-		} else if (g_iServerCurrent < g_iCvarServerLimit) {
-			if (bIsDoll) {
-				if (g_iDollCurrent[plyClient] < g_iCvarClientDollLimit) {
-					g_iDollCurrent[plyClient] += 1
-					g_iPropCurrent[plyClient] += 1
-				} else {
-					LM_PrintToChat(plyClient, "Your dolls has reached the limit.")
-					return false
-				}
-			} else {
-				if (g_iPropCurrent[plyClient] < (LM_IsAdmin(plyClient) ? g_iCvarAdminPropLimit : g_iCvarClientPropLimit))
-					g_iPropCurrent[plyClient] += 1
-				else {
-					LM_PrintToChat(plyClient, "Your props has reached the limit.")
-					return false
-				}
-			}
-			g_iEntOwner[entProp] = plyClient
-			g_iServerCurrent += 1
-			return true
+	if (!IsValidEntity(entProp)) {
+		ThrowNativeError(SP_ERROR_NATIVE, "Entity id %i is invalid.", entProp)
+		return false
+	}
+		
+	if (!LM_IsClientValid(plyClient, plyClient)) {
+		ThrowNativeError(SP_ERROR_NATIVE, "Client id %i is not in game.", plyClient)
+		return false
+	}
+		
+	if (LM_IsPlayer(entProp)) {
+		ThrowNativeError(SP_ERROR_NATIVE, "Not allowed to set owner to a player. Client:%i, Ent:%i", plyClient, entProp)
+		return false
+	}
+	
+	if (!LM_CheckMaxEdict()) {
+		LM_PrintToAll("TOO MUCH ENTITIES.")
+		return false
+	}
+
+	if (g_iServerCurrent >= g_iCvarServerLimit) {
+		LM_PrintToChat(plyClient, "The number of prop has reached the server limit.")
+		return false
+	}
+
+	if (bIsDoll) {
+		if (g_iDollCurrent[plyClient] < g_iCvarClientDollLimit) {
+			g_iDollCurrent[plyClient] += 1
+			g_iPropCurrent[plyClient] += 1
 		} else {
-			LM_PrintToChat(plyClient, "The number of prop has reached the server limit.")
+			LM_PrintToChat(plyClient, "Your dolls has reached the limit.")
+			return false
+		}
+	} else {
+		if (g_iPropCurrent[plyClient] < (LM_IsAdmin(plyClient) ? g_iCvarAdminPropLimit : g_iCvarClientPropLimit))
+			g_iPropCurrent[plyClient] += 1
+		else {
+			LM_PrintToChat(plyClient, "Your props has reached the limit.")
 			return false
 		}
 	}
-	
-	if (!IsValidEntity(entProp))
-		ThrowNativeError(SP_ERROR_NATIVE, "Entity id %i is invalid.", entProp)
-		
-	if (!LM_IsClientValid(plyClient, plyClient))
-		ThrowNativeError(SP_ERROR_NATIVE, "Client id %i is not in game.", plyClient)
-		
-	return -1
+	g_iEntOwner[entProp] = plyClient
+	g_iServerCurrent += 1
+	return true
 }
 
 Native_GetEntityOwner(Handle hPlugin, iNumParams) {
