@@ -15,7 +15,7 @@ Features
 - `Save system` that can save your personal progress with different savenames and load them tomorrow
 - Blacklists to temporarily restrict some naughty friends
 - NoKill to protect player from RDMers
-- `sm_ent_fire` that replicates `ent_fire`, because Valve is dumdum that made people requires rcon access to use ent_fire no matter what.
+- `sm_ent_fire` that replicates `ent_fire`, because Valve is dumdum that made people requires rcon access or disable autokick first for that player before using ent_fire.
 - `+grabent` and `+copyent` that helps you building bases with ease
 - `+sprint` and `sm_tp` to make you go around fast.
 - LASERS, because why not? ;D
