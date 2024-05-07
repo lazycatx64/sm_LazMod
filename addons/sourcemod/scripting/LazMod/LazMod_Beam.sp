@@ -49,7 +49,12 @@ public OnMapStart() {
 	g_mdlLaserBeam = PrecacheModel("materials/sprites/laserbeam.vmt")
 	g_mdlHalo = PrecacheModel("materials/sprites/halo01.vmt")
 	g_mdlBeam = PrecacheModel("materials/sprites/laser.vmt")
-	PrecacheSound("dr_oct.wav", true)
+
+	if (FileExists("sound/lazmod/dr_oct.wav")) {
+		AddFileToDownloadsTable("sound/lazmod/dr_oct.wav")
+		PrecacheSound("lazmod/dr_oct.wav", true)
+	}
+	
 	PrecacheSound("npc/strider/charging.wav", true)
 	PrecacheSound("npc/strider/fire.wav", true)
 }
@@ -127,8 +132,8 @@ public DrOctCharge(Client, float vDrOctOrigin[3], char[] szRange) {
 	GetClientAbsOrigin(Client, vOriginPlayer)
 	GetClientAbsOrigin(Client, vOriginPlayerBeam)
 	vOriginPlayerBeam[2] += 50
-	EmitAmbientSound("dr_oct.wav", vDrOctOrigin, Client, SNDLEVEL_NORMAL, SND_NOFLAGS, 0.3)
-	EmitAmbientSound("dr_oct.wav", vOriginPlayer, Client, SNDLEVEL_NORMAL, SND_NOFLAGS, 0.3)
+	EmitAmbientSound("lazmod/dr_oct.wav", vDrOctOrigin, Client, SNDLEVEL_NORMAL, SND_NOFLAGS, 0.3)
+	EmitAmbientSound("lazmod/dr_oct.wav", vOriginPlayer, Client, SNDLEVEL_NORMAL, SND_NOFLAGS, 0.3)
 	EmitAmbientSound("npc/strider/charging.wav", vDrOctOrigin, Client, SNDLEVEL_NORMAL, SND_NOFLAGS, 0.3)
 	EmitAmbientSound("npc/strider/charging.wav", vOriginPlayer, Client, SNDLEVEL_NORMAL, SND_NOFLAGS, 0.3)
 	
