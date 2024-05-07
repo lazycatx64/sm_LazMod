@@ -8,7 +8,7 @@
 #include <lazmod>
 
 
-Handle g_hCvarStackMax = INVALID_HANDLE
+ConVar g_hCvarStackMax
 int g_iCvarStackMax
 
 int g_entCopyTarget[MAXPLAYERS]
@@ -52,9 +52,9 @@ public OnPluginStart() {
 	RegAdminCmd("+copyent", Command_CopyentOn, 0, "Copy a prop.")
 	RegAdminCmd("-copyent", Command_CopyentOff, 0, "Paste a copied prop.")
 	
-	g_hCvarStackMax	= CreateConVar("lm_stack_max", "10", "How much prop you can stack in one time", FCVAR_NOTIFY, true, 0.0, true, 50.0)
-	g_iCvarStackMax = GetConVarBool(g_hCvarStackMax)
-	HookConVarChange(g_hCvarStackMax, Hook_CvarStackMax)
+	g_hCvarStackMax	= CreateConVar("lm_stack_max", "10", "How many props can a player stack at one time.", FCVAR_NOTIFY, true, 0.0, true, 100.0)
+	g_hCvarStackMax.AddChangeHook(Hook_CvarChanged)
+	CvarChanged(g_hCvarStackMax)
 
 	PrintToServer( "LazMod Copy loaded!" )
 }
@@ -65,9 +65,14 @@ public OnMapStart() {
 	g_mdlPhysBeam = PrecacheModel("materials/sprites/physbeam.vmt")
 }
 
-public Hook_CvarStackMax(Handle convar, const char[] oldValue, const char[] newValue) {
-	g_iCvarStackMax = GetConVarBool(g_hCvarStackMax)
+Hook_CvarChanged(Handle convar, const char[] oldValue, const char[] newValue) {
+	CvarChanged(convar)
 }
+void CvarChanged(Handle convar) {
+	if (convar == g_hCvarStackMax)
+		g_iCvarStackMax = g_hCvarStackMax.IntValue
+}
+
 
 public Action Command_Stack(plyClient, args) {
 	if (!LM_AllowToLazMod(plyClient) || LM_IsBlacklisted(plyClient) || !LM_IsClientValid(plyClient, plyClient, true))

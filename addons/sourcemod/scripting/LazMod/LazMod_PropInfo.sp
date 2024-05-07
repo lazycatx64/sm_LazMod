@@ -11,8 +11,8 @@
 
 
 Handle g_hHudTimer = INVALID_HANDLE
-Handle g_hCvarPropInfo = INVALID_HANDLE
-int g_iCvarPropInfo
+ConVar g_hCvarPropInfo
+bool g_bCvarPropInfo
 
 
 public Plugin myinfo = {
@@ -27,26 +27,32 @@ public OnPluginStart() {
 	LoadTranslations("common.phrases")
 	g_hHudTimer = CreateTimer(0.1, Display_Msgs, 0, TIMER_REPEAT)
 	
-	g_hCvarPropInfo	= CreateConVar("lm_propinfo", "1", "Enable the hud to display propinfo", FCVAR_NOTIFY, true, 0.0, true, 1.0)
-	g_iCvarPropInfo = GetConVarBool(g_hCvarPropInfo)
-	HookConVarChange(g_hCvarPropInfo, Hook_CvarPropInfo)
+	g_hCvarPropInfo	= CreateConVar("lm_propinfo_enable", "1", "Enable the hud to display propinfo", FCVAR_NOTIFY, true, 0.0, true, 1.0)
+	g_hCvarPropInfo.AddChangeHook(Hook_CvarChanged)
+	CvarChanged(g_hCvarPropInfo)
 
 	PrintToServer( "LazMod PropInfo loaded!" )
 }
 
-public Hook_CvarPropInfo(Handle convar, const char[] oldValue, const char[] newValue) {
-	g_iCvarPropInfo = GetConVarBool(g_hCvarPropInfo)
+Hook_CvarChanged(Handle convar, const char[] oldValue, const char[] newValue) {
+	CvarChanged(convar)
+}
+void CvarChanged(Handle convar) {
+	if (convar == g_hCvarPropInfo) {
+		g_bCvarPropInfo = g_hCvarPropInfo.BoolValue
 
-	if (StrEqual(newValue, "0")) {
-		if (g_hHudTimer != INVALID_HANDLE) {
-			KillTimer(g_hHudTimer)
-			g_hHudTimer = INVALID_HANDLE
+		if (g_bCvarPropInfo) {
+			if (g_hHudTimer == INVALID_HANDLE)
+				g_hHudTimer = CreateTimer(0.1, Display_Msgs, 0, TIMER_REPEAT)
+				
+		} else {
+			if (g_hHudTimer != INVALID_HANDLE) {
+				KillTimer(g_hHudTimer)
+				g_hHudTimer = INVALID_HANDLE
+			}
 		}
-			
-	} else {
-		if (g_hHudTimer == INVALID_HANDLE)
-			g_hHudTimer = CreateTimer(0.1, Display_Msgs, 0, TIMER_REPEAT)
 	}
+
 
 }
 
@@ -63,7 +69,7 @@ public Action Display_Msgs(Handle timer) {
 
 void EntityInfo(plyClient, entTarget) {
 
-	if (!g_iCvarPropInfo)
+	if (!g_bCvarPropInfo)
 		return
 
 	if (LM_IsFuncProp(entTarget))

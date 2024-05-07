@@ -12,10 +12,10 @@ static int COLOR_RED[4]	= {255,50,50,255}
 // static int COLOR_GREEN[4]	= {50,255,50,255}
 static int COLOR_BLUE[4]	= {50,50,255,255}
 
-Handle g_hCvarDRayRandClr = INVALID_HANDLE
-int g_iCvarDRayRandClr
+ConVar g_hCvarDRayRandClr
+bool g_bCvarDRayRandClr
 
-Handle g_hCvarDRayDmg = INVALID_HANDLE
+ConVar g_hCvarDRayDmg
 int g_iCvarDRayDmg
 
 int g_mdlLaserBeam
@@ -35,12 +35,12 @@ public OnPluginStart() {
 	RegAdminCmd("sm_droct", Command_DrOct, 0, "Will pull everything in the range, then push them away.")
 
 	g_hCvarDRayRandClr	= CreateConVar("lm_deathray_randcolor", "1", "Should the beam use random color", FCVAR_NOTIFY, true, 0.0, true, 1.0)
-	g_iCvarDRayRandClr = GetConVarBool(g_hCvarDRayRandClr)
-	HookConVarChange(g_hCvarDRayRandClr, Hook_CvarDRayRandClr)
+	g_hCvarDRayRandClr.AddChangeHook(Hook_CvarChanged)
+	CvarChanged(g_hCvarDRayRandClr)
 
 	g_hCvarDRayDmg	= CreateConVar("lm_deathray_damage", "200", "Damage of deathray", FCVAR_NOTIFY, true, 0.0)
-	g_iCvarDRayDmg = GetConVarBool(g_hCvarDRayDmg)
-	HookConVarChange(g_hCvarDRayDmg, Hook_CvarDRayDmg)
+	g_hCvarDRayDmg.AddChangeHook(Hook_CvarChanged)
+	CvarChanged(g_hCvarDRayDmg)
 
 	PrintToServer( "LazMod Beam loaded!" )
 }
@@ -60,8 +60,18 @@ public OnMapStart() {
 }
 
 
+Hook_CvarChanged(Handle convar, const char[] oldValue, const char[] newValue) {
+	CvarChanged(convar)
+}
+void CvarChanged(Handle convar) {
+	if (convar == g_hCvarDRayRandClr)
+		g_bCvarDRayRandClr = g_hCvarDRayRandClr.BoolValue
+	else if (convar == g_hCvarDRayDmg)
+		g_iCvarDRayDmg = g_hCvarDRayDmg.IntValue
+}
+
 public Hook_CvarDRayRandClr(Handle convar, const char[] oldValue, const char[] newValue) {
-	g_iCvarDRayRandClr = GetConVarBool(g_hCvarDRayRandClr)
+	g_bCvarDRayRandClr = GetConVarBool(g_hCvarDRayRandClr)
 }
 
 public Hook_CvarDRayDmg(Handle convar, const char[] oldValue, const char[] newValue) {
@@ -95,7 +105,7 @@ public Action Command_Deathray(Client, args) {
 	DispatchKeyValue(entExplosion, "iRadiusOverride", szRadius)
 	DispatchSpawn(entExplosion)
 	
-	if (g_iCvarDRayRandClr) {
+	if (g_bCvarDRayRandClr) {
 		iColor[0] = GetRandomInt(50, 255)
 		iColor[1] = GetRandomInt(50, 255)
 		iColor[2] = GetRandomInt(50, 255)

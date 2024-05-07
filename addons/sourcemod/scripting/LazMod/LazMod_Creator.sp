@@ -21,8 +21,8 @@ int g_iMaxWheelArray = 32
 Handle g_hWheelNameArray
 Handle g_hWheelModelPathArray
 
-Handle g_hCvarSpawnInFront = INVALID_HANDLE
-int g_iCvarSpawnInFront
+ConVar g_hCvarSpawnInFront
+bool g_bCvarSpawnInFront
 
 public Plugin myinfo = {
 	name = "LazMod - Creator",
@@ -53,16 +53,21 @@ public OnPluginStart() {
 
 
 	g_hCvarSpawnInFront	= CreateConVar("lm_spawn_infront", "0", "Spawn props in front of player instead at aimed position.", FCVAR_NOTIFY, true, 0.0, true, 1.0)
-	g_iCvarSpawnInFront = GetConVarBool(g_hCvarSpawnInFront)
-	HookConVarChange(g_hCvarSpawnInFront, Hook_CvarSpawnInFront)
+	g_hCvarSpawnInFront.AddChangeHook(Hook_CvarChanged)
+	CvarChanged(g_hCvarSpawnInFront)
 
 
 	PrintToServer( "LazMod Creator loaded!" )
 }
 
-public Hook_CvarSpawnInFront(Handle convar, const char[] oldValue, const char[] newValue) {
-	g_iCvarSpawnInFront = GetConVarBool(g_hCvarSpawnInFront)
+Hook_CvarChanged(Handle convar, const char[] oldValue, const char[] newValue) {
+	CvarChanged(convar)
 }
+void CvarChanged(Handle convar) {
+	if (convar == g_hCvarSpawnInFront)
+		g_bCvarSpawnInFront = g_hCvarSpawnInFront.BoolValue
+}
+
 
 public Action Command_SpawnFrozen(plyClient, args) {
 	if (!LM_AllowToLazMod(plyClient) || LM_IsBlacklisted(plyClient) || !LM_IsClientValid(plyClient, plyClient, true))
@@ -132,7 +137,7 @@ public Action Command_SpawnProp(plyClient, args) {
 		if (LM_SetEntityOwner(entProp, plyClient, bIsDoll)) {
 			float vClientEyePos[3], vSpawnOrigin[3], vClientEyeAngles[3], fRadiansX, fRadiansY, vSurfaceAngles[3]
 			
-			if (g_iCvarSpawnInFront) {
+			if (g_bCvarSpawnInFront) {
 				GetClientEyePosition(plyClient, vClientEyePos)
 				GetClientEyeAngles(plyClient, vClientEyeAngles)
 				

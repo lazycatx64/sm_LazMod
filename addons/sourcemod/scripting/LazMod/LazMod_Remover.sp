@@ -8,6 +8,9 @@
 
 #include <lazmod>
 
+ConVar g_hCvarDelEffect
+bool g_bCvarDelEffect
+
 
 static int COLOR_WHITE[4]	= {255,255,255,255}
 static int COLOR_RED[4]	= {255,50,50,255}
@@ -108,6 +111,11 @@ public OnPluginStart() {
 	RegAdminCmd("sm_dels", Command_AdminDelStrider, ADMFLAG_BAN, "Shoots a strider beam and remove props in range. A range can also be specified.")
 	RegAdminCmd("sm_dels2", Command_AdminDelStrider2, ADMFLAG_CONVARS, "Shoots a strider beam and remove props in range. Will also kill players in range.")
 	
+	g_hCvarDelEffect	= CreateConVar("lm_del_effects", "1", "Enable sm_del effects", FCVAR_NOTIFY, true, 0.0, true, 1.0)
+	g_hCvarDelEffect.AddChangeHook(Hook_CvarChanged)
+	CvarChanged(g_hCvarDelEffect)
+
+	HookEntityOutput("prop_physics", "OnBreak", OnPropBreak)
 	HookEntityOutput("prop_physics_override", "OnBreak", OnPropBreak)
 	
 	PrintToServer( "LazMod Remover loaded!" )
@@ -126,6 +134,14 @@ public OnMapStart() {
 		if (LM_IsClientValid(i, i))
 			GetClientAuthId(i, AuthId_Steam2, g_szConnectedClient[i], sizeof(g_szConnectedClient))
 	}
+}
+
+Hook_CvarChanged(Handle convar, const char[] oldValue, const char[] newValue) {
+	CvarChanged(convar)
+}
+void CvarChanged(Handle convar) {
+	if (convar == g_hCvarDelEffect)
+		g_bCvarDelEffect = g_hCvarDelEffect.BoolValue
 }
 
 public OnClientPutInServer(plyClient) {
@@ -227,21 +243,23 @@ public Action Command_Delete(plyClient, args) {
 		GetClientAbsOrigin(plyClient, vOriginPlayer)
 		vOriginPlayer[2] = vOriginPlayer[2] + 50
 		
-		int iPitch = GetRandomInt(50, 255)
-		if (GetRandomInt(0,1) == 1) {
-			EmitAmbientSound("weapons/airboat/airboat_gun_lastshot1.wav", vOriginAim, entProp, SNDLEVEL_NORMAL, SND_NOFLAGS, 0.5, iPitch)
-			EmitAmbientSound("weapons/airboat/airboat_gun_lastshot1.wav", vOriginPlayer, plyClient, SNDLEVEL_NORMAL, SND_NOFLAGS, 0.5, iPitch)
-		} else {
-			EmitAmbientSound("weapons/airboat/airboat_gun_lastshot2.wav", vOriginAim, entProp, SNDLEVEL_NORMAL, SND_NOFLAGS, 0.5, iPitch)
-			EmitAmbientSound("weapons/airboat/airboat_gun_lastshot2.wav", vOriginPlayer, plyClient, SNDLEVEL_NORMAL, SND_NOFLAGS, 0.5, iPitch)
+		if (g_bCvarDelEffect) {
+			int iPitch = GetRandomInt(50, 255)
+			if (GetRandomInt(0,1) == 1) {
+				EmitAmbientSound("weapons/airboat/airboat_gun_lastshot1.wav", vOriginAim, entProp, SNDLEVEL_NORMAL, SND_NOFLAGS, 0.5, iPitch)
+				EmitAmbientSound("weapons/airboat/airboat_gun_lastshot1.wav", vOriginPlayer, plyClient, SNDLEVEL_NORMAL, SND_NOFLAGS, 0.5, iPitch)
+			} else {
+				EmitAmbientSound("weapons/airboat/airboat_gun_lastshot2.wav", vOriginAim, entProp, SNDLEVEL_NORMAL, SND_NOFLAGS, 0.5, iPitch)
+				EmitAmbientSound("weapons/airboat/airboat_gun_lastshot2.wav", vOriginPlayer, plyClient, SNDLEVEL_NORMAL, SND_NOFLAGS, 0.5, iPitch)
+			}
+			
+			DispatchKeyValue(entProp, "targetname", "Del_Target")
+			
+			TE_SetupBeamRingPoint(vOriginAim, 10.0, 150.0, g_mdlBeam, g_mdlHalo, 0, 10, 0.5, 2.0, 0.5, COLOR_WHITE, 20, 0)
+			TE_SendToAll()
+			TE_SetupBeamPoints(vOriginAim, vOriginPlayer, g_mdlPhysBeam, g_mdlHalo, 0, 66, 0.5, 2.0, 2.0, 0, 0.0, COLOR_RED, 20)
+			TE_SendToAll()
 		}
-		
-		DispatchKeyValue(entProp, "targetname", "Del_Target")
-		
-		TE_SetupBeamRingPoint(vOriginAim, 10.0, 150.0, g_mdlBeam, g_mdlHalo, 0, 10, 0.5, 2.0, 0.5, COLOR_WHITE, 20, 0)
-		TE_SendToAll()
-		TE_SetupBeamPoints(vOriginAim, vOriginPlayer, g_mdlPhysBeam, g_mdlHalo, 0, 66, 0.5, 2.0, 2.0, 0, 0.0, COLOR_RED, 20)
-		TE_SendToAll()
 
 		if (LM_IsAdmin(plyClient)) {
 			if (StrEqual(szClass, "player") ||
