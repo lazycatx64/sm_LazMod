@@ -207,7 +207,7 @@ Native_CreateEntity(Handle hPlugin, iNumParams) {
 	}
 	DispatchKeyValue(entProp, "model", szModel)
 
-	if (plyClient != -1 && !LM_SetEntityOwner(entProp, plyClient)) {
+	if (plyClient != -1 && !LM_SetEntityOwner(entProp, plyClient, StrEqual(szClass, "prop_ragdoll", false))) {
 		RemoveEdict(entProp)
 		return -1
 	}
