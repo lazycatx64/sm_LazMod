@@ -3,6 +3,12 @@
 #define MAX_HOOK_ENTITIES 4096
 #define MSGTAG "\x01[\x04LM\x01]"
 
+enum ModStatus {
+	LAZMOD_DISABLED = 0,
+	LAZMOD_ADMINONLY = 1,
+	LAZMOD_ENABLED = 2
+}
+
 /**
  * Create an entity and finish other basic stuff in one line.
  * Note: Not DispatchSpawn() yet!
