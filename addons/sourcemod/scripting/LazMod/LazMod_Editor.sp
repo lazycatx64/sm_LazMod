@@ -633,8 +633,8 @@ public Action Command_SetMass(plyClient, args) {
 		return Plugin_Handled
 	
 	if (args < 1) {
-		LM_PrintToChat(plyClient, "Usage: !mass <amount>")
-		LM_PrintToChat(plyClient, "Ex: !mass 100")
+		LM_PrintToChat(plyClient, "Usage: !setmass <amount>")
+		LM_PrintToChat(plyClient, "Ex: !setmass 100")
 		return Plugin_Handled
 	}
 	
