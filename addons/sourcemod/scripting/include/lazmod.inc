@@ -1,5 +1,4 @@
 
-#define LAZMOD_API_VER 3
 #define LAZMOD_VER "1.0.0"
 #define MAX_HOOK_ENTITIES 4096
 #define MSGTAG "\x01[\x04LM\x01]"

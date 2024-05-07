@@ -6,10 +6,6 @@
 #include <lazmod>
 #include <lazmod_stocks>
 
-#if LAZMOD_API_VER < 3
-	#error "build.inc is outdated. please update before compiling"
-#endif
-
 
 
 int g_iPropCurrent[MAXPLAYERS]
