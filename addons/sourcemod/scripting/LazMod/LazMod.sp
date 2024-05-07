@@ -44,11 +44,13 @@ public Plugin myinfo = {
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, err_max) {
 	RegPluginLibrary("build_test")
 	
-	CreateNative("LM_SetEntityOwner",		Native_SetEntityOwner)
-	CreateNative("LM_GetEntityOwner",		Native_GetEntityOwner)
-	CreateNative("LM_IsEntityOwner",		Native_IsEntityOwner)
+	CreateNative("LM_CreateEntity",		Native_CreateEntity)
 
-	CreateNative("LM_AllowToLazMod",		Native_AllowToLazMod)
+	CreateNative("LM_SetEntityOwner",	Native_SetEntityOwner)
+	CreateNative("LM_GetEntityOwner",	Native_GetEntityOwner)
+	CreateNative("LM_IsEntityOwner",	Native_IsEntityOwner)
+
+	CreateNative("LM_AllowToLazMod",	Native_AllowToLazMod)
 	CreateNative("LM_AllowFly",			Native_AllowFly)
 
 	CreateNative("LM_IsClientValid",	Native_IsClientValid)
@@ -159,6 +161,57 @@ public Action Command_SpawnCount(plyClient, args) {
 	LM_LogCmd(plyClient, "sm_count", szArgs)
 	return Plugin_Handled
 }
+
+
+
+/**
+ * Create an entity and finish other basic stuff in one line.
+ * Note: Not DispatchSpawn() yet!
+ * 
+ * @param plyClient			Client to assign the owner if needed
+ * @param szClass			Classname for entity to create
+ * @param szModel			Model name
+ * @param vOrigin			Entity will put there after spawn
+ * @param vAngles			Entity will set to that angles after spawn
+ * 
+ * @return 					Entity index, -1 if failed to create entity.
+ */
+Native_CreateEntity(Handle hPlugin, iNumParams) {
+	
+	char szClass[32], szModel[128]
+	float vOrigin[3], vAngles[3]
+	int plyClient = GetNativeCell(1)
+	GetNativeString(2, szClass, sizeof(szClass))
+	GetNativeString(3, szModel, sizeof(szModel))
+	GetNativeArray(4, vOrigin, sizeof(vOrigin))
+	GetNativeArray(4, vAngles, sizeof(vAngles))
+
+	int entProp = -1
+	entProp = CreateEntityByName(szClass)
+	if (entProp == -1)
+		return -1
+
+	if (!StrEqual(szModel, "") && !IsModelPrecached(szModel) && PrecacheModel(szModel) == 0) {
+		RemoveEdict(entProp)
+		return -1
+	}
+	DispatchKeyValue(entProp, "model", szModel)
+
+	if (plyClient != -1 && !LM_SetEntityOwner(entProp, plyClient)) {
+		RemoveEdict(entProp)
+		return -1
+	}
+
+	if (StrEqual(szClass, "prop_dynamic") || StrEqual(szClass, "prop_dynamic_override"))
+		SetEntProp(entProp, Prop_Data, "m_nSolidType", 6)
+
+	TeleportEntity(entProp, vOrigin, vAngles)
+
+	
+
+	return entProp
+}
+
 
 Native_SetEntityOwner(Handle hPlugin, iNumParams) {
 	int entProp = GetNativeCell(1)
