@@ -1,16 +1,12 @@
 
 
-#include <clientprefs>
 #include <sourcemod>
-#include <sdktools>
 #include <regex>
 
 #include <vphysics>
 #include <smlib>
 
 #include <lazmod>
-#include <lazmod_stocks>
-
 
 Handle g_hFile[MAXPLAYERS]
 char g_szFileName[128][MAXPLAYERS]

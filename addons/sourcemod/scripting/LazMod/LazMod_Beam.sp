@@ -1,11 +1,11 @@
 
 
-#include <clientprefs>
 #include <sourcemod>
 #include <sdktools>
-#include <lazmod>
-#include <lazmod_stocks>
+
 #include <vphysics>
+
+#include <lazmod>
 
 static int COLOR_WHITE[4]	= {255,255,255,255}
 static int COLOR_RED[4]	= {255,50,50,255}

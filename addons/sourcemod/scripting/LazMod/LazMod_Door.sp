@@ -1,13 +1,11 @@
 
 
-#include <clientprefs>
 #include <sourcemod>
 #include <sdktools>
-#include <lazmod>
-#include <lazmod_stocks>
+
 #include <vphysics>
 
-
+#include <lazmod>
 
 
 Handle g_hCookieSDoorTarget

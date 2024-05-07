@@ -1,6 +1,5 @@
 
 
-#include <clientprefs>
 #include <sourcemod>
 #include <sdktools>
 
@@ -8,7 +7,6 @@
 #include <vphysics>
 
 #include <lazmod>
-#include <lazmod_stocks>
 
 
 int g_iMaxPropArray = 2048

@@ -1,10 +1,11 @@
 
 
-#include <clientprefs>
 #include <sourcemod>
 #include <sdktools>
-#include <lazmod>
+
 #include <vphysics>
+
+#include <lazmod>
 
 int g_Beam
 int g_Halo

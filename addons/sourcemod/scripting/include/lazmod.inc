@@ -3,6 +3,8 @@
 #define MAX_HOOK_ENTITIES 4096
 #define MSGTAG "\x01[\x04LM\x01]"
 
+#include <lazmod_stocks>
+
 enum ModStatus {
 	LAZMOD_DISABLED = 0,
 	LAZMOD_ADMINONLY = 1,

@@ -1,10 +1,11 @@
 
 
-#include <clientprefs>
 #include <sourcemod>
 #include <sdktools>
-#include <lazmod>
+
 #include <vphysics>
+
+#include <lazmod>
 
 
 Handle g_hCvarStackMax = INVALID_HANDLE
