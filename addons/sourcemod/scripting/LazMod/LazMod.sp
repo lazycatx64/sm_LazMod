@@ -11,23 +11,27 @@
 int g_iPropCurrent[MAXPLAYERS]
 int g_iDollCurrent[MAXPLAYERS]
 int g_iServerCurrent
-int g_iEntOwner[MAX_HOOK_ENTITIES] = {-1,...}
+int g_entPropOwner[MAX_HOOK_ENTITIES] = {-1,...}
 
-Handle g_hCvarModEnabled		= INVALID_HANDLE
-Handle g_hCvarNonOwner			= INVALID_HANDLE
-Handle g_hCvarFly				= INVALID_HANDLE
-Handle g_hCvarServerLimit		= INVALID_HANDLE
-Handle g_hCvarAdminPropLimit	= INVALID_HANDLE
-Handle g_hCvarClientPropLimit	= INVALID_HANDLE
-Handle g_hCvarClientDollLimit	= INVALID_HANDLE
+ConVar g_hCvarModEnabled
+ConVar g_hCvarAllowNonOwner
+ConVar g_hCvarAllowFly
+ConVar g_hCvarAdminBypassOwner
+ConVar g_hCvarMaxPropServer
+ConVar g_hCvarMaxPropAdmin
+ConVar g_hCvarMaxRagdollAdmin
+ConVar g_hCvarMaxPropPlayer
+ConVar g_hCvarMaxRagdollPlayer
 
-int g_iCvarModEnabled
-int g_iCvarNonOwner
-int g_iCvarFly
-int g_iCvarServerLimit
-int g_iCvarAdminPropLimit
-int g_iCvarClientPropLimit
-int g_iCvarClientDollLimit
+ModStatus g_enCvarModEnabled
+bool g_bCvarAllowNonOwner
+bool g_bCvarAllowFly
+bool g_bCvarAdminBypassOwner
+int g_iCvarMaxPropServer
+int g_iCvarMaxPropAdmin
+int g_iCvarMaxRagdollAdmin
+int g_iCvarMaxPropPlayer
+int g_iCvarMaxRagdollPlayer
 
 public Plugin myinfo = {
 	name = "LazMod Core",
@@ -40,26 +44,26 @@ public Plugin myinfo = {
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, err_max) {
 	RegPluginLibrary("build_test")
 	
-	CreateNative("LM_CreateEntity",		Native_CreateEntity)
+	CreateNative("LM_CreateEntity",			Native_CreateEntity)
 
-	CreateNative("LM_SetEntityOwner",	Native_SetEntityOwner)
-	CreateNative("LM_GetEntityOwner",	Native_GetEntityOwner)
-	CreateNative("LM_IsEntityOwner",	Native_IsEntityOwner)
+	CreateNative("LM_SetEntityOwner",		Native_SetEntityOwner)
+	CreateNative("LM_GetEntityOwner",		Native_GetEntityOwner)
+	CreateNative("LM_IsEntityOwner",		Native_IsEntityOwner)
 
-	CreateNative("LM_AllowToLazMod",	Native_AllowToLazMod)
-	CreateNative("LM_AllowFly",			Native_AllowFly)
+	CreateNative("LM_AllowToLazMod",		Native_AllowToLazMod)
+	CreateNative("LM_AllowFly",				Native_AllowFly)
 
-	CreateNative("LM_IsClientValid",	Native_IsClientValid)
-	CreateNative("LM_IsAdmin",			Native_IsAdmin)
+	CreateNative("LM_IsClientValid",		Native_IsClientValid)
+	CreateNative("LM_IsAdmin",				Native_IsAdmin)
 
-	CreateNative("LM_IsFuncProp", 		Native_IsFuncProp)
-	CreateNative("LM_IsNpc",			Native_IsNpc)
-	CreateNative("LM_IsPlayer",			Native_IsPlayer)
+	CreateNative("LM_IsFuncProp", 			Native_IsFuncProp)
+	CreateNative("LM_IsNpc",				Native_IsNpc)
+	CreateNative("LM_IsPlayer",				Native_IsPlayer)
 
-	CreateNative("LM_SetSpawnLimit",	Native_SetSpawnLimit)
-	CreateNative("LM_LogCmd",			Native_LogCmd)
-	CreateNative("LM_PrintToChat",		Native_PrintToChat)
-	CreateNative("LM_PrintToAll",		Native_PrintToAll)
+	CreateNative("LM_SetSpawnLimit",		Native_SetSpawnLimit)
+	CreateNative("LM_LogCmd",				Native_LogCmd)
+	CreateNative("LM_PrintToChat",			Native_PrintToChat)
+	CreateNative("LM_PrintToAll",			Native_PrintToAll)
 	CreateNative("LM_GetClientAimEntity",	Native_GetClientAimEntity)
 
 	
@@ -67,34 +71,48 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, err_max) {
 }
 
 public OnPluginStart() {	
-	g_hCvarModEnabled	= CreateConVar("lm_enable", 		"2", "Enable the LazMod. 2=For All, 1=Admins Only, 0=Disabled.", FCVAR_NOTIFY, true, 0.0, true, 2.0)
-	g_hCvarNonOwner		= CreateConVar("lm_allow_nonowner",	"0", "Switch non-admin player can control non-owner props (usually map props)", FCVAR_NOTIFY, true, 0.0, true, 1.0)
-	g_hCvarFly			= CreateConVar("lm_allow_fly",		"1", "Switch non-admin player can use !fly to noclip", FCVAR_NOTIFY, true, 0.0, true, 1.0)
-	g_hCvarServerLimit	= CreateConVar("lm_server_props",	"2000", "Total prop spawn limit. (Cannot exceed engine-defined upper limit)", FCVAR_NOTIFY, true, 0.0)
-	g_hCvarAdminPropLimit	= CreateConVar("lm_admin_props",	"2000", "Admin prop spawn limit.", FCVAR_NOTIFY, true, 0.0)
-	g_hCvarClientPropLimit	= CreateConVar("lm_client_props",	"700", "Player prop spawn limit.", FCVAR_NOTIFY, true, 0.0)
-	g_hCvarClientDollLimit	= CreateConVar("lm_client_dolls",	"10", "Player ragdoll spawn limit.", FCVAR_NOTIFY, true, 0.0)
+	g_hCvarModEnabled = CreateConVar("lm_enable", "2", "Enable the LazMod. 2=For All, 1=Admins Only, 0=Disabled.", FCVAR_NOTIFY, true, 0.0, true, 2.0)
+	g_hCvarModEnabled.AddChangeHook(Hook_CvarChanged)
+	CvarChanged(g_hCvarModEnabled)
+
+	g_hCvarAllowNonOwner = CreateConVar("lm_allow_nonowner", "0", "Players can control non-owner props (usually map props)", FCVAR_NOTIFY, true, 0.0, true, 1.0)
+	g_hCvarAllowNonOwner.AddChangeHook(Hook_CvarChanged)
+	CvarChanged(g_hCvarAllowNonOwner)
+
+	g_hCvarAllowFly = CreateConVar("lm_allow_fly", "1", "Players can use !fly to noclip", FCVAR_NOTIFY, true, 0.0, true, 1.0)
+	g_hCvarAllowFly.AddChangeHook(Hook_CvarChanged)
+	CvarChanged(g_hCvarAllowFly)
+	
+	g_hCvarAdminBypassOwner = CreateConVar("lm_admin_bypass_owner", "1", "Admins bypass ownership so they can control all props", FCVAR_NOTIFY, true, 0.0, true, 1.0)
+	g_hCvarAdminBypassOwner.AddChangeHook(Hook_CvarChanged)
+	CvarChanged(g_hCvarAdminBypassOwner)
+
+
+
+	g_hCvarMaxPropServer = CreateConVar("lm_maxprop_server", "2000", "Total prop spawn limit including ragdolls. (Cannot exceed engine-defined upper limit)", FCVAR_NOTIFY, true, 0.0)
+	g_hCvarMaxPropServer.AddChangeHook(Hook_CvarChanged)
+	CvarChanged(g_hCvarMaxPropServer)
+
+	g_hCvarMaxPropAdmin = CreateConVar("lm_maxprop_admin", "2000", "Admin prop spawn limit.", FCVAR_NOTIFY, true, 0.0)
+	g_hCvarMaxPropAdmin.AddChangeHook(Hook_CvarChanged)
+	CvarChanged(g_hCvarMaxPropAdmin)
+
+	g_hCvarMaxRagdollAdmin = CreateConVar("lm_maxragdoll_admin", "10", "Admin ragdoll spawn limit.", FCVAR_NOTIFY, true, 0.0)
+	g_hCvarMaxRagdollAdmin.AddChangeHook(Hook_CvarChanged)
+	CvarChanged(g_hCvarMaxRagdollAdmin)
+
+	g_hCvarMaxPropPlayer = CreateConVar("lm_maxprop_player", "700", "Player prop spawn limit.", FCVAR_NOTIFY, true, 0.0)
+	g_hCvarMaxPropPlayer.AddChangeHook(Hook_CvarChanged)
+	CvarChanged(g_hCvarMaxPropPlayer)
+
+	g_hCvarMaxRagdollPlayer = CreateConVar("lm_maxragdoll_player", "5", "Player ragdoll spawn limit.", FCVAR_NOTIFY, true, 0.0)
+	g_hCvarMaxRagdollPlayer.AddChangeHook(Hook_CvarChanged)
+	CvarChanged(g_hCvarMaxRagdollPlayer)
+	
+
 	RegAdminCmd("sm_version", Command_Version, 0, "Show Lazmod Core version")
 	RegAdminCmd("sm_count", Command_SpawnCount, 0, "Show how many entities are you spawned.")
 	
-	g_iCvarModEnabled = GetConVarInt(g_hCvarModEnabled)
-	g_iCvarNonOwner = GetConVarBool(g_hCvarNonOwner)
-	g_iCvarFly = GetConVarBool(g_hCvarFly)
-	g_iCvarServerLimit = GetConVarInt(g_hCvarServerLimit)
-	g_iCvarAdminPropLimit = GetConVarInt(g_hCvarAdminPropLimit)
-	g_iCvarClientPropLimit = GetConVarInt(g_hCvarClientPropLimit)
-	g_iCvarClientDollLimit = GetConVarInt(g_hCvarClientDollLimit)
-
-	HookConVarChange(g_hCvarModEnabled, Hook_CvarModEnabled)
-	HookConVarChange(g_hCvarNonOwner, Hook_CvarNonOwner)
-	HookConVarChange(g_hCvarFly, Hook_CvarFly)
-	HookConVarChange(g_hCvarServerLimit, Hook_CvarServerLimit)
-	HookConVarChange(g_hCvarAdminPropLimit, Hook_CvarAdminPropLimit)
-	HookConVarChange(g_hCvarClientPropLimit, Hook_CvarClientPropLimit)
-	HookConVarChange(g_hCvarClientDollLimit, Hook_CvarClientDollLimit)
-	
-
-	// ServerCommand("gamedesc_override \"BuildMod %s\"", LAZMOD_VER)
 	PrintToServer( "LazMod Core loaded!" )
 	PrintToServer( "Max Entities %d", GetMaxEntities() )
 
@@ -105,32 +123,29 @@ public OnMapStart() {
 	LM_FirstRun()
 }
 
-public Hook_CvarModEnabled(Handle convar, const char[] oldValue, const char[] newValue) {
-	g_iCvarModEnabled = GetConVarInt(g_hCvarModEnabled)
+Hook_CvarChanged(Handle convar, const char[] oldValue, const char[] newValue) {
+	CvarChanged(convar)
 }
-
-public Hook_CvarNonOwner(Handle convar, const char[] oldValue, const char[] newValue) {
-	g_iCvarNonOwner = GetConVarBool(g_hCvarNonOwner)
-}
-
-public Hook_CvarFly(Handle convar, const char[] oldValue, const char[] newValue) {
-	g_iCvarFly = GetConVarBool(g_hCvarFly)
-}
-
-public Hook_CvarServerLimit(Handle convar, const char[] oldValue, const char[] newValue) {
-	g_iCvarServerLimit = GetConVarInt(g_hCvarServerLimit)
-}
-
-public Hook_CvarAdminPropLimit(Handle convar, const char[] oldValue, const char[] newValue) {
-	g_iCvarAdminPropLimit = GetConVarInt(g_hCvarAdminPropLimit)
-}
-
-public Hook_CvarClientPropLimit(Handle convar, const char[] oldValue, const char[] newValue) {
-	g_iCvarClientPropLimit = GetConVarInt(g_hCvarClientPropLimit)
-}
-
-public Hook_CvarClientDollLimit(Handle convar, const char[] oldValue, const char[] newValue) {
-	g_iCvarClientDollLimit = GetConVarInt(g_hCvarClientDollLimit)
+void CvarChanged(Handle convar) {
+	if (convar == g_hCvarModEnabled)
+		g_enCvarModEnabled = view_as<ModStatus>(g_hCvarModEnabled.IntValue)
+	else if (convar == g_hCvarAllowNonOwner)
+		g_bCvarAllowNonOwner = g_hCvarAllowNonOwner.BoolValue
+	else if (convar == g_hCvarAllowFly)
+		g_bCvarAllowFly = g_hCvarAllowFly.BoolValue
+	else if (convar == g_hCvarAdminBypassOwner)
+		g_bCvarAdminBypassOwner = g_hCvarAdminBypassOwner.BoolValue
+		
+	else if (convar == g_hCvarMaxPropServer)
+		g_iCvarMaxPropServer = g_hCvarMaxPropServer.IntValue
+	else if (convar == g_hCvarMaxPropAdmin)
+		g_iCvarMaxPropAdmin = g_hCvarMaxPropAdmin.IntValue
+	else if (convar == g_hCvarMaxRagdollAdmin)
+		g_iCvarMaxRagdollAdmin = g_hCvarMaxRagdollAdmin.IntValue
+	else if (convar == g_hCvarMaxPropPlayer)
+		g_iCvarMaxPropPlayer = g_hCvarMaxPropPlayer.IntValue
+	else if (convar == g_hCvarMaxRagdollPlayer)
+		g_iCvarMaxRagdollPlayer = g_hCvarMaxRagdollPlayer.IntValue
 }
 
 public Action Command_Version(plyClient, args) {
@@ -141,13 +156,13 @@ public Action Command_Version(plyClient, args) {
 public Action Command_SpawnCount(plyClient, args) {
 	if (!LM_AllowToLazMod(plyClient) || LM_IsBlacklisted(plyClient))
 		return Plugin_Handled
-		
-	LM_PrintToChat(plyClient, "Your Limit: %i/%i [Ragdoll: %i/%i]", g_iPropCurrent[plyClient], LM_IsAdmin(plyClient) ? g_iCvarAdminPropLimit : g_iCvarClientPropLimit, g_iDollCurrent[plyClient], g_iCvarClientDollLimit)
-	LM_PrintToChat(plyClient, "Server Limit: %i/%i (%i/%i edicts)",  g_iServerCurrent, g_iCvarServerLimit, GetEntityCount(), LM_GetMaxEdict())
+	
+	LM_PrintToChat(plyClient, "Your Limit: %i/%i [Ragdoll: %i/%i]", g_iPropCurrent[plyClient],(LM_IsAdmin(plyClient) ? g_iCvarMaxPropAdmin : g_iCvarMaxPropPlayer), g_iDollCurrent[plyClient], (LM_IsAdmin(plyClient) ? g_iCvarMaxRagdollAdmin : g_iCvarMaxRagdollPlayer))
+	LM_PrintToChat(plyClient, "Server Limit: %i/%i (%i/%i edicts)",  g_iServerCurrent, g_iCvarMaxPropServer, GetEntityCount(), LM_GetMaxEdict())
 	if (LM_IsAdmin(plyClient)) {
 		for (int i = 1; i < MaxClients; i++) {
 			if (LM_IsClientValid(i, i) && plyClient != i)
-				LM_PrintToChat(plyClient, "%N: %i/%i [Ragdoll: %i/%i]", i, g_iPropCurrent[i], LM_IsAdmin(i) ? g_iCvarAdminPropLimit : g_iCvarClientPropLimit, g_iDollCurrent[i], g_iCvarClientDollLimit)
+				LM_PrintToChat(plyClient, "%N: %i/%i [Ragdoll: %i/%i]", i, g_iPropCurrent[i], (LM_IsAdmin(i) ? g_iCvarMaxPropAdmin : g_iCvarMaxPropPlayer), g_iDollCurrent[i], (LM_IsAdmin(i) ? g_iCvarMaxRagdollAdmin : g_iCvarMaxRagdollPlayer))
 		
 		}
 	}
@@ -218,7 +233,7 @@ Native_SetEntityOwner(Handle hPlugin, iNumParams) {
 		bIsDoll = GetNativeCell(3)
 	
 	if (plyClient == -1) {
-		g_iEntOwner[entProp] = -1
+		g_entPropOwner[entProp] = -1
 		return true
 	}
 
@@ -242,13 +257,13 @@ Native_SetEntityOwner(Handle hPlugin, iNumParams) {
 		return false
 	}
 
-	if (g_iServerCurrent >= g_iCvarServerLimit) {
+	if (g_iServerCurrent >= g_iCvarMaxPropServer) {
 		LM_PrintToChat(plyClient, "The number of prop has reached the server limit.")
 		return false
 	}
 
 	if (bIsDoll) {
-		if (g_iDollCurrent[plyClient] < g_iCvarClientDollLimit) {
+		if (g_iDollCurrent[plyClient] < (LM_IsAdmin(plyClient) ? g_iCvarMaxRagdollAdmin : g_iCvarMaxRagdollPlayer)) {
 			g_iDollCurrent[plyClient] += 1
 			g_iPropCurrent[plyClient] += 1
 		} else {
@@ -256,24 +271,24 @@ Native_SetEntityOwner(Handle hPlugin, iNumParams) {
 			return false
 		}
 	} else {
-		if (g_iPropCurrent[plyClient] < (LM_IsAdmin(plyClient) ? g_iCvarAdminPropLimit : g_iCvarClientPropLimit))
+		if (g_iPropCurrent[plyClient] < (LM_IsAdmin(plyClient) ? g_iCvarMaxPropAdmin : g_iCvarMaxPropPlayer))
 			g_iPropCurrent[plyClient] += 1
 		else {
 			LM_PrintToChat(plyClient, "Your props has reached the limit.")
 			return false
 		}
 	}
-	g_iEntOwner[entProp] = plyClient
+	g_entPropOwner[entProp] = plyClient
 	g_iServerCurrent += 1
 	return true
 }
 
 Native_GetEntityOwner(Handle hPlugin, iNumParams) {
-	new iEnt = GetNativeCell(1)
-	if (IsValidEntity(iEnt))
-		return g_iEntOwner[iEnt]
+	int entProp = GetNativeCell(1)
+	if (IsValidEntity(entProp))
+		return g_entPropOwner[entProp]
 	else {
-		ThrowNativeError(SP_ERROR_NATIVE, "Entity id %i is invalid.", iEnt)
+		ThrowNativeError(SP_ERROR_NATIVE, "Entity id %i is invalid.", entProp)
 		return -1
 	}
 }
@@ -314,27 +329,31 @@ Native_SetSpawnLimit(Handle hPlugin, iNumParams) {
 }
 
 Native_AllowToLazMod(Handle hPlugin, iNumParams) {
-	int plyClient = GetNativeCell(1)
 
+	int plyClient = GetNativeCell(1)
 
 	if (!IsClientConnected(plyClient)) {
 		ThrowNativeError(SP_ERROR_NATIVE, "Client id %i is not connected.", plyClient)
 		return -1
 	}
 
-	switch (g_iCvarModEnabled) {
-		case 0: {
+	switch (g_enCvarModEnabled) {
+		case LAZMOD_DISABLED: {
 			LM_PrintToChat(plyClient, "LazMod is not available or disabled!")
 			return false
 		}
-		case 1: {
+		case LAZMOD_ADMINONLY: {
 			if (!LM_IsAdmin(plyClient)) {
 				LM_PrintToChat(plyClient, "LazMod is not available or disabled.")
 				return false
 			} else
 				return true
 		}
-		default: return true
+		case LAZMOD_ENABLED: {
+			return true
+		}
+		default:
+			return true
 	}
 	
 }
@@ -347,7 +366,7 @@ Native_AllowFly(Handle hPlugin, iNumParams) {
 	}
 
 	AdminId adminId = GetUserAdmin(plyClient)
-	if (!g_iCvarFly && GetAdminFlag(adminId, Admin_Custom1) == false) {
+	if (!g_bCvarAllowFly && GetAdminFlag(adminId, Admin_Custom1) == false) {
 		LM_PrintToChat(plyClient, "Fly is not available or disabled.")
 		return false
 	} else
@@ -439,18 +458,18 @@ Native_IsEntityOwner(Handle hPlugin, iNumParams) {
 	if (iNumParams >= 3)
 		bIngoreCvar = GetNativeCell(3)
 	
-	if (LM_IsAdmin(plyClient))
+	if (LM_IsAdmin(plyClient) && g_bCvarAdminBypassOwner)
 		return true
 
 	if (LM_GetEntityOwner(entProp) == plyClient)
 		return true
 
-	if (LM_IsPlayer(entProp) && !LM_IsAdmin(plyClient)) {
+	if (LM_IsPlayer(entProp) && (!LM_IsAdmin(plyClient) || !g_bCvarAdminBypassOwner)) {
 		LM_PrintToChat(plyClient, "You are not allowed to do this to players!")
 		return false
 	}
 
-	if (LM_GetEntityOwner(entProp) == -1 && (bIngoreCvar || g_iCvarNonOwner))
+	if (LM_GetEntityOwner(entProp) == -1 && (bIngoreCvar || g_bCvarAllowNonOwner))
 		return true
 
 	LM_PrintToChat(plyClient, "This prop does not belong to you!")
