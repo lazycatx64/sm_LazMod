@@ -7,6 +7,9 @@
 
 
 
+ConVar g_hCvarNokillEnabled
+bool g_bCvarNokillEnabled
+
 
 bool g_bGodMode[MAXPLAYERS]
 int g_iGodModeLock[MAXPLAYERS] = {0, ...}
@@ -16,7 +19,7 @@ Handle g_hLock[MAXPLAYERS]
 public Plugin myinfo = {
 	name = "LazMod - NoKill",
 	author = "LaZycAt, hjkwe654",
-	description = "Protect player from DMers, works based on filter_damage_type entity.",
+	description = "Protect player from RDMers and most type of damages, works based on filter_damage_type.",
 	version = LAZMOD_VER,
 	url = ""
 }
@@ -27,19 +30,37 @@ public OnPluginStart() {
 	HookEvent("player_hurt", OnPlyDamaged, EventHookMode_Post)
 	HookEvent("player_death", OnPlyDeath, EventHookMode_Post)
 	
+	g_hCvarNokillEnabled = CreateConVar("lm_nokill_enabled", "1", "Enables nokill", FCVAR_NOTIFY, true, 0.0, true, 1.0)
+	g_hCvarNokillEnabled.AddChangeHook(Hook_CvarChanged)
+	CvarChanged(g_hCvarNokillEnabled)
+
 	PrintToServer( "LazMod NoKill loaded!" )
 }
 
-public OnMapStart()
+public OnMapStart() {
 	CheckDfilterExist()
+}
 
+
+Hook_CvarChanged(Handle convar, const char[] oldValue, const char[] newValue) {
+	CvarChanged(convar)
+}
+void CvarChanged(Handle convar) {
+	if (convar == g_hCvarNokillEnabled)
+		g_bCvarNokillEnabled = g_hCvarNokillEnabled.BoolValue
+}
 
 public Action Command_NoKill(Client, args) {
 	if (!LM_AllowToLazMod(Client) || LM_IsBlacklisted(Client) || !LM_IsClientValid(Client, Client)) {
-		PrintToChat(Client, "No!")
+		LM_PrintToChat(Client, "No!")
 		return Plugin_Handled
 	}
 	
+	if (!g_bCvarNokillEnabled) {
+		LM_PrintToChat(Client, "NoKill is currently disabled.")
+		return Plugin_Handled
+	}
+
 	CheckDfilterExist()
 	
 	char szPlayer[64]
@@ -65,7 +86,7 @@ public Action Command_NoKill(Client, args) {
 						g_bGodMode[iTarget] = true
 						SetVariantString("cat_dfilter_dmg")
 						AcceptEntityInput(iTarget, "setdamagefilter", -1)
-						LM_PrintToChat(iTarget, "On")
+						LM_PrintToChat(iTarget, "NoKill On")
 						LM_PrintToChat(Client, "Turned %N NoKill ON", iTarget)
 					} else 
 						LM_PrintToChat(Client, "%N NoKill is already ON", iTarget)
@@ -74,7 +95,7 @@ public Action Command_NoKill(Client, args) {
 						g_bGodMode[iTarget] = false
 						SetVariantString("0")
 						AcceptEntityInput(iTarget, "setdamagefilter", -1)
-						LM_PrintToChat(iTarget, "Off")
+						LM_PrintToChat(iTarget, "NoKill Off")
 						LM_PrintToChat(Client, "Turned %N NoKill OFF", iTarget)
 					} else
 						LM_PrintToChat(Client, "%N NoKill is already OFF", iTarget)
@@ -84,13 +105,13 @@ public Action Command_NoKill(Client, args) {
 					g_bGodMode[iTarget] = true
 					SetVariantString("cat_dfilter_dmg")
 					AcceptEntityInput(iTarget, "setdamagefilter", -1)
-					LM_PrintToChat(iTarget, "On")
+					LM_PrintToChat(iTarget, "NoKill On")
 					LM_PrintToChat(Client, "Turned %N NoKill ON", iTarget)
 				} else {
 					g_bGodMode[iTarget] = false
 					SetVariantString("0")
 					AcceptEntityInput(iTarget, "setdamagefilter", -1)
-					LM_PrintToChat(iTarget, "Off")
+					LM_PrintToChat(iTarget, "NoKill Off")
 					LM_PrintToChat(Client, "Turned %N NoKill OFF", iTarget)
 				}
 			}
@@ -108,12 +129,12 @@ public Action Command_NoKill(Client, args) {
 		g_bGodMode[Client] = true
 		SetVariantString("cat_dfilter_dmg")
 		AcceptEntityInput(Client, "setdamagefilter", -1)
-		LM_PrintToChat(Client, "On")
+		LM_PrintToChat(Client, "NoKill On")
 	} else {
 		g_bGodMode[Client] = false
 		SetVariantString("0")
 		AcceptEntityInput(Client, "setdamagefilter", -1)
-		LM_PrintToChat(Client, "Off")
+		LM_PrintToChat(Client, "NoKill Off")
 	}
 	
 	char szTemp[33], szArgs[128]
@@ -164,7 +185,7 @@ OnPlyDamaged(Handle hEvent, const char[] szName, bool bBroadcast) {
 		SetVariantString("0")
 		AcceptEntityInput(plyAttacker, "setdamagefilter", -1)
 		LM_PrintToChat(plyAttacker, "NoKill auto disabled because attacking players.")
-		LM_PrintToChat(plyAttacker, "Off")
+		LM_PrintToChat(plyAttacker, "NoKill Off")
 	}
 }
 
@@ -176,7 +197,7 @@ public Action Timer_Lock(Handle Timer, any plyAttacker) {
 				PrintCenterText(plyAttacker, "NoKill Locked, Time Left: %i", g_iGodModeLock[plyAttacker])
 				g_hLock[plyAttacker] = CreateTimer(1.0, Timer_Lock, plyAttacker)
 			} else {
-				LM_PrintToChat(plyAttacker, "Unlocked")
+				LM_PrintToChat(plyAttacker, "NoKill Unlocked")
 				KillTimer(g_hLock[plyAttacker])
 				g_hLock[plyAttacker] = INVALID_HANDLE
 			}
@@ -199,12 +220,5 @@ CheckDfilterExist() {
 		DispatchKeyValue(g_entDmgFilter, "Negated", "0")
 		DispatchKeyValue(g_entDmgFilter, "damagetype", "16384")
 		DispatchSpawn(g_entDmgFilter)
-	}
-}
-
-public OnPluginEnd() {
-	for (int i = 0; i < MAXPLAYERS; i++) {
-		g_bGodMode[i] = false
-		g_iGodModeLock[i] = 0
 	}
 }
