@@ -29,10 +29,7 @@ public OnPluginStart() {
 	
 	// Player Commands
 	{
-	}
-
-	// Level 2 Commands
-	{
+		RegAdminCmd("sm_prop", Command_PropInfo, 0, "Show info of a prop.")
 		// RegAdminCmd("sm_setview", Command_Setview, 0, "Turn your view into a prop.")
 		// RegAdminCmd("sm_resetview", Command_Resetview, 0, "Quit the setview.")
 		// RegAdminCmd("sm_ginertia", Command_GetInertia, 0, "Get an entity inertia.")
@@ -86,6 +83,52 @@ public OnMapStart() {
 	PrecacheSound("ion/attack.wav", true)
 	
 	MapPreset()
+}
+
+
+public Action Command_PropInfo(plyClient, args) {
+	if (!LM_AllowToLazMod(plyClient) || LM_IsBlacklisted(plyClient) || !LM_IsClientValid(plyClient, plyClient))
+		return Plugin_Handled
+	
+	int entProp = LM_GetClientAimEntity(plyClient)
+	if (entProp == -1) 
+		return Plugin_Handled
+	
+	char szOwner[MAX_NAME_LENGTH], szClass[32], szTargetname[64], szModel[PLATFORM_MAX_PATH] 
+	float vOrigin[3], vAngles[3]
+
+	int plyOwner = LM_GetEntityOwner(entProp)
+	if (plyOwner != -1)
+		GetClientName(plyOwner, szOwner, sizeof(szOwner))
+	else if (plyOwner > MAXPLAYERS){
+		szOwner = "*Disconnectd"
+	} else {
+		szOwner = "*None"
+	}
+
+	LM_GetEntClassname(entProp, szClass, sizeof(szClass))
+	LM_GetEntTargetName(entProp, szTargetname, sizeof(szTargetname))
+	LM_GetEntModel(entProp, szModel, sizeof(szModel))
+	LM_GetEntOrigin(entProp, vOrigin)
+	LM_GetEntAngles(entProp, vAngles)
+
+	LM_PrintToChat(plyClient, "Prop info:")
+	LM_PrintToChat(plyClient, "\tOwner: %s", szOwner)
+	LM_PrintToChat(plyClient, "\tIndex: %d", entProp)
+	LM_PrintToChat(plyClient, "\tClassname: %s", szClass)
+	LM_PrintToChat(plyClient, "\tTargetname: %s", szTargetname)
+	LM_PrintToChat(plyClient, "\tModel: %s", szModel)
+	LM_PrintToChat(plyClient, "\tMass: %f", Phys_GetMass(entProp))
+	LM_PrintToChat(plyClient, "\tOrigin: %f %f %f", vOrigin[0], vOrigin[1], vOrigin[2])
+	LM_PrintToChat(plyClient, "\tAngles: %f %f %f", vAngles[0], vAngles[1], vAngles[2])
+
+
+
+
+	char szArgs[128]
+	GetCmdArgString(szArgs, sizeof(szArgs))
+	LM_LogCmd(plyClient, "sm_what", szArgs)
+	return Plugin_Handled
 }
 
 // TODO: SourceOP Dead
@@ -757,14 +800,15 @@ public Action Command_AdminBottle(Client, args) {
 	return Plugin_Handled
 }
 
-public Action Command_Test(Client, args) {
+public Action Command_Test(plyClient, args) {
 	
-	int entProp = LM_GetClientAimEntity(Client)
+	int entProp = LM_GetClientAimEntity(plyClient)
 	if (entProp == -1) 
 		return Plugin_Handled
 	
-	DispatchKeyValue(entProp, "model", "models/props_junk/watermelon01.mdl")
-	DispatchSpawn(entProp)
+	float vOrigin[3] = {-10523.685546, -10168.564453, -4375.968750}
+	SetEntPropVector(entProp, Prop_Data, "m_vecOrigin", vOrigin)
+
 	return Plugin_Handled
 }
 
