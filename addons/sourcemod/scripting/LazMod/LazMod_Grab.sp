@@ -4,22 +4,26 @@
 #include <sdktools>
 
 #include <vphysics>
+#include <smlib>
 
 #include <lazmod>
 
 int g_mdlLaserBeam
 int g_mdlHalo
-int g_mdlPhysBeam
 
 MoveType g_mtGrabMoveType[MAXPLAYERS]
-int g_iGrabTarget[MAXPLAYERS]
+int g_entGrabTarget[MAXPLAYERS]
 float g_vGrabPlayerOrigin[MAXPLAYERS][3]
-bool g_bGrabIsRunning[MAXPLAYERS]
-bool g_bGrabFreeze[MAXPLAYERS]
+bool g_bGrabIsRunning[MAXPLAYERS] = {false,...}
+bool g_bGrabUnfreeze[MAXPLAYERS] = {false,...}
+int g_iGrabColor[4] = {255, 50, 50, 255}
 
+int g_entCopyOld[MAXPLAYERS]
 int g_entCopyTarget[MAXPLAYERS]
 float g_vCopyPlayerOrigin[MAXPLAYERS][3]
-bool g_bCopyIsRunning[MAXPLAYERS] = {false, ...}
+bool g_bCopyIsRunning[MAXPLAYERS] = {false,...}
+bool g_bCopyUnfreeze[MAXPLAYERS] = {false,...}
+int g_iCopyColor[4] = {255, 50, 200, 255}
 char CopyableProps[][] = {
 	"prop_dynamic",
 	"prop_dynamic_override",
@@ -43,7 +47,7 @@ public Plugin myinfo = {
 }
 
 public OnPluginStart() {
-	RegAdminCmd("+grabent", Command_GrabentOn, 0, "Grabent a prop.")
+	RegAdminCmd("+grabent", Command_GrabentOn, 0, "Grabent a prop, use '+grabent 1' can freeze prop after grab.")
 	RegAdminCmd("-grabent", Command_GrabentOff, 0, "Stop grabent.")
 	
 	RegAdminCmd("+copyent", Command_CopyentOn, 0, "Copyent a prop.")
@@ -55,145 +59,133 @@ public OnPluginStart() {
 public OnMapStart() {
 	g_mdlHalo = PrecacheModel("materials/sprites/halo01.vmt")
 	g_mdlLaserBeam = PrecacheModel("materials/sprites/laser.vmt")
-	g_mdlPhysBeam = PrecacheModel("materials/sprites/physbeam.vmt")
 }
 
 
-public Action Command_GrabentOn(Client, args) {
-	if (!LM_IsClientValid(Client, Client, true))
+public Action Command_GrabentOn(plyClient, args) {
+	if (!LM_IsClientValid(plyClient, plyClient, true))
 		return Plugin_Handled
 	
-	g_iGrabTarget[Client] = LM_GetClientAimEntity(Client, true, true)
-	if (g_iGrabTarget[Client] == -1)
+	g_entGrabTarget[plyClient] = LM_GetClientAimEntity(plyClient, true, true)
+	if (g_entGrabTarget[plyClient] == -1)
 		return Plugin_Handled
 	
-	if (g_bGrabIsRunning[Client]) {
-		LM_PrintToChat(Client, "You are already grabbing something!")
+	if (g_bGrabIsRunning[plyClient]) {
+		LM_PrintToChat(plyClient, "You are already grabbing something!")
 		return Plugin_Handled
 	}	
 	
-	if (!LM_IsAdmin(Client)) {
-		if (GetEntityFlags(g_iGrabTarget[Client]) == (FL_CLIENT | FL_FAKECLIENT))
+	if (!LM_IsAdmin(plyClient)) {
+		if (GetEntityFlags(g_entGrabTarget[plyClient]) == (FL_CLIENT | FL_FAKECLIENT))
 			return Plugin_Handled
 	}
 	
-	if (LM_IsEntityOwner(Client, g_iGrabTarget[Client])) {		
-		char szFreeze[20]
-		GetCmdArg(1, szFreeze, sizeof(szFreeze))
+	if (!LM_IsEntityOwner(plyClient, g_entGrabTarget[plyClient]))
+		return Plugin_Handled
+
+	char szFreeze[20]
+	GetCmdArg(1, szFreeze, sizeof(szFreeze))
+	
+	g_bGrabUnfreeze[plyClient] = true
+	if (!StrEqual(szFreeze, ""))
+		g_bGrabUnfreeze[plyClient] = false
+	
+	SetEntityRenderColor(g_entGrabTarget[plyClient], g_iGrabColor[0], g_iGrabColor[1], g_iGrabColor[2], g_iGrabColor[3])
+	SetEntityRenderFx(g_entGrabTarget[plyClient], RENDERFX_PULSE_FAST_WIDE)
+	SetEntityRenderMode(g_entGrabTarget[plyClient], RENDER_NORMAL)
+
+	g_mtGrabMoveType[plyClient] = GetEntityMoveType(g_entGrabTarget[plyClient])
+	g_bGrabIsRunning[plyClient] = true
+	
+	CreateTimer(0.01, Timer_GrabBeam, plyClient)
+	CreateTimer(0.01, Timer_GrabRing, plyClient)
+	CreateTimer(0.05, Timer_GrabMain, plyClient)
+	
+	return Plugin_Handled
+}
+
+public Action Command_GrabentOff(plyClient, args) {
+	g_bGrabIsRunning[plyClient] = false
+	return Plugin_Handled
+}
+
+public Action Timer_GrabBeam(Handle Timer, any plyClient) {
+	if(!IsValidEntity(g_entGrabTarget[plyClient]) || !LM_IsClientValid(plyClient, plyClient))
+		return Plugin_Handled
 		
-		g_bGrabFreeze[Client] = false
-		if (StrEqual(szFreeze, "1"))
-			g_bGrabFreeze[Client] = true
+	float vOriginEntity[3], vOriginPlayer[3]
+	
+	GetClientAbsOrigin(plyClient, g_vGrabPlayerOrigin[plyClient])
+	GetClientAbsOrigin(plyClient, vOriginPlayer)
+	GetEntPropVector(g_entGrabTarget[plyClient], Prop_Data, "m_vecOrigin", vOriginEntity)
+	vOriginPlayer[2] += 50
+	
+	TE_SetupBeamPoints(vOriginEntity, vOriginPlayer, g_mdlLaserBeam, g_mdlHalo, 0, 66, 0.1, 2.0, 2.0, 0, 0.0, g_iGrabColor, 20)
+	TE_SendToAll()
+	
+	if (g_bGrabIsRunning[plyClient])
+		CreateTimer(0.01, Timer_GrabBeam, plyClient)
+	
+	return Plugin_Handled
+}
+
+public Action Timer_GrabRing(Handle Timer, any plyClient) {
+	if(!IsValidEntity(g_entGrabTarget[plyClient]) || !LM_IsClientValid(plyClient, plyClient))
+		return Plugin_Handled
 		
-		DispatchKeyValue(g_iGrabTarget[Client], "rendermode", "5")
-		DispatchKeyValue(g_iGrabTarget[Client], "renderamt", "150")
-		DispatchKeyValue(g_iGrabTarget[Client], "renderfx", "4")
+	float vOriginEntity[3]
+	GetEntPropVector(g_entGrabTarget[plyClient], Prop_Data, "m_vecOrigin", vOriginEntity)
+	
+	TE_SetupBeamRingPoint(vOriginEntity, 10.0, 15.0, g_mdlLaserBeam, g_mdlHalo, 0, 10, 0.6, 3.0, 0.5, g_iGrabColor, 5, 0)
+	TE_SendToAll()
+	TE_SetupBeamRingPoint(vOriginEntity, 80.0, 100.0, g_mdlLaserBeam, g_mdlHalo, 0, 10, 0.6, 3.0, 0.5, g_iGrabColor, 5, 0)
+	TE_SendToAll()
+	
+	if (g_bGrabIsRunning[plyClient])
+		CreateTimer(0.5, Timer_GrabRing, plyClient)
+	
+	return Plugin_Handled
+}
+
+public Action Timer_GrabMain(Handle Timer, any plyClient) {
+	if(!IsValidEntity(g_entGrabTarget[plyClient]) || !LM_IsClientValid(plyClient, plyClient))
+		return Plugin_Handled
 		
-		DispatchKeyValue(g_iGrabTarget[Client], "rendercolor", "255 50 50")
-		
-		g_mtGrabMoveType[Client] = GetEntityMoveType(g_iGrabTarget[Client])
-		g_bGrabIsRunning[Client] = true
-		
-		CreateTimer(0.01, Timer_GrabBeam, Client)
-		// Disabled for being too fancy
-		// CreateTimer(0.01, Timer_GrabRing, Client)
-		CreateTimer(0.05, Timer_GrabMain, Client)
+	float vOriginEntity[3], vOriginPlayer[3]
+	
+	GetEntPropVector(g_entGrabTarget[plyClient], Prop_Data, "m_vecOrigin", vOriginEntity)
+	GetClientAbsOrigin(plyClient, vOriginPlayer)
+	
+	vOriginEntity[0] += vOriginPlayer[0] - g_vGrabPlayerOrigin[plyClient][0]
+	vOriginEntity[1] += vOriginPlayer[1] - g_vGrabPlayerOrigin[plyClient][1]
+	vOriginEntity[2] += vOriginPlayer[2] - g_vGrabPlayerOrigin[plyClient][2]
+	
+	if(Phys_IsPhysicsObject(g_entGrabTarget[plyClient])) {
+		Phys_EnableMotion(g_entGrabTarget[plyClient], false)
+		Phys_Sleep(g_entGrabTarget[plyClient])
 	}
-	return Plugin_Handled
-}
-
-public Action Command_GrabentOff(Client, args) {
-	g_bGrabIsRunning[Client] = false
-	return Plugin_Handled
-}
-
-public Action Timer_GrabBeam(Handle Timer, any Client) {
-	if(IsValidEntity(g_iGrabTarget[Client]) && LM_IsClientValid(Client, Client)) {
-		float vOriginEntity[3], vOriginPlayer[3]
-		
-		GetClientAbsOrigin(Client, g_vGrabPlayerOrigin[Client])
-		GetClientAbsOrigin(Client, vOriginPlayer)
-		GetEntPropVector(g_iGrabTarget[Client], Prop_Data, "m_vecOrigin", vOriginEntity)
-		vOriginPlayer[2] += 50
-		
-		int iColor[4]
-		iColor[0] = GetRandomInt(50, 255)
-		iColor[1] = GetRandomInt(50, 255)
-		iColor[2] = GetRandomInt(50, 255)
-		iColor[3] = 255
-		
-		TE_SetupBeamPoints(vOriginEntity, vOriginPlayer, g_mdlPhysBeam, g_mdlHalo, 0, 66, 0.1, 2.0, 2.0, 0, 0.0, iColor, 20)
-		TE_SendToAll()
-		
-		if (g_bGrabIsRunning[Client])
-			CreateTimer(0.01, Timer_GrabBeam, Client)
-	}
-	return Plugin_Handled
-}
-
-public Action Timer_GrabRing(Handle Timer, any Client) {
-	if(IsValidEntity(g_iGrabTarget[Client]) && LM_IsClientValid(Client, Client)) {
-		float vOriginEntity[3]
-		GetEntPropVector(g_iGrabTarget[Client], Prop_Data, "m_vecOrigin", vOriginEntity)
-		
-		int iColor[4]
-		iColor[0] = GetRandomInt(50, 255)
-		iColor[1] = GetRandomInt(50, 255)
-		iColor[2] = GetRandomInt(50, 255)
-		iColor[3] = 255
-		
-		TE_SetupBeamRingPoint(vOriginEntity, 10.0, 15.0, g_mdlLaserBeam, g_mdlHalo, 0, 10, 0.6, 3.0, 0.5, iColor, 5, 0)
-		TE_SetupBeamRingPoint(vOriginEntity, 80.0, 100.0, g_mdlLaserBeam, g_mdlHalo, 0, 10, 0.6, 3.0, 0.5, iColor, 5, 0)
-		TE_SendToAll()
-		
-		if (g_bGrabIsRunning[Client])
-			CreateTimer(0.3, Timer_GrabRing, Client)
-	}
-	return Plugin_Handled
-}
-
-public Action Timer_GrabMain(Handle Timer, any Client) {
-	if(IsValidEntity(g_iGrabTarget[Client]) && LM_IsClientValid(Client, Client)) {
-		// if (!LM_IsAdmin(Client)) {
-			// if (LM_GetEntityOwner(g_iGrabTarget[Client]) != Client) {
-				// g_bGrabIsRunning[Client] = false
-				// return
-			// }
-		// }
-		
-		float vOriginEntity[3], vOriginPlayer[3]
-		
-		GetEntPropVector(g_iGrabTarget[Client], Prop_Data, "m_vecOrigin", vOriginEntity)
-		GetClientAbsOrigin(Client, vOriginPlayer)
-		
-		vOriginEntity[0] += vOriginPlayer[0] - g_vGrabPlayerOrigin[Client][0]
-		vOriginEntity[1] += vOriginPlayer[1] - g_vGrabPlayerOrigin[Client][1]
-		vOriginEntity[2] += vOriginPlayer[2] - g_vGrabPlayerOrigin[Client][2]
-		
-		if(Phys_IsPhysicsObject(g_iGrabTarget[Client])) {
-			Phys_EnableMotion(g_iGrabTarget[Client], false)
-			Phys_Sleep(g_iGrabTarget[Client])
-		}
-		SetEntityMoveType(g_iGrabTarget[Client], MOVETYPE_NONE)
-		TeleportEntity(g_iGrabTarget[Client], vOriginEntity, NULL_VECTOR, NULL_VECTOR)
-		
-		if (g_bGrabIsRunning[Client])
-			CreateTimer(0.001, Timer_GrabMain, Client)
-		else {
-			if (GetEntityFlags(g_iGrabTarget[Client]) & (FL_CLIENT | FL_FAKECLIENT))
-				SetEntityMoveType(g_iGrabTarget[Client], MOVETYPE_WALK)
-			else {
-				if (!g_bGrabFreeze[Client] && Phys_IsPhysicsObject(g_iGrabTarget[Client])) {
-					Phys_EnableMotion(g_iGrabTarget[Client], true)
-					Phys_Sleep(g_iGrabTarget[Client])
-				}
-				SetEntityMoveType(g_iGrabTarget[Client], g_mtGrabMoveType[Client])
+	SetEntityMoveType(g_entGrabTarget[plyClient], MOVETYPE_NONE)
+	TeleportEntity(g_entGrabTarget[plyClient], vOriginEntity)
+	
+	if (!g_bGrabIsRunning[plyClient]) {
+		if (GetEntityFlags(g_entGrabTarget[plyClient]) & (FL_CLIENT | FL_FAKECLIENT)) {
+			SetEntityMoveType(g_entGrabTarget[plyClient], MOVETYPE_WALK)
+			
+		} else {
+			if (Phys_IsPhysicsObject(g_entGrabTarget[plyClient])) {
+				Phys_EnableMotion(g_entGrabTarget[plyClient], g_bGrabUnfreeze[plyClient])
+				Phys_Sleep(g_entGrabTarget[plyClient])
 			}
-			DispatchKeyValue(g_iGrabTarget[Client], "rendermode", "5")
-			DispatchKeyValue(g_iGrabTarget[Client], "renderamt", "255")
-			DispatchKeyValue(g_iGrabTarget[Client], "renderfx", "0")
-			DispatchKeyValue(g_iGrabTarget[Client], "rendercolor", "255 255 255")
+			SetEntityMoveType(g_entGrabTarget[plyClient], g_mtGrabMoveType[plyClient])
 		}
+		
+		SetEntityRenderColor(g_entGrabTarget[plyClient], 255, 255, 255, 255)
+		SetEntityRenderFx(g_entGrabTarget[plyClient], RENDERFX_NONE)
+		SetEntityRenderMode(g_entGrabTarget[plyClient], RENDER_NORMAL)
+
+	} else {
+		CreateTimer(0.001, Timer_GrabMain, plyClient)
+
 	}
 	return Plugin_Handled
 }
@@ -221,139 +213,108 @@ public Action Command_CopyentOn(plyClient, args) {
 		return Plugin_Handled
 	}
 	
-	char szClass[33]
+	char szFreeze[2] = ""
+	GetCmdArg(1, szFreeze, sizeof(szFreeze))
+		
+	g_bCopyUnfreeze[plyClient] = true
+	if (StrEqual(szFreeze, "1"))
+		g_bCopyUnfreeze[plyClient] = false
+
+	char szClass[32]
 	bool bCanCopy = false
 	GetEdictClassname(entProp, szClass, sizeof(szClass))
 	for (int i = 0; i < sizeof(CopyableProps); i++) {
 		if(StrEqual(szClass, CopyableProps[i], false))
 			bCanCopy = true
 	}
-	
-	bool IsDoll = false
-	if (StrEqual(szClass, "prop_ragdoll") || StrEqual(szClass, "player")) {
-		g_entCopyTarget[plyClient] = CreateEntityByName("prop_ragdoll")
-		IsDoll = true
-		
-	} else {
-		g_entCopyTarget[plyClient] = CreateEntityByName(szClass)
-	}
-	
-	if (LM_SetEntityOwner(g_entCopyTarget[plyClient], plyClient, IsDoll)) {
-		if (bCanCopy) {
-			float fEntityOrigin[3], fEntityAngle[3]
-			char szModelName[128]
-			char szColorR[20], szColorG[20], szColorB[20], szColor[3][128], szColor2[255]
-			
-			GetEntPropVector(entProp, Prop_Data, "m_vecOrigin", fEntityOrigin)
-			GetEntPropVector(entProp, Prop_Data, "m_angRotation", fEntityAngle)
-			GetEntPropString(entProp, Prop_Data, "m_ModelName", szModelName, sizeof(szModelName))
-			DispatchKeyValue(g_entCopyTarget[plyClient], "model", szModelName)
-			
-			
-			GetEdictClassname(g_entCopyTarget[plyClient], szClass, sizeof(szClass))
-			if (StrEqual(szClass, "prop_dynamic")) {
-				SetEntProp(g_entCopyTarget[plyClient], Prop_Send, "m_nSolidType", 6)
-				SetEntProp(g_entCopyTarget[plyClient], Prop_Data, "m_nSolidType", 6)
-			}
-			
-			DispatchSpawn(g_entCopyTarget[plyClient])
-			TeleportEntity(g_entCopyTarget[plyClient], fEntityOrigin, fEntityAngle, NULL_VECTOR)
-			
-			if (Phys_IsPhysicsObject(g_entCopyTarget[plyClient]))
-				Phys_EnableMotion(g_entCopyTarget[plyClient], false)
-			
-			GetCmdArg(1, szColorR, sizeof(szColorR))
-			GetCmdArg(2, szColorG, sizeof(szColorG))
-			GetCmdArg(3, szColorB, sizeof(szColorB))
-			
-			DispatchKeyValue(g_entCopyTarget[plyClient], "rendermode", "5")
-			DispatchKeyValue(g_entCopyTarget[plyClient], "renderamt", "150")
-			DispatchKeyValue(g_entCopyTarget[plyClient], "renderfx", "4")
-			
-			if (args > 1) {
-				szColor[0] = szColorR
-				szColor[1] = szColorG
-				szColor[2] = szColorB
-				ImplodeStrings(szColor, 3, " ", szColor2, 255)
-				DispatchKeyValue(g_entCopyTarget[plyClient], "rendercolor", szColor2)
-			} else {
-				DispatchKeyValue(g_entCopyTarget[plyClient], "rendercolor", "50 255 255")
-			}
-			g_bCopyIsRunning[plyClient] = true
-			
-			CreateTimer(0.01, Timer_CopyRing, plyClient)
-			CreateTimer(0.01, Timer_CopyBeam, plyClient)
-			CreateTimer(0.02, Timer_CopyMain, plyClient)
-			return Plugin_Handled
-		} else {
-			LM_PrintToChat(plyClient, "This prop was not copy able.")
-			return Plugin_Handled
-		}
-	} else {
-		RemoveEdict(g_entCopyTarget[plyClient])
+	if (!bCanCopy) {
+		LM_PrintToChat(plyClient, "This prop cannot be copied.")
 		return Plugin_Handled
 	}
-	// return Plugin_Handled
+
+	// Note:If a model was designed to be prop_dynamic, spawning as prop_physics will fail to spawn
+	//		same as prop_physics to prop_dynamic, using _override can fix this
+	if (StrEqual(szClass, "prop_physics") || StrEqual(szClass, "prop_dynamic")) {
+		StrCat(szClass, sizeof(szClass), "_override")
+	}
+	
+	char szModelName[128]
+	float vOrigin[3], vAngles[3]
+	LM_GetEntModel(entProp, szModelName, sizeof(szModelName))
+	LM_GetEntOrigin(entProp, vOrigin)
+	LM_GetEntAngles(entProp, vAngles)
+	g_entCopyTarget[plyClient] = LM_CreateEntity(plyClient, szClass, szModelName, vOrigin, vAngles)
+	g_entCopyOld[plyClient] = entProp
+	
+	if (g_entCopyTarget[plyClient] == -1)
+		return Plugin_Handled
+
+	DispatchSpawn(g_entCopyTarget[plyClient])
+	
+	if (Phys_IsPhysicsObject(g_entCopyTarget[plyClient]))
+		Phys_EnableMotion(g_entCopyTarget[plyClient], false)
+	
+	SetEntityRenderColor(g_entCopyTarget[plyClient], g_iCopyColor[0], g_iCopyColor[1], g_iCopyColor[2], g_iCopyColor[3])
+	SetEntityRenderFx(g_entCopyTarget[plyClient], RENDERFX_PULSE_FAST_WIDE)
+	SetEntityRenderMode(g_entCopyTarget[plyClient], RENDER_NORMAL)
+	
+	g_bCopyIsRunning[plyClient] = true
+	
+	CreateTimer(0.01, Timer_CopyRing, plyClient)
+	CreateTimer(0.01, Timer_CopyBeam, plyClient)
+	CreateTimer(0.02, Timer_CopyMain, plyClient)
+
+	return Plugin_Handled
+
 }
 
-public Action Command_CopyentOff(Client, args) {
-	if (!LM_AllowToLazMod(Client) || LM_IsBlacklisted(Client))
+public Action Command_CopyentOff(plyClient, args) {
+	if (!LM_AllowToLazMod(plyClient) || LM_IsBlacklisted(plyClient))
 		return Plugin_Handled
-		
-	g_bCopyIsRunning[Client] = false
+	
+	g_bCopyIsRunning[plyClient] = false
 	return Plugin_Handled
 }
 
-public Action Timer_CopyBeam(Handle Timer, any Client) {
-	if(IsValidEntity(g_entCopyTarget[Client]) && LM_IsClientValid(Client, Client)) {
+public Action Timer_CopyBeam(Handle Timer, any plyClient) {
+	if(IsValidEntity(g_entCopyTarget[plyClient]) && LM_IsClientValid(plyClient, plyClient)) {
 		float fOriginPlayer[3], fOriginEntity[3]
 		
-		GetClientAbsOrigin(Client, g_vCopyPlayerOrigin[Client])
-		GetClientAbsOrigin(Client, fOriginPlayer)
+		GetClientAbsOrigin(plyClient, g_vCopyPlayerOrigin[plyClient])
+		GetClientAbsOrigin(plyClient, fOriginPlayer)
 		
-		GetEntPropVector(g_entCopyTarget[Client], Prop_Data, "m_vecOrigin", fOriginEntity)
+		GetEntPropVector(g_entCopyTarget[plyClient], Prop_Data, "m_vecOrigin", fOriginEntity)
 		fOriginPlayer[2] += 50
 		
-		int iColor[4]
-		iColor[0] = GetRandomInt(50, 255)
-		iColor[1] = GetRandomInt(50, 255)
-		iColor[2] = GetRandomInt(50, 255)
-		iColor[3] = GetRandomInt(255, 255)
-		
-		TE_SetupBeamPoints(fOriginEntity, fOriginPlayer, g_mdlPhysBeam, g_mdlHalo, 0, 66, 0.1, 2.0, 2.0, 0, 0.0, iColor, 20)
+		TE_SetupBeamPoints(fOriginEntity, fOriginPlayer, g_mdlLaserBeam, g_mdlHalo, 0, 66, 0.1, 2.0, 2.0, 0, 0.0, g_iCopyColor, 20)
 		TE_SendToAll()
 		
-		if (g_bCopyIsRunning[Client])
-			CreateTimer(0.01, Timer_CopyBeam, Client);	
+		if (g_bCopyIsRunning[plyClient])
+			CreateTimer(0.01, Timer_CopyBeam, plyClient);	
 	}
 	return Plugin_Handled
 }
 
-public Action Timer_CopyRing(Handle Timer, any Client) {
-	if(IsValidEntity(g_entCopyTarget[Client]) && LM_IsClientValid(Client, Client)) {
+public Action Timer_CopyRing(Handle Timer, any plyClient) {
+	if(IsValidEntity(g_entCopyTarget[plyClient]) && LM_IsClientValid(plyClient, plyClient)) {
 		float fOriginEntity[3]
 		
-		GetEntPropVector(g_entCopyTarget[Client], Prop_Data, "m_vecOrigin", fOriginEntity)
+		GetEntPropVector(g_entCopyTarget[plyClient], Prop_Data, "m_vecOrigin", fOriginEntity)
 		
-		int iColor[4]
-		iColor[0] = GetRandomInt(50, 255)
-		iColor[1] = GetRandomInt(254, 255)
-		iColor[2] = GetRandomInt(254, 255)
-		iColor[3] = GetRandomInt(250, 255)
-		
-		TE_SetupBeamRingPoint(fOriginEntity, 10.0, 15.0, g_mdlLaserBeam, g_mdlHalo, 0, 10, 0.6, 3.0, 0.5, iColor, 5, 0)
+		TE_SetupBeamRingPoint(fOriginEntity, 10.0, 15.0, g_mdlLaserBeam, g_mdlHalo, 0, 10, 0.6, 3.0, 0.5, g_iCopyColor, 5, 0)
 		TE_SendToAll()
-		TE_SetupBeamRingPoint(fOriginEntity, 80.0, 100.0, g_mdlLaserBeam, g_mdlHalo, 0, 10, 0.6, 3.0, 0.5, iColor, 5, 0)
+		TE_SetupBeamRingPoint(fOriginEntity, 80.0, 100.0, g_mdlLaserBeam, g_mdlHalo, 0, 10, 0.6, 3.0, 0.5, g_iCopyColor, 5, 0)
 		TE_SendToAll()
 		
-		if (g_bCopyIsRunning[Client])
-			CreateTimer(0.3, Timer_CopyRing, Client)
+		if (g_bCopyIsRunning[plyClient])
+			CreateTimer(0.5, Timer_CopyRing, plyClient)
 	}
 	return Plugin_Handled
 }
 
 public Action Timer_CopyMain(Handle Timer, any plyClient) {
 	if(IsValidEntity(g_entCopyTarget[plyClient]) && LM_IsClientValid(plyClient, plyClient)) {
+
 		float vPropOrigin[3], vPlayerOrigin[3]
 		
 		GetEntPropVector(g_entCopyTarget[plyClient], Prop_Data, "m_vecOrigin", vPropOrigin)
@@ -368,21 +329,30 @@ public Action Timer_CopyMain(Handle Timer, any plyClient) {
 			Phys_Sleep(g_entCopyTarget[plyClient])
 		}
 		SetEntityMoveType(g_entCopyTarget[plyClient], MOVETYPE_NONE)
-		TeleportEntity(g_entCopyTarget[plyClient], vPropOrigin, NULL_VECTOR, NULL_VECTOR)
+		TeleportEntity(g_entCopyTarget[plyClient], vPropOrigin)
 
 		if (g_bCopyIsRunning[plyClient])
 			CreateTimer(0.001, Timer_CopyMain, plyClient)
 		else {
 			if(Phys_IsPhysicsObject(g_entCopyTarget[plyClient])) {
-				Phys_EnableMotion(g_entCopyTarget[plyClient], true)
+				Phys_EnableMotion(g_entCopyTarget[plyClient], g_bCopyUnfreeze[plyClient])
 				Phys_Sleep(g_entCopyTarget[plyClient])
 			}
-			SetEntityMoveType(g_entCopyTarget[plyClient], MOVETYPE_VPHYSICS)
+
+			if (IsValidEdict(g_entCopyOld[plyClient])) {
+				SetEntityMoveType(g_entCopyTarget[plyClient], GetEntityMoveType(g_entCopyOld[plyClient]))
+				int clr[3], a
+				GetEntityRenderColor(g_entCopyOld[plyClient], clr[0], clr[1], clr[2], a)
+				LM_SetEntRenderEffects(g_entCopyTarget[plyClient], GetEntityRenderMode(g_entCopyOld[plyClient]), GetEntityRenderFx(g_entCopyOld[plyClient]), a, clr)
+			} else {
+				DispatchKeyValue(g_entCopyTarget[plyClient], "rendermode", "5")
+				DispatchKeyValue(g_entCopyTarget[plyClient], "renderamt", "255")
+				DispatchKeyValue(g_entCopyTarget[plyClient], "renderfx", "0")
+				DispatchKeyValue(g_entCopyTarget[plyClient], "rendercolor", "255 255 255")
+			}
 			
-			DispatchKeyValue(g_entCopyTarget[plyClient], "rendermode", "5")
-			DispatchKeyValue(g_entCopyTarget[plyClient], "renderamt", "255")
-			DispatchKeyValue(g_entCopyTarget[plyClient], "renderfx", "0")
-			DispatchKeyValue(g_entCopyTarget[plyClient], "rendercolor", "255 255 255")
+			g_entCopyTarget[plyClient] = -1
+			g_entCopyOld[plyClient] = -1
 		}
 	}
 	return Plugin_Handled
