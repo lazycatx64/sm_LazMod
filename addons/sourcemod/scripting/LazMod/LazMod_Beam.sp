@@ -89,7 +89,7 @@ public Action Command_Deathray(Client, args) {
 	if (entProp != -1) {
 		static EntFlag; EntFlag = GetEntityFlags(entProp)
 		if (EntFlag & (FL_CLIENT | FL_FAKECLIENT))
-			GetEntPropVector(entProp, Prop_Data, "m_vecOrigin", fAimPos)
+			LM_GetEntOrigin(entProp, fAimPos)
 	}
 	
 	GetClientAbsOrigin(Client, fClientPos)

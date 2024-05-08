@@ -71,7 +71,7 @@ public Action Command_SpawnDoor(plyClient, args) {
 		if (StrEqual(szType[0], "a")) {
 			Format(g_szDDoorTarget[plyClient], sizeof(g_szDDoorTarget[]), "door%d", GetRandomInt(1000, 5000))
 			DispatchKeyValue(entEntity, "targetname", g_szDDoorTarget[plyClient])
-			GetEntPropString(entEntity, Prop_Data, "m_ModelName", g_szDDoorModel[plyClient], sizeof(g_szDDoorModel[]))
+			LM_GetEntModel(entEntity, g_szDDoorModel[plyClient], sizeof(g_szDDoorModel[]))
 
 			LM_PrintToChat(plyClient, "Door selected, now use !ddoor b or c on button prop", entEntity)
 		} else if (StrEqual(szType[0], "b") || StrEqual(szType[0], "c")) {

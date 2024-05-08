@@ -634,7 +634,7 @@ public Action Time_DelRange(Handle hTimer, any plyClient) {
 		int entProp = -1
 		for (int i = 0; i < sizeof(g_szEntityType); i++) {
 			while ((entProp = FindEntityByClassname(entProp, g_szEntityType[i])) != -1) {
-				GetEntPropVector(entProp, Prop_Data, "m_vecOrigin", vOriginEntity)
+				LM_GetEntOrigin(entProp, vOriginEntity)
 				vOriginEntity[2] += 1
 				if (vOriginEntity[0] != 0 && vOriginEntity[1] !=1 && vOriginEntity[2] != 0 && LM_IsInSquare(vOriginEntity, g_vDelRangePoint1[plyClient], g_vDelRangePoint3[plyClient])) {
 					GetEdictClassname(entProp, szClass, sizeof(szClass))
@@ -774,7 +774,7 @@ public Action Timer_DSfire(Handle hTimer, Handle hDataPack) {
 	int entProp = -1
 	for (int i = 0; i < sizeof(g_szEntityType); i++) {
 		while ((entProp = FindEntityByClassname(entProp, g_szEntityType[i])) != -1) {
-			GetEntPropVector(entProp, Prop_Data, "m_vecOrigin", vOriginEntity)
+			LM_GetEntOrigin(entProp, vOriginEntity)
 			vOriginEntity[2] += 1
 			char szClass[33]
 			GetEdictClassname(entProp,szClass,sizeof(szClass))
@@ -836,7 +836,7 @@ public Action Timer_DScharge2(Handle hTimer, Handle hDataPack) {
 	int entProp = -1
 	for (int i = 0; i < sizeof(g_szEntityType); i++) {
 		while ((entProp = FindEntityByClassname(entProp, g_szEntityType[i])) != -1) {
-			GetEntPropVector(entProp, Prop_Data, "m_vecOrigin", vOriginEntity)
+			LM_GetEntOrigin(entProp, vOriginEntity)
 			vOriginEntity[2] = (vOriginEntity[2] + 1)
 			if (!Phys_IsPhysicsObject(entProp))
 				continue
@@ -908,7 +908,7 @@ public Action Timer_DSfire2(Handle hTimer, Handle hDataPack) {
 	int entProp = -1
 	for (int i = 0; i < sizeof(g_szEntityType); i++) {
 		while ((entProp = FindEntityByClassname(entProp, g_szEntityType[i])) != -1) {
-			GetEntPropVector(entProp, Prop_Data, "m_vecOrigin", vOriginEntity)
+			LM_GetEntOrigin(entProp, vOriginEntity)
 			vOriginEntity[2] += 1
 			char szClass[33]
 			GetEdictClassname(entProp,szClass,sizeof(szClass))

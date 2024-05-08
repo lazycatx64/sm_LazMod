@@ -195,7 +195,7 @@ public Action Command_Rotate(plyClient, args) {
 		vAddAngles[1] = GetCmdArgFloat(2)
 		vAddAngles[2] = GetCmdArgFloat(3)
 		
-		GetEntPropVector(entProp, Prop_Data, "m_angRotation", vPropAngles)
+		LM_GetEntAngles(entProp, vPropAngles)
 		AddVectors(vPropAngles, vAddAngles, vNewAngles)
 		
 		TeleportEntity(entProp, NULL_VECTOR, vNewAngles, NULL_VECTOR)
@@ -374,8 +374,8 @@ public Action Command_Move(plyClient, args) {
 		GetCmdArg(2, szArgY, sizeof(szArgY))
 		GetCmdArg(3, szArgZ, sizeof(szArgZ))
 		
-		GetEntPropVector(entProp, Prop_Data, "m_vecOrigin", fEntityOrigin)
-		GetEntPropVector(entProp, Prop_Data, "m_angRotation", fEntityAngle)
+		LM_GetEntOrigin(entProp, fEntityOrigin)
+		LM_GetEntAngles(entProp, fEntityAngle)
 		
 		fEntityOrigin[0] += StringToFloat(szArgX)
 		fEntityOrigin[1] += StringToFloat(szArgY)
@@ -414,11 +414,11 @@ public Action Command_Align(plyClient, args) {
 	float fEntityAngle[3], fEntityOrigin[3]
 	GetCmdArg(1, szMode, sizeof(szMode))
 	
-	GetEntPropVector(entProp, Prop_Data, "m_vecOrigin", fEntityOrigin)
-	GetEntPropVector(entProp, Prop_Data, "m_angRotation", fEntityAngle)
+	LM_GetEntOrigin(entProp, fEntityOrigin)
+	LM_GetEntAngles(entProp, fEntityAngle)
 
 	if (StrEqual(szMode[0], "set") || StrEqual(szMode[0], "s")) {
-		GetEntPropVector(entProp, Prop_Data, "m_vecOrigin", g_vAlignOrigin[plyClient])
+		LM_GetEntOrigin(entProp, g_vAlignOrigin[plyClient])
 		LM_PrintToChat(plyClient, "Align set.")
 	} else if (StrEqual(szMode[0], "x")) {
 		fEntityOrigin[0] = g_vAlignOrigin[plyClient][0]
@@ -457,9 +457,9 @@ public Action Command_Center(plyClient, args) {
 	} else if (g_iCenterIsRunning[plyClient] == 2) {
 		float fAngleMain[3], fOriginMain[3], fOriginFirst[3], fOriginSecend[3]
 		
-		GetEntPropVector(g_entCenterMain[plyClient], Prop_Data, "m_angRotation", fAngleMain)
-		GetEntPropVector(g_entCenterFirst[plyClient], Prop_Data, "m_vecOrigin", fOriginFirst)
-		GetEntPropVector(entProp, Prop_Data, "m_vecOrigin", fOriginSecend)
+		LM_GetEntAngles(g_entCenterMain[plyClient], fAngleMain)
+		LM_GetEntOrigin(g_entCenterFirst[plyClient], fOriginFirst)
+		LM_GetEntOrigin(entProp, fOriginSecend)
 		
 		for (int i = 0; i < 3; i++)
 			fOriginMain[i] = (fOriginFirst[i] + fOriginSecend[i]) / 2
@@ -823,8 +823,8 @@ public Action Command_EntFire(plyClient, args) {
 		if (!IsValidEntity(entProp))
 			continue
 
-		GetEntPropString(entProp, Prop_Data, "m_iName", szTargetName, sizeof(szTargetName));
-		GetEntPropString(entProp, Prop_Data, "m_iClassname", szClassName, sizeof(szClassName));
+		LM_GetEntTargetName(entProp, szTargetName, sizeof(szTargetName))
+		LM_GetEntClassname(entProp, szClassName, sizeof(szClassName))
 
 		if (StrEqual(szTargetName, szName) || StrEqual(szClassName, szName)) {
 			if (fDelay > 0) {

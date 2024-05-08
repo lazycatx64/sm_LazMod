@@ -174,7 +174,7 @@ public Action Command_SpawnProp(plyClient, args) {
 			DispatchKeyValue(entProp, "model", szModelPath)
 			
 			if (iPropType == 2 || String_StartsWith(szClass, "prop_dynami"))
-				SetEntProp(entProp, Prop_Data, "m_nSolidType", 6)
+				LM_SetEntSolidType(entProp, SOLID_VPHYSICS)
 			
 			DispatchSpawn(entProp)
 			if (iPropType == 2)

@@ -143,7 +143,7 @@ stock void Display_Prop(int plyClient, int entTarget) {
 	char szClass[32]
 	GetEdictClassname(entTarget, szClass, sizeof(szClass))
 	char szModel[128] 
-	GetEntPropString(entTarget, Prop_Data, "m_ModelName", szModel, sizeof(szModel))
+	LM_GetEntModel(entTarget, szModel, sizeof(szModel))
 
 	if (Phys_IsPhysicsObject(entTarget)) 
 		ShowHudText(plyClient, -1, "Classname: %s\nIndex: %i\nModel: %s\nOwner: %s\nMass:%f", szClass, entTarget, szModel, szOwner, Phys_GetMass(entTarget))

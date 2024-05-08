@@ -130,9 +130,9 @@ public Action Timer_Stack(Handle Timer, Handle hDataPack) {
 	char szClass[32], szModel[256]
 	float vEntityOrigin[3], vEntityAngle[3]
 	GetEdictClassname(entProp, szClass, sizeof(szClass))
-	GetEntPropVector(entProp, Prop_Data, "m_vecOrigin", vEntityOrigin)
-	GetEntPropVector(entProp, Prop_Data, "m_angRotation", vEntityAngle)
-	GetEntPropString(entProp, Prop_Data, "m_ModelName", szModel, sizeof(szModel))
+	LM_GetEntOrigin(entProp, vEntityOrigin)
+	LM_GetEntAngles(entProp, vEntityAngle)
+	LM_GetEntModel(entProp, szModel, sizeof(szModel))
 	
 	if (g_iCurrent[Client] < iAmount) {
 		bool IsDoll = false
@@ -144,7 +144,7 @@ public Action Timer_Stack(Handle Timer, Handle hDataPack) {
 		if (LM_SetEntityOwner(iStackEntity, Client, IsDoll)) {			
 			DispatchKeyValue(iStackEntity, "model", szModel)
 			if (StrEqual(szClass, "prop_dynamic"))
-				SetEntProp(iStackEntity, Prop_Send, "m_nSolidType", 6)
+				LM_SetEntSolidType(iStackEntity, SOLID_VPHYSICS)
 			DispatchSpawn(iStackEntity)
 			
 			AddVectors(vMove, vNext, vNext)
@@ -197,8 +197,7 @@ public Action Command_Extend(plyClient, args) {
 		int entProp3
 		if (StrContains(szClass, "prop_dynamic") >= 0) {
 			entProp3 = CreateEntityByName("prop_dynamic_override")
-			SetEntProp(entProp3, Prop_Send, "m_nSolidType", 6)
-			SetEntProp(entProp3, Prop_Data, "m_nSolidType", 6)
+			LM_SetEntSolidType(entProp3, SOLID_VPHYSICS)
 		} else
 			entProp3 = CreateEntityByName(szClass)
 			
@@ -211,10 +210,10 @@ public Action Command_Extend(plyClient, args) {
 				char szModel[255]
 				float vProp1Origin[3], vProp1Angles[3], vProp2Origin[3], vProp3Origin[3]
 				
-				GetEntPropVector(g_entExtendTarget[plyClient], Prop_Data, "m_vecOrigin", vProp1Origin)
-				GetEntPropVector(g_entExtendTarget[plyClient], Prop_Data, "m_angRotation", vProp1Angles)
-				GetEntPropString(g_entExtendTarget[plyClient], Prop_Data, "m_ModelName", szModel, sizeof(szModel))
-				GetEntPropVector(entProp1, Prop_Data, "m_vecOrigin", vProp2Origin)
+				LM_GetEntOrigin(g_entExtendTarget[plyClient], vProp1Origin)
+				LM_GetEntAngles(g_entExtendTarget[plyClient], vProp1Angles)
+				LM_GetEntModel(g_entExtendTarget[plyClient], szModel, sizeof(szModel))
+				LM_GetEntOrigin(entProp1, vProp2Origin)
 				
 				for (int i = 0; i < 3; i++)
 					vProp3Origin[i] = (vProp2Origin[i] + vProp2Origin[i] - vProp1Origin[i])

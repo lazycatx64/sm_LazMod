@@ -94,7 +94,7 @@ public Action Event_OnPlayerSpawn(Handle event, const char[] name, bool dontBroa
 public Action OnPlayerRunCmd(Client, &buttons, &impulse, float vel[3], float angles[3], &weapon) {
 	
 	char szWeapon[64]
-	int iWeapon = GetEntPropEnt(Client, Prop_Send, "m_hActiveWeapon")
+	int iWeapon = LM_GetEntActiveWeapon(Client)
 	
 	if (buttons & (IN_ATTACK | IN_ATTACK2) && iWeapon != -1 && IsValidEdict(iWeapon) && GetEdictClassname(iWeapon, szWeapon, sizeof(szWeapon)) && StrEqual(szWeapon, "weapon_crowbar")) {
 		int iCurrent

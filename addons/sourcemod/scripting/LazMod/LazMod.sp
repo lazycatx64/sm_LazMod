@@ -213,7 +213,7 @@ Native_CreateEntity(Handle hPlugin, iNumParams) {
 	}
 
 	if (StrEqual(szClass, "prop_dynamic") || StrEqual(szClass, "prop_dynamic_override"))
-		SetEntProp(entProp, Prop_Data, "m_nSolidType", 6)
+		LM_SetEntSolidType(entProp, SOLID_VPHYSICS)
 
 	TeleportEntity(entProp, vOrigin, vAngles)
 

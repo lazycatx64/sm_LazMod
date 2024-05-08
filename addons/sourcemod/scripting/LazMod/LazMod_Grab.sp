@@ -117,7 +117,7 @@ public Action Timer_GrabBeam(Handle Timer, any plyClient) {
 	
 	GetClientAbsOrigin(plyClient, g_vGrabPlayerOrigin[plyClient])
 	GetClientAbsOrigin(plyClient, vOriginPlayer)
-	GetEntPropVector(g_entGrabTarget[plyClient], Prop_Data, "m_vecOrigin", vOriginEntity)
+	LM_GetEntOrigin(g_entGrabTarget[plyClient], vOriginEntity)
 	vOriginPlayer[2] += 50
 	
 	TE_SetupBeamPoints(vOriginEntity, vOriginPlayer, g_mdlLaserBeam, g_mdlHalo, 0, 66, 0.1, 2.0, 2.0, 0, 0.0, g_iGrabColor, 20)
@@ -134,7 +134,7 @@ public Action Timer_GrabRing(Handle Timer, any plyClient) {
 		return Plugin_Handled
 		
 	float vOriginEntity[3]
-	GetEntPropVector(g_entGrabTarget[plyClient], Prop_Data, "m_vecOrigin", vOriginEntity)
+	LM_GetEntOrigin(g_entGrabTarget[plyClient], vOriginEntity)
 	
 	TE_SetupBeamRingPoint(vOriginEntity, 10.0, 15.0, g_mdlLaserBeam, g_mdlHalo, 0, 10, 0.6, 3.0, 0.5, g_iGrabColor, 5, 0)
 	TE_SendToAll()
@@ -153,7 +153,7 @@ public Action Timer_GrabMain(Handle Timer, any plyClient) {
 		
 	float vOriginEntity[3], vOriginPlayer[3]
 	
-	GetEntPropVector(g_entGrabTarget[plyClient], Prop_Data, "m_vecOrigin", vOriginEntity)
+	LM_GetEntOrigin(g_entGrabTarget[plyClient], vOriginEntity)
 	GetClientAbsOrigin(plyClient, vOriginPlayer)
 	
 	vOriginEntity[0] += vOriginPlayer[0] - g_vGrabPlayerOrigin[plyClient][0]
@@ -278,15 +278,15 @@ public Action Command_CopyentOff(plyClient, args) {
 
 public Action Timer_CopyBeam(Handle Timer, any plyClient) {
 	if(IsValidEntity(g_entCopyTarget[plyClient]) && LM_IsClientValid(plyClient, plyClient)) {
-		float fOriginPlayer[3], fOriginEntity[3]
+		float fOriginPlayer[3], vOriginEntity[3]
 		
 		GetClientAbsOrigin(plyClient, g_vCopyPlayerOrigin[plyClient])
 		GetClientAbsOrigin(plyClient, fOriginPlayer)
 		
-		GetEntPropVector(g_entCopyTarget[plyClient], Prop_Data, "m_vecOrigin", fOriginEntity)
+		LM_GetEntOrigin(g_entCopyTarget[plyClient], vOriginEntity)
 		fOriginPlayer[2] += 50
 		
-		TE_SetupBeamPoints(fOriginEntity, fOriginPlayer, g_mdlLaserBeam, g_mdlHalo, 0, 66, 0.1, 2.0, 2.0, 0, 0.0, g_iCopyColor, 20)
+		TE_SetupBeamPoints(vOriginEntity, fOriginPlayer, g_mdlLaserBeam, g_mdlHalo, 0, 66, 0.1, 2.0, 2.0, 0, 0.0, g_iCopyColor, 20)
 		TE_SendToAll()
 		
 		if (g_bCopyIsRunning[plyClient])
@@ -297,13 +297,13 @@ public Action Timer_CopyBeam(Handle Timer, any plyClient) {
 
 public Action Timer_CopyRing(Handle Timer, any plyClient) {
 	if(IsValidEntity(g_entCopyTarget[plyClient]) && LM_IsClientValid(plyClient, plyClient)) {
-		float fOriginEntity[3]
+		float vOriginEntity[3]
 		
-		GetEntPropVector(g_entCopyTarget[plyClient], Prop_Data, "m_vecOrigin", fOriginEntity)
+		LM_GetEntOrigin(g_entCopyTarget[plyClient], vOriginEntity)
 		
-		TE_SetupBeamRingPoint(fOriginEntity, 10.0, 15.0, g_mdlLaserBeam, g_mdlHalo, 0, 10, 0.6, 3.0, 0.5, g_iCopyColor, 5, 0)
+		TE_SetupBeamRingPoint(vOriginEntity, 10.0, 15.0, g_mdlLaserBeam, g_mdlHalo, 0, 10, 0.6, 3.0, 0.5, g_iCopyColor, 5, 0)
 		TE_SendToAll()
-		TE_SetupBeamRingPoint(fOriginEntity, 80.0, 100.0, g_mdlLaserBeam, g_mdlHalo, 0, 10, 0.6, 3.0, 0.5, g_iCopyColor, 5, 0)
+		TE_SetupBeamRingPoint(vOriginEntity, 80.0, 100.0, g_mdlLaserBeam, g_mdlHalo, 0, 10, 0.6, 3.0, 0.5, g_iCopyColor, 5, 0)
 		TE_SendToAll()
 		
 		if (g_bCopyIsRunning[plyClient])
@@ -317,7 +317,7 @@ public Action Timer_CopyMain(Handle Timer, any plyClient) {
 
 		float vPropOrigin[3], vPlayerOrigin[3]
 		
-		GetEntPropVector(g_entCopyTarget[plyClient], Prop_Data, "m_vecOrigin", vPropOrigin)
+		LM_GetEntOrigin(g_entCopyTarget[plyClient], vPropOrigin)
 		GetClientAbsOrigin(plyClient, vPlayerOrigin)
 		
 		vPropOrigin[0] += vPlayerOrigin[0] - g_vCopyPlayerOrigin[plyClient][0]

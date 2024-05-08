@@ -558,7 +558,7 @@ public Action Command_AdminHurt(Client, args) {
 	int entProp = GetClientAimTarget(Client)
 	if (entProp != -1)
 		if (LM_IsPlayer(entProp))
-			GetEntPropVector(entProp, Prop_Data, "m_vecOrigin", fAimPos)
+			LM_GetEntOrigin(entProp, fAimPos)
 	
 	if (StrEqual(szHurtDamage, ""))
 		szHurtDamage = "50"
@@ -598,7 +598,7 @@ public Action Command_AdminHurt(Client, args) {
 		AcceptEntityInput(entHurt, "setparent", Client, Client)
 		for(int i = 0; i < 4000; i++) {
 			if(IsValidEdict(i)) {
-				GetEntPropVector(i, Prop_Data, "m_vecOrigin", fOriginEntity)
+				LM_GetEntOrigin(i, fOriginEntity)
 				GetEdictClassname(i, szClassName, sizeof(szClassName))
 				if((StrContains(szClassName, "npc_") == 0 || StrEqual(szClassName, "player")) && LM_IsInRange(fOriginEntity, fAimPos, StringToFloat(szHurtRange))) {
 					DispatchKeyValue(i, "targetname", "HurtTarget")
@@ -724,7 +724,7 @@ public Action Command_AdminMissileSet(Client, args) {
 		g_szMissileModel[Client] = "models/props_junk/watermelon01.mdl"
 		LM_PrintToChat(Client, "Missile model has been set back to \"%s\".", g_szMissileModel[Client])
 	} else {
-		GetEntPropString(entProp, Prop_Data, "m_ModelName", g_szMissileModel[Client], sizeof(g_szMissileModel))
+		LM_GetEntModel(entProp, g_szMissileModel[Client], sizeof(g_szMissileModel[]))
 		LM_PrintToChat(Client, "Missile model has been set to \"%s\".", g_szMissileModel[Client])
 	}
 	PrecacheModel(g_szMissileModel[Client])
@@ -806,9 +806,6 @@ public Action Command_Test(plyClient, args) {
 	if (entProp == -1) 
 		return Plugin_Handled
 	
-	float vOrigin[3] = {-10523.685546, -10168.564453, -4375.968750}
-	SetEntPropVector(entProp, Prop_Data, "m_vecOrigin", vOrigin)
-
 	return Plugin_Handled
 }
 
