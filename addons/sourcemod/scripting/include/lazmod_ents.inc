@@ -1,4 +1,5 @@
 
+#include <smlib>
 
 /**
  * Get origin of an entity.
@@ -32,6 +33,30 @@ stock void LM_GetEntAngles(const int entProp, float vAngles[3]) {
 stock int LM_GetEntHealth(const int entProp) {
 
 	return GetEntProp(entProp, Prop_Data, "m_iHealth")
+}
+
+/**
+ * Get solid type of an entity.
+ * 
+ * @param entProp		Entity index
+ * 
+ * @return				Solid type of entity
+ */
+stock SolidType_t LM_GetEntSolidType(const int entProp) {
+
+	return view_as<SolidType_t>(GetEntProp(entProp, Prop_Data, "m_nSolidType"))
+}
+
+/**
+ * Set solid type of an entity.
+ * 
+ * @param entProp		Entity index
+ * 
+ * @return				Solid type of entity
+ */
+stock void LM_SetEntSolidType(const int entProp, const SolidType_t stSolidType) {
+
+	SetEntProp(entProp, Prop_Data, "m_nSolidType", view_as<int>(stSolidType))
 }
 
 /**
@@ -112,4 +137,15 @@ stock LM_SetEntRenderEffects(const int entProp, RenderMode rmMode = RENDER_NORMA
 
 
 
+/**
+ * Get active weapon of an entity, usually a player or npc.
+ * 
+ * @param entProp		Entity index
+ * 
+ * @return				Weapon ent index
+ */
+stock int LM_GetEntActiveWeapon(const int entProp) {
+
+	return GetEntPropEnt(entProp, Prop_Send, "m_hActiveWeapon")
+}
 
