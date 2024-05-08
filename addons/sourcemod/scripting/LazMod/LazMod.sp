@@ -194,7 +194,7 @@ Native_CreateEntity(Handle hPlugin, iNumParams) {
 	GetNativeString(2, szClass, sizeof(szClass))
 	GetNativeString(3, szModel, sizeof(szModel))
 	GetNativeArray(4, vOrigin, sizeof(vOrigin))
-	GetNativeArray(4, vAngles, sizeof(vAngles))
+	GetNativeArray(5, vAngles, sizeof(vAngles))
 
 	int entProp = -1
 	entProp = CreateEntityByName(szClass)
