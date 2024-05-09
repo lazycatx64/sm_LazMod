@@ -12,7 +12,7 @@
 int g_iPropCurrent[MAXPLAYERS]
 int g_iDollCurrent[MAXPLAYERS]
 int g_iServerCurrent
-int g_entPropOwner[MAX_HOOK_ENTITIES] = {-1,...}
+int g_entPropOwner[MAX_HOOK_ENTITIES]
 
 ConVar g_hCvarModEnabled
 ConVar g_hCvarAllowNonOwner
@@ -127,6 +127,8 @@ public OnPluginStart() {
 
 public OnMapStart() {
 	LM_FirstRun()
+	for (int i = 0; i < sizeof(g_entPropOwner); i++)
+		g_entPropOwner[i] = -1
 }
 
 Hook_CvarChanged(Handle convar, const char[] oldValue, const char[] newValue) {
