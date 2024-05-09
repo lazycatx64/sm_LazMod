@@ -1,0 +1,10 @@
+### Additional data ###
+# steamid	STEAM_0:1:12345678
+# knownname	LaZycAt
+# savename	example
+# savemap	gm_flatgrass,freespacev6
+# savedate	1715281734
+# propcount	47
+classname	model	origin	angles	rendercolor	alpha	ncself	health	moveable
+prop_dynamic	models/props_c17/support01.mdl	1.000,-2.000,3.000	-0.000,0.000,180.000	255 255 255	255	0	0	0
+prop_dynamic	models/props_c17/support01.mdl	-4.000,-5.000,6.000	0.000,90.000,-90.000	255 255 255	255	0	0	0
