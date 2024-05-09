@@ -636,7 +636,7 @@ public Action Time_DelRange(Handle hTimer, any plyClient) {
 			while ((entProp = FindEntityByClassname(entProp, g_szEntityType[i])) != -1) {
 				LM_GetEntOrigin(entProp, vOriginEntity)
 				vOriginEntity[2] += 1
-				if (vOriginEntity[0] != 0 && vOriginEntity[1] !=1 && vOriginEntity[2] != 0 && LM_IsInSquare(vOriginEntity, g_vDelRangePoint1[plyClient], g_vDelRangePoint3[plyClient])) {
+				if (vOriginEntity[0] != 0 && vOriginEntity[1] !=1 && vOriginEntity[2] != 0 && LM_IsInCube(vOriginEntity, g_vDelRangePoint1[plyClient], g_vDelRangePoint3[plyClient])) {
 					GetEdictClassname(entProp, szClass, sizeof(szClass))
 					if (StrEqual(szClass, "func_physbox"))
 						AcceptEntityInput(entProp, "kill", -1)
