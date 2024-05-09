@@ -60,6 +60,7 @@ public Action Display_Msgs(Handle timer) {
 	for (int plyClient = 1; plyClient <= MaxClients; plyClient++) {		
 		if (LM_IsClientValid(plyClient, plyClient, true) && !IsFakeClient(plyClient)) {
 			int iAimTarget = LM_GetClientAimEntity(plyClient, false, true)
+			// TODO: Max distance? GetVectorDistance()
 			if (iAimTarget != -1 && IsValidEdict(iAimTarget))
 				EntityInfo(plyClient, iAimTarget)
 		}
