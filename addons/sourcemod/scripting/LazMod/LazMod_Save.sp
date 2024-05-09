@@ -9,7 +9,7 @@
 #include <lazmod>
 
 Handle g_hFile[MAXPLAYERS]
-char g_szFileName[MAXPLAYERS][128]
+char g_szFileName[MAXPLAYERS][PLATFORM_MAX_PATH]
 char g_szListName[128]
 char g_szSavePath[] = "data/lazmodsaves"
 
@@ -49,9 +49,6 @@ public OnPluginStart() {
 
 public Action Command_SaveSpawn(plyClient, args) {
 
-
-
-	
 	if (g_bIsRunning[plyClient]) {
 		LM_PrintToChat(plyClient, "Process is already running. Please Wait...")
 		return Plugin_Handled
@@ -59,16 +56,14 @@ public Action Command_SaveSpawn(plyClient, args) {
 	if (!LM_AllowToLazMod(plyClient) || LM_IsBlacklisted(plyClient) && LM_IsClientValid(plyClient, plyClient))
 		return Plugin_Handled
 	
-	char szMode[8], szSaveName[32], szSteamID[32]
+	char szMode[8], szSaveName[64], szSteamID[32]
 	GetCmdArg(1, szMode, sizeof(szMode))
 	GetCmdArg(2, szSaveName, sizeof(szSaveName))
 	GetClientAuthId(plyClient, AuthId_Steam2, szSteamID, sizeof(szSteamID))
 	ReplaceString(szSteamID, sizeof(szSteamID), ":", "-")
-	// ReplaceString(szSteamID, sizeof(szSteamID), "STEAM_", "")
+	
 	g_szFileName[plyClient] = ""
-	// BuildPath(Path_SM, g_szFileName[plyClient], sizeof(g_szFileName[]), "%s/%s#%s.csv", g_szSavePath, szSteamID, szSaveName)
-	BuildPath(Path_SM, g_szFileName[plyClient], sizeof(g_szFileName[]), "data/lazmodsaves/STEAM_0-1-12345678#example.csv", g_szSavePath, szSteamID, szSaveName)
-	LM_PrintToChat(plyClient, g_szFileName[plyClient])
+	BuildPath(Path_SM, g_szFileName[plyClient], sizeof(g_szFileName[]), "%s/%s#%s.csv", g_szSavePath, szSteamID, szSaveName)
 	
 	g_hFile[plyClient] = INVALID_HANDLE
 	g_iTryCount[plyClient] = 0
@@ -82,23 +77,7 @@ public Action Command_SaveSpawn(plyClient, args) {
 			return Plugin_Handled
 			
 		if (StrEqual(szMode, "save")) {
-			if (FileExists(g_szFileName[plyClient])) {
-				LM_PrintToChat(plyClient, "The save already exists. Replacing old save...")
-					
-				if (!DeleteFile(g_szFileName[plyClient])) {
-					LM_PrintToChat(plyClient, "Replace failed! Save process abort!")
-					return Plugin_Handled
-				}
-			}
-			LM_PrintToChat(plyClient, "Saving the props. Please Wait...")
-			g_bIsRunning[plyClient] = true
-			
-			Handle hSavePack
-			CreateDataTimer(0.001, Timer_Save, hSavePack)
-			WritePackCell(hSavePack, plyClient)
-			WritePackString(hSavePack, szMode)
-			WritePackString(hSavePack, szSaveName)
-			WritePackString(hSavePack, szSteamID)
+			SaveSpawn_Save(plyClient, szSaveName)
 			return Plugin_Handled
 
 
@@ -121,7 +100,6 @@ public Action Command_SaveSpawn(plyClient, args) {
 
 
 	} else if (StrEqual(szMode, "list")) {
-
 		SaveSpawn_List(plyClient)
 
 	} else {
@@ -149,12 +127,15 @@ void SaveSpawn_Usage(int plyClient) {
 
 }
 
-void SaveSpawn_Save(int plyClient, char[] szSaveName) {
-	// Handle hListPack
-	// char szSteamID[32]
-	// GetClientAuthId(plyClient, AuthId_Steam2, szSteamID, sizeof(szSteamID))
-	// ReplaceString(szSteamID, sizeof(szSteamID), ":", "-")
-
+void SaveSpawn_Save(const int plyClient, const char[] szSaveName) {
+	
+	LM_PrintToChat(plyClient, "Gathering data, preparing to save...")
+	g_bIsRunning[plyClient] = true
+	
+	Handle hSavePack
+	CreateDataTimer(1.0, Timer_Save, hSavePack)
+	WritePackCell(hSavePack, plyClient)
+	WritePackString(hSavePack, szSaveName)
 }
 
 void SaveSpawn_Load(const int plyClient, const char[] szSaveName) {
@@ -171,7 +152,7 @@ void SaveSpawn_Load(const int plyClient, const char[] szSaveName) {
 	g_bIsRunning[plyClient] = true
 
 	Handle hLoadPack
-	CreateDataTimer(0.01, Timer_Load, hLoadPack)
+	CreateDataTimer(1.0, Timer_Load, hLoadPack)
 	WritePackCell(hLoadPack, plyClient)
 	WritePackString(hLoadPack, "0")
 
@@ -212,7 +193,7 @@ void SaveSpawn_List(int plyClient) {
 	char szAuthSteamID[24], szFileSteamID[24], szSaveName[36]
 
 	Regex reFile = CompileRegex("(.*)#(.*).csv$")
-	Regex reMap = CompileRegex("^# savemap\t([^,]+(?:,[^,]+){0,2})")
+	Regex reMap = CompileRegex("^# savemap\t(\\w.*)$")
 	Regex reDate = CompileRegex("^# savedate\t(\\d+)")
 	Regex reCount = CompileRegex("^# propcount\t(\\d+)")
 
@@ -220,6 +201,7 @@ void SaveSpawn_List(int plyClient) {
 	PrintToConsole(plyClient, "-----------------------------------------------------------------------------")
 	PrintToConsole(plyClient, "| SaveName                         | Date       | Props | Maps")
 	PrintToConsole(plyClient, "-----------------------------------------------------------------------------")
+
 	GetClientAuthId(plyClient, AuthId_Steam2, szAuthSteamID, sizeof(szAuthSteamID))
 	ReplaceString(szAuthSteamID, sizeof(szAuthSteamID), ":", "-")
 
@@ -247,7 +229,7 @@ void SaveSpawn_List(int plyClient) {
 		if (hFile == INVALID_HANDLE)
 			continue
 
-		char szData[96], szDateTime[64] = "n/a       ", szMap[64] = "n/a"
+		char szData[96], szDateTime[64] = "          ", szMap[128] = ""
 		int iPropCount = 0
 		while (ReadFileLine(hFile, szData, sizeof(szData)) && String_StartsWith(szData, "#")) {
 
@@ -275,78 +257,171 @@ void SaveSpawn_List(int plyClient) {
 
 
 public Action Timer_Save(Handle hTimer, Handle hDataPack) {
-	ResetPack(hDataPack)
-	char szMode[16], szSaveName[32], szSteamID[32]
+	
+	char szSaveName[32]
 	ResetPack(hDataPack)
 	int plyClient = ReadPackCell(hDataPack)
-	ReadPackString(hDataPack, szMode, sizeof(szMode))
 	ReadPackString(hDataPack, szSaveName, sizeof(szSaveName))
-	ReadPackString(hDataPack, szSteamID, sizeof(szSteamID))
 	
 	if (!LM_IsClientValid(plyClient, plyClient))
 		return Plugin_Handled
 	
-	if (g_hFile[plyClient] == INVALID_HANDLE) {
-		g_hFile[plyClient] = OpenFile(g_szFileName[plyClient], "w")
-		g_iTryCount[plyClient]++
-		if (g_iTryCount[plyClient] < 3) {
-			Handle hNewPack
-			CreateDataTimer(0.2, Timer_Save, hNewPack)
-			WritePackCell(hNewPack, plyClient)
-			WritePackString(hNewPack, szMode)
-			WritePackString(hNewPack, szSaveName)
-			WritePackString(hNewPack, szSteamID)
-		} else {
-			LM_PrintToChat(plyClient, "Unable to create the save! Contact admins!")
-			g_hFile[plyClient] = INVALID_HANDLE
-			g_iTryCount[plyClient] = 0
-		}
-	} else {
-		char szTime[16], szClass[32], szModel[128]
-		float fOrigin[3], fAngles[3]
-		int iOrigin[3], iAngles[3]
-		int iHealth, iCount = 0
-		FormatTime(szTime, sizeof(szTime), "%Y/%m/%d")
-		WriteFileLine(g_hFile[plyClient], ";---------- File Create : [%s] ----------||", szTime)
-		WriteFileLine(g_hFile[plyClient], ";---------- BY: %N <%s> ----------||", plyClient, szSteamID)
-		for (int i = 0; i < MAX_HOOK_ENTITIES; i++) {
-			if (IsValidEdict(i)) {
-				GetEdictClassname(i, szClass, sizeof(szClass))
-				if ((StrContains(szClass, "prop_dynamic") >= 0 || StrContains(szClass, "prop_physics") >= 0) && !StrEqual(szClass, "prop_ragdoll") && LM_GetEntityOwner(i) == plyClient) {
-					
-					LM_GetEntOrigin(i, fOrigin)
-					LM_GetEntAngles(i, fAngles)
-					LM_GetEntModel(i, szModel, sizeof(szModel))
-					for (int j = 0; j < 3; j++) {
-						iOrigin[j] = RoundToNearest(fOrigin[j])
-						iAngles[j] = RoundToNearest(fAngles[j])
-					}
-					iHealth = GetEntProp(i, Prop_Data, "m_iHealth", 4)
-					if (iHealth > 100000000)
-						iHealth = 2
-					else if (iHealth > 0)
-						iHealth = 1
-					else
-						iHealth = 0
-					g_iCount[plyClient]++
-					WriteFileLine(g_hFile[plyClient], "ent%i %s %s %i %i %i %i %i %i %i", g_iCount[plyClient], szClass, szModel, iOrigin[0], iOrigin[1], iOrigin[2], iAngles[0], iAngles[1], iAngles[2], iHealth)
+
+	// Count if theres anything to save
+	char szCls[32]
+	int iPreCount = 0
+	for (int i = 0; i < GetMaxEntities(); i++) {
+		if (!IsValidEdict(i))
+			continue
+		if (LM_GetEntityOwner(i) != plyClient)
+			continue
+		LM_GetEntClassname(i, szCls, sizeof(szCls))
+		if (!String_StartsWith(szCls, "prop_physics") && !String_StartsWith(szCls, "prop_dynamic"))
+			continue
+
+		iPreCount++
+	}
+	
+	if (iPreCount == 0) {
+		LM_PrintToChat(plyClient, "Found no savable prop, build something first!")
+		g_bIsRunning[plyClient] = false
+		return Plugin_Handled
+	}
+
+
+
+	// Extract map list from old save if theres one
+	char szDataMap[64]
+	if (FileExists(g_szFileName[plyClient])) {
+		Handle hFile = OpenFile(g_szFileName[plyClient], "r")
+		Regex reMap = CompileRegex("^# savemap\t((\\w+),?(\\w+)?,?(\\w+)?)?")
+
+		char szData[96], szCurrentMap[32], szMaps[64], szMap1[32], szMap2[32], szMap3[32]
+		while (ReadFileLine(hFile, szData, sizeof(szData)) && String_StartsWith(szData, "#")) {
+
+			if (MatchRegex(reMap, szData) > 0) {
+				GetRegexSubString(reMap, 1, szMaps, sizeof(szMaps))
+				GetRegexSubString(reMap, 2, szMap1, sizeof(szMap1))
+				GetRegexSubString(reMap, 3, szMap2, sizeof(szMap2))
+				GetRegexSubString(reMap, 4, szMap3, sizeof(szMap3))
+				GetCurrentMap(szCurrentMap, sizeof(szCurrentMap))
+				if (StrContains(szMaps, szCurrentMap)) {
+					Format(szDataMap, sizeof(szDataMap), "%s,%s,%s", szCurrentMap, StrEqual(szMap1, szCurrentMap)?szMap2:szMap1, StrEqual(szMap2, szCurrentMap)?szMap3:szMap2)
+				} else {
+					Format(szDataMap, sizeof(szDataMap), "%s,%s,%s", szCurrentMap, szMap1, szMap2)
 				}
 			}
 		}
-		WriteFileLine(g_hFile[plyClient], ";---------- File End | %i Props ----------||", iCount)
-		
-		FlushFile(g_hFile[plyClient])
-		CloseHandle(g_hFile[plyClient])
-		g_bIsRunning[plyClient] = false
-		if (g_iCount[plyClient] > 0) {
-			LM_PrintToChat(plyClient, "Saved %i prop(s) with savename '%s'", g_iCount[plyClient], szSaveName)
-			g_iCount[plyClient] = 0
-			CheckSaveList(plyClient, szMode, szSaveName, szSteamID)
-		} else {
-			LM_PrintToChat(plyClient, "Nothing to save.")
-			DeleteFile(g_szFileName[plyClient])
-		}
+		LM_PrintToChat(plyClient, "mapp %s", szCurrentMap)
+		LM_PrintToChat(plyClient, "szMaps %s", szMaps)
+		LM_PrintToChat(plyClient, "szMap1 %s", szMap1)
+		LM_PrintToChat(plyClient, "szMap2 %s", szMap2)
+		LM_PrintToChat(plyClient, "szMap3 %s", szMap3)
+		CloseHandle(hFile)
+	} else {
+		GetCurrentMap(szDataMap, sizeof(szDataMap))
 	}
+
+
+	// Try backup old save by renaming it if theres one
+	char szBackupFile[PLATFORM_MAX_PATH] = ""
+	if (FileExists(g_szFileName[plyClient])) {
+		LM_PrintToChat(plyClient, "Found an existing save and started backing up...")
+
+		Format(szBackupFile, sizeof(szBackupFile), "%s.bak", g_szFileName[plyClient])
+		
+		if (!RenameFile(szBackupFile, g_szFileName[plyClient])) {
+			LM_PrintToChat(plyClient, "Unable to back up old save, please try to save with a new savename or contact admins.")
+			g_bIsRunning[plyClient] = false
+			return Plugin_Handled
+		}
+		LM_PrintToChat(plyClient, "Backup completed!")
+
+		
+	}
+	
+	// Try create new file
+	g_hFile[plyClient] = OpenFile(g_szFileName[plyClient], "w")
+	if (g_hFile[plyClient] == INVALID_HANDLE) {
+		LM_PrintToChat(plyClient, "Unable to create new save, please try to save with a new savename or contact admins.")
+
+		if (!StrEqual(szBackupFile, "")) {
+			if (RenameFile(g_szFileName[plyClient], szBackupFile)){
+				LM_PrintToChat(plyClient, "Old save has been restored.")
+				szBackupFile = ""
+			} else {
+				LM_PrintToChat(plyClient, "Failed to restore old save!!")
+			}
+		}
+		g_bIsRunning[plyClient] = false
+		return Plugin_Handled
+	}
+	
+	LM_PrintToChat(plyClient, "Found %d savable props, the save will now begin...", iPreCount)
+	
+	
+	// Save begin
+	char szSteamID[32], szHeaders[256]
+	GetClientAuthId(plyClient, AuthId_Steam2, szSteamID, sizeof(szSteamID))
+	ImplodeStrings(g_szDataTypes, sizeof(g_szDataTypes), "\t", szHeaders, sizeof(szHeaders))
+
+	WriteFileLine(g_hFile[plyClient], "### Additional data ###")
+	WriteFileLine(g_hFile[plyClient], "# steamid\t%s", szSteamID)
+	WriteFileLine(g_hFile[plyClient], "# knownname\t%N", plyClient)
+	WriteFileLine(g_hFile[plyClient], "# savename\t%s", szSaveName)
+	WriteFileLine(g_hFile[plyClient], "# savemap\t%s", szDataMap)
+	WriteFileLine(g_hFile[plyClient], "# savedate\t%d", GetTime())
+	WriteFileLine(g_hFile[plyClient], "# propcount\t%d", iPreCount)
+	WriteFileLine(g_hFile[plyClient], "%s", szHeaders)
+
+	char szClass[32], szModel[128]
+	float vOrigin[3], vAngles[3]
+	int iColors[3], iAlpha, iCount = 0
+	
+	
+	for (int entProp = 0; entProp < GetMaxEntities(); entProp++) {
+		if (!IsValidEdict(entProp))
+			continue
+		if (LM_GetEntityOwner(entProp) != plyClient)
+			continue
+		LM_GetEntClassname(entProp, szClass, sizeof(szClass))
+		if (!String_StartsWith(szClass, "prop_physics") && !String_StartsWith(szClass, "prop_dynamic"))
+			continue
+
+		LM_GetEntOrigin(entProp, vOrigin)
+		LM_GetEntAngles(entProp, vAngles)
+		LM_GetEntModel(entProp, szModel, sizeof(szModel))
+		GetEntityRenderColor(entProp, iColors[0], iColors[1], iColors[2], iAlpha)
+
+
+		WriteFileLine(g_hFile[plyClient], "%s\t%s\t%.3f,%.3f,%.3f\t%.3f,%.3f,%.3f\t%i %i %i\t%i\t0\t0\t0", 
+				szClass, szModel, vOrigin[0], vOrigin[1], vOrigin[2], vAngles[0], vAngles[1], vAngles[2], iColors[0], iColors[1], iColors[2], iAlpha)
+		iCount++
+	}
+	
+	FlushFile(g_hFile[plyClient])
+	CloseHandle(g_hFile[plyClient])
+	if (iCount > 0) {
+		LM_PrintToChat(plyClient, "Saved %d props with savename '%s'", iCount, szSaveName)
+		
+		if (!StrEqual(szBackupFile, ""))
+			DeleteFile(szBackupFile)
+
+	} else {
+		LM_PrintToChat(plyClient, "Nothing to save, removing created data.")
+		DeleteFile(g_szFileName[plyClient])
+		if (!StrEqual(szBackupFile, "")) {
+			if (RenameFile(g_szFileName[plyClient], szBackupFile)){
+				LM_PrintToChat(plyClient, "Old save has been restored.")
+				szBackupFile = ""
+			} else {
+				LM_PrintToChat(plyClient, "Failed to restore old save!!")
+			}
+		}
+
+	}
+	g_bIsRunning[plyClient] = false
+
 	return Plugin_Handled
 }
 
@@ -450,7 +525,12 @@ public Action Timer_Load(Handle hTimer, Handle hDataPack) {
 				// 	iHealth = 999999999
 				// if (iHealth == 1)
 				// 	iHealth = 50
-				
+				if (StrEqual(szClass, "prop_physics"))
+					szClass = "prop_physics_override"
+				else if (StrEqual(szClass, "prop_dynamic"))
+					szClass = "prop_dynamic_override"
+
+
 				entProp = LM_CreateEntity(plyClient, szClass, szModel, vOrigin, vAngles)
 				
 				if (entProp == -1) {
@@ -462,8 +542,8 @@ public Action Timer_Load(Handle hTimer, Handle hDataPack) {
 					DispatchKeyValue(entProp, "renderamt", szAlpha)
 					DispatchSpawn(entProp)
 					AcceptEntityInput(entProp, "disablemotion", -1)
-
-					if (g_iCount[plyClient]++ % 100 == 0)
+					g_iCount[plyClient]++
+					if (g_iCount[plyClient] > 99 && g_iCount[plyClient] % 100 == 0)
 						LM_PrintToChat(plyClient, "Loaded %d props, still going...", g_iCount[plyClient])
 
 				}
