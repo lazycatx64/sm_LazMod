@@ -9,8 +9,9 @@
 #include <lazmod>
 
 Handle g_hFile[MAXPLAYERS]
-char g_szFileName[128][MAXPLAYERS]
+char g_szFileName[MAXPLAYERS][128]
 char g_szListName[128]
+char g_szSavePath[] = "data/lazmodsaves"
 
 bool g_bIsRunning[MAXPLAYERS] = {false, ...}
 int g_iCount[MAXPLAYERS]
@@ -65,8 +66,10 @@ public Action Command_SaveSpawn(plyClient, args) {
 	ReplaceString(szSteamID, sizeof(szSteamID), ":", "-")
 	// ReplaceString(szSteamID, sizeof(szSteamID), "STEAM_", "")
 	g_szFileName[plyClient] = ""
-	BuildPath(Path_SM, g_szFileName[plyClient], sizeof(g_szFileName), "data/lazmodsaves/%s#%s.csv", szSteamID, szSaveName)
-	LM_PrintToChat(plyClient, "%s", g_szFileName[plyClient])
+	// BuildPath(Path_SM, g_szFileName[plyClient], sizeof(g_szFileName[]), "%s/%s#%s.csv", g_szSavePath, szSteamID, szSaveName)
+	BuildPath(Path_SM, g_szFileName[plyClient], sizeof(g_szFileName[]), "data/lazmodsaves/STEAM_0-1-12345678#example.csv", g_szSavePath, szSteamID, szSaveName)
+	LM_PrintToChat(plyClient, g_szFileName[plyClient])
+	
 	g_hFile[plyClient] = INVALID_HANDLE
 	g_iTryCount[plyClient] = 0
 	g_iCount[plyClient] = 0
@@ -97,20 +100,12 @@ public Action Command_SaveSpawn(plyClient, args) {
 			WritePackString(hSavePack, szSaveName)
 			WritePackString(hSavePack, szSteamID)
 			return Plugin_Handled
-		} else if (StrEqual(szMode, "load")) {
-			if (!FileExists(g_szFileName[plyClient])) {
-				LM_PrintToChat(plyClient, "The save does not exist.")
-			} else {
-				LM_PrintToChat(plyClient, "Loading the content. Please Wait...")
-				g_bIsRunning[plyClient] = true
 
-				Handle hLoadPack
-				CreateDataTimer(0.01, Timer_Load, hLoadPack)
-				WritePackCell(hLoadPack, plyClient)
-				WritePackString(hLoadPack, szSteamID)
-				WritePackString(hLoadPack, "0")
-			}
-			return Plugin_Handled
+
+		} else if (StrEqual(szMode, "load")) {
+			SaveSpawn_Load(plyClient, szSaveName)
+
+
 		} else if (StrEqual(szMode, "delete")) {
 			if (FileExists(g_szFileName[plyClient])) {
 				if (DeleteFile(g_szFileName[plyClient])) {
@@ -122,28 +117,36 @@ public Action Command_SaveSpawn(plyClient, args) {
 			} else {
 				LM_PrintToChat(plyClient, "The save does not exist.")
 			}
-			return Plugin_Handled
 		}
-		return Plugin_Handled
+
+
 	} else if (StrEqual(szMode, "list")) {
+
 		SaveSpawn_List(plyClient)
-		return Plugin_Handled
+
+	} else {
+	
+		SaveSpawn_Usage(plyClient)
+
 	}
 
-	SaveSpawn_Usage(plyClient)
+	char szArgs[128]
+	GetCmdArgString(szArgs, sizeof(szArgs))
+	LM_LogCmd(plyClient, "sm_ss", szArgs)
 
 	return Plugin_Handled
 }
 
 void SaveSpawn_Usage(int plyClient) {
-	LM_PrintToChat(plyClient, " Usage:")
-	LM_PrintToChat(plyClient, " Save name can only be letters and numbers.")
-	LM_PrintToChat(plyClient, " !ss save <SaveName>")
-	LM_PrintToChat(plyClient, " !ss load <SaveName>")
-	LM_PrintToChat(plyClient, " !ss info <SaveName>")
-	LM_PrintToChat(plyClient, " !ss delete <SaveName>")
-	LM_PrintToChat(plyClient, " !ss list")
-	
+	LM_PrintToChat(plyClient, "Usage:\n\
+								  !ss save <SaveName>\n\
+								  !ss load <SaveName>\n\
+								  !ss info <SaveName>\n\
+								  !ss delete <SaveName>\n\
+								  !ss list\n\
+								Note: Save names can only be in letters and numbers, and can be up to 32 characters long."
+		)
+
 }
 
 void SaveSpawn_Save(int plyClient, char[] szSaveName) {
@@ -154,11 +157,25 @@ void SaveSpawn_Save(int plyClient, char[] szSaveName) {
 
 }
 
-void SaveSpawn_Load(int plyClient, char[] szSaveName) {
-	// Handle hListPack
-	// char szSteamID[32]
-	// GetClientAuthId(plyClient, AuthId_Steam2, szSteamID, sizeof(szSteamID))
-	// ReplaceString(szSteamID, sizeof(szSteamID), ":", "-")
+void SaveSpawn_Load(const int plyClient, const char[] szSaveName) {
+
+	if (!Save_CheckSaveName(plyClient, szSaveName))
+		return
+
+	if (!FileExists(g_szFileName[plyClient])) {
+		LM_PrintToChat(plyClient, "The save does not exist.")
+		return
+	}
+
+	LM_PrintToChat(plyClient, "Loading the save, please Wait...")
+	g_bIsRunning[plyClient] = true
+
+	Handle hLoadPack
+	CreateDataTimer(0.01, Timer_Load, hLoadPack)
+	WritePackCell(hLoadPack, plyClient)
+	WritePackString(hLoadPack, "0")
+
+	return
 	
 }
 
@@ -188,13 +205,72 @@ void SaveSpawn_Delete(int plyClient, char[] szSaveName) {
 }
 
 void SaveSpawn_List(int plyClient) {
-	// Handle hListPack
-	// char szSteamID[32]
-	// GetClientAuthId(plyClient, AuthId_Steam2, szSteamID, sizeof(szSteamID))
-	// ReplaceString(szSteamID, sizeof(szSteamID), ":", "-")
-	// CreateDataTimer(0.01, Timer_List, hListPack)
-	// WritePackCell(hListPack, plyClient)
-	// WritePackString(hListPack, szSteamID)
+
+	// int iCount = 0
+	char szSavePath[512]
+	char szFileName[64]
+	char szAuthSteamID[24], szFileSteamID[24], szSaveName[36]
+
+	Regex reFile = CompileRegex("(.*)#(.*).csv$")
+	Regex reMap = CompileRegex("^# savemap\t([^,]+(?:,[^,]+){0,2})")
+	Regex reDate = CompileRegex("^# savedate\t(\\d+)")
+	Regex reCount = CompileRegex("^# propcount\t(\\d+)")
+
+	LM_PrintToChat(plyClient, "Listing saves in console...")
+	PrintToConsole(plyClient, "-----------------------------------------------------------------------------")
+	PrintToConsole(plyClient, "| SaveName                         | Date       | Props | Maps")
+	PrintToConsole(plyClient, "-----------------------------------------------------------------------------")
+	GetClientAuthId(plyClient, AuthId_Steam2, szAuthSteamID, sizeof(szAuthSteamID))
+	ReplaceString(szAuthSteamID, sizeof(szAuthSteamID), ":", "-")
+
+	BuildPath(Path_SM, szSavePath, sizeof(szSavePath), g_szSavePath)
+	if (!DirExists(szSavePath))
+		return 
+
+	DirectoryListing arDirList = OpenDirectory(szSavePath)
+	while (arDirList.GetNext(szFileName, sizeof(szFileName))) {
+
+		if (StrEqual(szFileName, ".") || StrEqual(szFileName, ".."))
+			continue
+
+		MatchRegex(reFile, szFileName)
+		GetRegexSubString(reFile, 1, szFileSteamID, sizeof(szFileSteamID))
+		if (!StrEqual(szFileSteamID, szAuthSteamID))
+			continue
+
+		GetRegexSubString(reFile, 2, szSaveName, sizeof(szSaveName))
+		
+
+		char szFilePath[128]
+		BuildPath(Path_SM, szFilePath, sizeof(szFilePath), "%s/%s", g_szSavePath, szFileName)
+		Handle hFile = OpenFile(szFilePath, "r")
+		if (hFile == INVALID_HANDLE)
+			continue
+
+		char szData[96], szDateTime[64] = "n/a       ", szMap[64] = "n/a"
+		int iPropCount = 0
+		while (ReadFileLine(hFile, szData, sizeof(szData)) && String_StartsWith(szData, "#")) {
+
+			if (MatchRegex(reMap, szData) > 0) {
+				GetRegexSubString(reMap, 1, szData, sizeof(szData))
+				if (strlen(szData) > 1)
+					strcopy(szMap, sizeof(szMap), szData)
+			} else if (MatchRegex(reDate, szData) > 0) {
+				GetRegexSubString(reDate, 1, szData, sizeof(szData))
+				FormatTime(szDateTime, sizeof(szDateTime), "%F", StringToInt(szData))
+			} else if (MatchRegex(reCount, szData) > 0) {
+				GetRegexSubString(reCount, 1, szData, sizeof(szData))
+				iPropCount = StringToInt(szData)
+			}
+		}
+		Format(szSaveName, sizeof(szSaveName), "| %s ", szSaveName)
+		while (strlen(szSaveName) < sizeof(szSaveName)-2) {
+			StrCat(szSaveName, sizeof(szSaveName), " ")
+		}
+		PrintToConsole(plyClient, "%s | %s | %d | Maps:%s", szSaveName, szDateTime, iPropCount, szMap)
+		CloseHandle(hFile)
+	}
+	return
 }
 
 
@@ -237,9 +313,10 @@ public Action Timer_Save(Handle hTimer, Handle hDataPack) {
 			if (IsValidEdict(i)) {
 				GetEdictClassname(i, szClass, sizeof(szClass))
 				if ((StrContains(szClass, "prop_dynamic") >= 0 || StrContains(szClass, "prop_physics") >= 0) && !StrEqual(szClass, "prop_ragdoll") && LM_GetEntityOwner(i) == plyClient) {
-					GetEntPropString(i, Prop_Data, "m_ModelName", szModel, sizeof(szModel))
-					GetEntPropVector(i, Prop_Send, "m_vecOrigin", fOrigin)
-					GetEntPropVector(i, Prop_Data, "m_angRotation", fAngles)
+					
+					LM_GetEntOrigin(i, fOrigin)
+					LM_GetEntAngles(i, fAngles)
+					LM_GetEntModel(i, szModel, sizeof(szModel))
 					for (int j = 0; j < 3; j++) {
 						iOrigin[j] = RoundToNearest(fOrigin[j])
 						iAngles[j] = RoundToNearest(fAngles[j])
@@ -275,10 +352,9 @@ public Action Timer_Save(Handle hTimer, Handle hDataPack) {
 
 public Action Timer_Load(Handle hTimer, Handle hDataPack) {
 	ResetPack(hDataPack)
-	char szSteamID[32], szDataHeader[255]
+	char szDataHeader[255]
 	bool bRegOwnerError = false
 	int plyClient = ReadPackCell(hDataPack)
-	ReadPackString(hDataPack, szSteamID, sizeof(szSteamID))
 	ReadPackString(hDataPack, szDataHeader, sizeof(szDataHeader))
 	
 	if (!LM_IsClientValid(plyClient, plyClient))
@@ -291,7 +367,6 @@ public Action Timer_Load(Handle hTimer, Handle hDataPack) {
 			Handle hNewPack
 			CreateDataTimer(0.2, Timer_Load, hNewPack)
 			WritePackCell(hNewPack, plyClient)
-			WritePackString(hNewPack, szSteamID)
 			WritePackString(hNewPack, szDataHeader)
 		} else {
 			LM_PrintToChat(plyClient, "Save found but unable to load! Contact admins!")
@@ -303,7 +378,11 @@ public Action Timer_Load(Handle hTimer, Handle hDataPack) {
 		char szLoadString[255]
 		if (ReadFileLine(g_hFile[plyClient], szLoadString, sizeof(szLoadString))) {
 			
-			if (String_StartsWith(szLoadString, "###")) {
+			if (!LM_CheckMaxEdict()) {
+				LM_PrintToChat(plyClient, "Server has no more room for new props, current loading will be terminated!")
+				bRegOwnerError = true
+
+			} else if (String_StartsWith(szLoadString, "###")) {
 				// pass
 				
 			} else if (String_StartsWith(szLoadString, "#")) {
@@ -320,7 +399,8 @@ public Action Timer_Load(Handle hTimer, Handle hDataPack) {
 				szDataHeader = szLoadString
 				
 			} else if (StrContains(szLoadString, "prop_physics") != -1 || StrContains(szLoadString, "prop_dynamic") != -1) {
-				int entLoadEntity = -1
+				
+				int entProp = -1
 				char szDataBuffer[9][255], szHeaderBuffer[9][255], szClass[32], szModel[128], szColor[16], szAlpha[4]
 				char szOrigin[3][16], szAngles[3][16]
 				float vOrigin[3], vAngles[3]
@@ -371,40 +451,21 @@ public Action Timer_Load(Handle hTimer, Handle hDataPack) {
 				// if (iHealth == 1)
 				// 	iHealth = 50
 				
-				if (StrEqual(szClass, "prop_dynamic")) {
-					entLoadEntity = CreateEntityByName("prop_dynamic_override")
-					SetEntProp(entLoadEntity, Prop_Send, "m_nSolidType", 6)
-					SetEntProp(entLoadEntity, Prop_Data, "m_nSolidType", 6)
-				} else if (StrEqual(szClass, "prop_physics")) {
-					entLoadEntity = CreateEntityByName("prop_physics_override")
-				} else {
-					g_iError[plyClient]++
-				}
+				entProp = LM_CreateEntity(plyClient, szClass, szModel, vOrigin, vAngles)
 				
-				if (entLoadEntity != -1) {
-					if (LM_SetEntityOwner(entLoadEntity, plyClient)) {
-						if (!IsModelPrecached(szModel))
-							PrecacheModel(szModel)
-						DispatchKeyValue(entLoadEntity, "model", szModel)
-						DispatchKeyValue(entLoadEntity, "rendermode", "5")
-						DispatchKeyValue(entLoadEntity, "rendercolor", szColor)
-						DispatchKeyValue(entLoadEntity, "renderamt", szAlpha)
-						TeleportEntity(entLoadEntity, vOrigin, vAngles, NULL_VECTOR)
-						DispatchSpawn(entLoadEntity)
-						// SetVariantInt(iHealth)
-						// AcceptEntityInput(entLoadEntity, "sethealth", -1)
-						AcceptEntityInput(entLoadEntity, "disablemotion", -1)
-						g_iCount[plyClient]++
-						if (g_iCount[plyClient] % 100 == 0)
-							LM_PrintToChat(plyClient, "Loaded %d props, still going...", g_iCount[plyClient])
+				if (entProp == -1) {
+					g_iError[plyClient]++
 
-					} else {
-						if (!LM_CheckMaxEdict()) {
-							LM_PrintToChat(plyClient, "Server has no more room for new props, current loading will be terminated!")
-						}
-						RemoveEdict(entLoadEntity)
-						bRegOwnerError = true
-					}
+				} else {
+					DispatchKeyValue(entProp, "rendermode", "5")
+					DispatchKeyValue(entProp, "rendercolor", szColor)
+					DispatchKeyValue(entProp, "renderamt", szAlpha)
+					DispatchSpawn(entProp)
+					AcceptEntityInput(entProp, "disablemotion", -1)
+
+					if (g_iCount[plyClient]++ % 100 == 0)
+						LM_PrintToChat(plyClient, "Loaded %d props, still going...", g_iCount[plyClient])
+
 				}
 			}
 		}
@@ -412,7 +473,6 @@ public Action Timer_Load(Handle hTimer, Handle hDataPack) {
 			Handle hNewPack
 			CreateDataTimer(0.05, Timer_Load, hNewPack)
 			WritePackCell(hNewPack, plyClient)
-			WritePackString(hNewPack, szSteamID)
 			WritePackString(hNewPack, szDataHeader)
 		} else {
 			CloseHandle(g_hFile[plyClient])
@@ -425,68 +485,24 @@ public Action Timer_Load(Handle hTimer, Handle hDataPack) {
 	return Plugin_Handled
 }
 
-public Action Timer_List(Handle hTimer, Handle hDataPack) {
-	ResetPack(hDataPack)
-	char szSteamID[32]
-	int plyClient = ReadPackCell(hDataPack)
-	ReadPackString(hDataPack, szSteamID, sizeof(szSteamID))
-	
-	if (!LM_IsClientValid(plyClient, plyClient))
-		return Plugin_Handled
-	
-	if (g_hFile[plyClient] == INVALID_HANDLE) {
-		g_hFile[plyClient] = OpenFile(g_szListName, "r")
-		g_iTryCount[plyClient]++
-		if (g_iTryCount[plyClient] < 3) {
-			Handle hNewPack
-			CreateDataTimer(0.2, Timer_List, hNewPack)
-			WritePackCell(hNewPack, plyClient)
-			WritePackString(hNewPack, szSteamID)
-		} else {
-			LM_PrintToChat(plyClient, "Unable to list the save! Contact admins!")
-			g_hFile[plyClient] = INVALID_HANDLE
-			g_iTryCount[plyClient] = 0
-			return Plugin_Handled
-		}
-	} else {
-		char szListString[255], szBuffer[3][128], szSaveName[32], szTime[16]
-		PrintToChat(plyClient, "|| [SaveName] | [Date]")
-		
-		while (!IsEndOfFile(g_hFile[plyClient])) {
-			if (ReadFileLine(g_hFile[plyClient], szListString, sizeof(szListString))) {
-				if (StrContains(szListString, szSteamID) != -1) {
-					ExplodeString(szListString, " ", szBuffer, 3, 128)
-					Format(szSaveName, sizeof(szSaveName), "%s", szBuffer[1])
-					Format(szTime, sizeof(szTime), "%s", szBuffer[2])
-					PrintToChat(plyClient, "|| %s | %s", szSaveName, szTime)
-					g_iCount[plyClient]++
-				}
-			}
-		}
-		CloseHandle(g_hFile[plyClient])
-		g_bIsRunning[plyClient] = false
-		if (g_iCount[plyClient] == 0) {
-			LM_PrintToChat(plyClient, "You don't have any save.")
-		} else {
-			LM_PrintToChat(plyClient, "You have %i save(s).", g_iCount[plyClient])
-			g_iCount[plyClient] = 0
-		}
-	}
-	return Plugin_Handled
-}
+stock Save_CheckSaveName(const int plyClient, const char[] szSaveName) {
 
-stock Save_CheckSaveName(plyClient, char szSaveName[32]) {
 	if (strlen(szSaveName) > 32) {
 		LM_PrintToChat(plyClient, "The max SaveName length is 32!")
 		return false
 	}
 	
 	Regex hRegex = new Regex("^[A-Za-z0-9]+$")
-	if (hRegex.Match(szSaveName))
-		return true
-
+	if (hRegex.Match(szSaveName) == -1) {
+		LM_PrintToChat(plyClient, "The savename can only contain letters and numbers!")
+		return false
+	}
 	
-	return false
+	return true
+}
+
+stock CheckFileExist(char[] szFileName) {
+
 }
 
 public CheckSaveList(plyClient, char[] szMode, char[] szSaveName, char[] szSteamID) {
