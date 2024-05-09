@@ -9,10 +9,6 @@
 #include <lazmod>
 
 
-int g_iMaxPropArray = 2048
-Handle g_hPropNameArray
-Handle g_hPropModelPathArray
-
 int g_iMaxRagdollArray = 512
 Handle g_hRagdollNameArray
 Handle g_hRagdollModelPathArray
@@ -23,6 +19,13 @@ Handle g_hWheelModelPathArray
 
 ConVar g_hCvarSpawnInFront
 bool g_bCvarSpawnInFront
+
+Handle hPropList		= INVALID_HANDLE
+Handle hRagdollList		= INVALID_HANDLE
+Handle hWheelList		= INVALID_HANDLE
+char g_szPathProps[PLATFORM_MAX_PATH]	= "configs/lazmod/props.ini"
+char g_szPathRagdolls[PLATFORM_MAX_PATH]	= "configs/lazmod/ragdolls.ini"
+char g_szPathWheels[PLATFORM_MAX_PATH]	= "configs/lazmod/wheels.ini"
 
 public Plugin myinfo = {
 	name = "LazMod - Creator",
@@ -36,9 +39,6 @@ public OnPluginStart() {
 	RegAdminCmd("sm_spawn", Command_SpawnProp, 0, "Spawn physics props.")
 	RegAdminCmd("sm_spawnf", Command_SpawnFrozen, 0, "Spawn and freeze the prop instantly so it dosen't go anywhere.")
 	RegAdminCmd("sm_spawnd", Command_SpawnDynamic, 0, "Spawn dynamic props.")
-	g_hPropNameArray = CreateArray(32, g_iMaxPropArray);
-	g_hPropModelPathArray = CreateArray(128, g_iMaxPropArray);
-	ReadProps()
 
 	RegAdminCmd("sm_ragdoll", Command_SpawnRagdoll, 0, "Spawn ragdoll props.")
 	g_hRagdollNameArray = CreateArray(32, g_iMaxRagdollArray);
@@ -51,11 +51,18 @@ public OnPluginStart() {
 	ReadWheels()
 	
 
-
 	g_hCvarSpawnInFront	= CreateConVar("lm_spawn_infront", "0", "Spawn props in front of player instead at aimed position.", FCVAR_NOTIFY, true, 0.0, true, 1.0)
 	g_hCvarSpawnInFront.AddChangeHook(Hook_CvarChanged)
 	CvarChanged(g_hCvarSpawnInFront)
 
+	char szGameName[32]
+	GetGameFolderName(szGameName, sizeof(szGameName))
+	BuildPath(Path_SM, g_szPathProps, sizeof(g_szPathProps), g_szPathProps)
+	hPropList = CreateKeyValues("PropList")
+	FileToKeyValues(hPropList, g_szPathProps)
+	if (!KvJumpToKey(hPropList, szGameName)) {
+		ThrowError("Game not supported because props.ini has no list for this game: %s", szGameName)
+	}
 
 	PrintToServer( "LazMod Creator loaded!" )
 }
@@ -114,82 +121,53 @@ public Action Command_SpawnProp(plyClient, args) {
 		return Plugin_Handled
 	}
 	
-	char szPropName[32], szModelPath[128]
+	char szPropName[32], szModel[128]
 	int iPropType
 	GetCmdArg(1, szPropName, sizeof(szPropName))
 	iPropType = GetCmdArgInt(2)
 	
-	int iPropIndex = FindStringInArray(g_hPropNameArray, szPropName)
-	
-	if (iPropIndex != -1) {
-		bool bIsDoll = false
-		char szClass[32]
-		
-		if (StrEqual(szClass, "prop_ragdoll"))
-			bIsDoll = true
-		
-		int entProp = -1
-		if (iPropType == 2)
-			entProp = CreateEntityByName("prop_dynamic_override")
-		else
-			entProp = CreateEntityByName("prop_physics_override")
+	KvGetString(hPropList, szPropName, szModel, sizeof(szModel))
 
-		if (LM_SetEntityOwner(entProp, plyClient, bIsDoll)) {
-			float vClientEyePos[3], vSpawnOrigin[3], vClientEyeAngles[3], fRadiansX, fRadiansY, vSurfaceAngles[3]
-			
-			if (g_bCvarSpawnInFront) {
-				GetClientEyePosition(plyClient, vClientEyePos)
-				GetClientEyeAngles(plyClient, vClientEyeAngles)
-				
-				fRadiansX = DegToRad(vClientEyeAngles[0])
-				fRadiansY = DegToRad(vClientEyeAngles[1])
-				
-				vSpawnOrigin[0] = vClientEyePos[0] + (100 * Cosine(fRadiansY) * Cosine(fRadiansX))
-				vSpawnOrigin[1] = vClientEyePos[1] + (100 * Sine(fRadiansY) * Cosine(fRadiansX))
-				vSpawnOrigin[2] = vClientEyePos[2] - 20
-
-
-			} else if (iPropType == 2) {
-
-				GetClientEyePosition(plyClient, vClientEyePos)
-				GetClientEyeAngles(plyClient, vClientEyeAngles)
-				Handle trace = TR_TraceRayFilterEx(vClientEyePos, vClientEyeAngles, MASK_SHOT, RayType_Infinite, TraceEntityFilterOnlyVPhysics)
-				if (TR_DidHit(trace)) {
-					float vHitNormal[3]
-					TR_GetEndPosition(vSpawnOrigin, trace)
-					TR_GetPlaneNormal(trace, vHitNormal)
-					GetVectorAngles(vHitNormal, vSurfaceAngles)
-					vSurfaceAngles[0] += 90
-				}
-			
-			} else {
-				LM_ClientAimPos(plyClient, vSpawnOrigin)
-			}
-			
-			GetArrayString(g_hPropModelPathArray, iPropIndex, szModelPath, sizeof(szModelPath))
-			
-			if (!IsModelPrecached(szModelPath))
-				PrecacheModel(szModelPath)
-			
-			DispatchKeyValue(entProp, "model", szModelPath)
-			
-			if (iPropType == 2 || String_StartsWith(szClass, "prop_dynami"))
-				LM_SetEntSolidType(entProp, SOLID_VPHYSICS)
-			
-			DispatchSpawn(entProp)
-			if (iPropType == 2)
-				TeleportEntity(entProp, vSpawnOrigin, vSurfaceAngles, NULL_VECTOR)
-			else
-				TeleportEntity(entProp, vSpawnOrigin, NULL_VECTOR, NULL_VECTOR)
-			
-			if (iPropType == 1 && Phys_IsPhysicsObject(entProp))
-				Phys_EnableMotion(entProp, false)
-
-		} else
-			RemoveEdict(entProp)
-	} else {
+	if (StrEqual(szModel, "")) {
 		LM_PrintToChat(plyClient, "Prop not found: %s", szPropName)
+		return Plugin_Handled
 	}
+
+	float vSpawnOrigin[3], vSurfaceAngles[3]
+
+	if (g_bCvarSpawnInFront) {
+		LM_GetFrontSpawnPos(plyClient, vSpawnOrigin)
+
+	} else if (iPropType == 2) {
+		LM_GetClientAimPosNormal(plyClient, vSpawnOrigin, vSurfaceAngles)
+	
+	} else {
+		LM_ClientAimPos(plyClient, vSpawnOrigin)
+	}
+			
+
+	char szClass[32]
+	if (iPropType == 2)
+		szClass = "prop_dynamic_override"
+	else
+		szClass = "prop_physics_override"
+
+	int entProp = -1
+	if (iPropType == 2)
+		entProp = LM_CreateEntity(plyClient, szClass, szModel, vSpawnOrigin, vSurfaceAngles)
+	else
+		entProp = LM_CreateEntity(plyClient, szClass, szModel, vSpawnOrigin)
+
+	if (entProp == -1) {
+		LM_PrintToChat(plyClient, "Failed to spawn prop!")
+		return Plugin_Handled
+	}
+
+	DispatchSpawn(entProp)
+	
+	if (iPropType == 1 && Phys_IsPhysicsObject(entProp))
+		Phys_EnableMotion(entProp, false)
+
 
 	char szArgs[128]
 	GetCmdArgString(szArgs, sizeof(szArgs))
@@ -197,66 +175,6 @@ public Action Command_SpawnProp(plyClient, args) {
 
 	return Plugin_Handled
 }
-
-ReadProps() {
-	char szFile[128]
-	BuildPath(Path_SM, szFile, sizeof(szFile), "configs/lazmod/props.ini")
-	
-	Handle hFile = OpenFile(szFile, "rt")
-	if (hFile == INVALID_HANDLE)
-		return
-	
-	int iCountProps = 0
-	while (!IsEndOfFile(hFile))
-	{
-		char szLine[255]
-		if (!ReadFileLine(hFile, szLine, sizeof(szLine)))
-			break
-		
-		/* 略過註解 */
-		int iLen = strlen(szLine)
-		bool bIgnore = false
-		
-		for (int i = 0; i < iLen; i++) {
-			if (bIgnore) {
-				if (szLine[i] == '"')
-					bIgnore = false
-			} else {
-				if (szLine[i] == '"')
-					bIgnore = true
-				else if (szLine[i] == ';') {
-					szLine[i] = '\0'
-					break
-				} else if (szLine[i] == '/' && i != iLen - 1 && szLine[i+1] == '/') {
-					szLine[i] = '\0'
-					break
-				}
-			}
-		}
-		
-		TrimString(szLine)
-		
-		if ((szLine[0] == '/' && szLine[1] == '/') || (szLine[0] == ';' || szLine[0] == '\0'))
-			continue
-	
-		ReadPropsLine(szLine, iCountProps++)
-	}
-	PrintToServer( "LazMod Creator - Loaded %i props", iCountProps )
-	CloseHandle(hFile)
-}
-
-ReadPropsLine(const char[] szLine, iCountProps) {
-	char szPropInfo[2][128]
-	ExplodeString(szLine, ", ", szPropInfo, sizeof(szPropInfo), sizeof(szPropInfo[]))
-	
-	StripQuotes(szPropInfo[0])
-	SetArrayString(g_hPropNameArray, iCountProps, szPropInfo[0])
-	
-	StripQuotes(szPropInfo[1])
-	SetArrayString(g_hPropModelPathArray, iCountProps, szPropInfo[1])
-	
-}
-
 
 
 
