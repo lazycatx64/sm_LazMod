@@ -797,7 +797,7 @@ public Action Command_ClearParent(plyClient, args) {
 
 
 
-
+// TODO: Add !activator? !self, !picker
 public Action Command_EntFire(plyClient, args) {
 	if (!LM_AllowToLazMod(plyClient) || LM_IsBlacklisted(plyClient) || !LM_IsClientValid(plyClient, plyClient, true))
 		return Plugin_Handled
