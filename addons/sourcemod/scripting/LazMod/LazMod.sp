@@ -3,6 +3,8 @@
 #include <sourcemod>
 #include <sdktools>
 
+#include <vphysics>
+
 #include <lazmod>
 
 
@@ -44,6 +46,8 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, err_max) {
 	RegPluginLibrary("build_test")
 	
 	CreateNative("LM_CreateEntity",			Native_CreateEntity)
+	CreateNative("LM_GetFrontSpawnPos",		Native_GetFrontSpawnPos)
+	CreateNative("LM_GetClientAimPosNormal",Native_GetClientAimPosNormal)
 
 	CreateNative("LM_SetEntityOwner",		Native_SetEntityOwner)
 	CreateNative("LM_GetEntityOwner",		Native_GetEntityOwner)
@@ -69,7 +73,10 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, err_max) {
 	return APLRes_Success
 }
 
-public OnPluginStart() {	
+public OnPluginStart() {
+
+	// TODO: convar for apply auto kick
+
 	g_hCvarModEnabled = CreateConVar("lm_enable", "2", "Enable the LazMod. 2=For All, 1=Admins Only, 0=Disabled.", FCVAR_NOTIFY, true, 0.0, true, 2.0)
 	g_hCvarModEnabled.AddChangeHook(Hook_CvarChanged)
 	CvarChanged(g_hCvarModEnabled)
@@ -174,18 +181,6 @@ public Action Command_SpawnCount(plyClient, args) {
 
 
 
-/**
- * Create an entity and finish other basic stuff in one line.
- * Note: Not DispatchSpawn() yet!
- * 
- * @param plyClient			Client to assign the owner if needed
- * @param szClass			Classname for entity to create
- * @param szModel			Model name
- * @param vOrigin			Entity will put there after spawn
- * @param vAngles			Entity will set to that angles after spawn
- * 
- * @return 					Entity index, -1 if failed to create entity.
- */
 Native_CreateEntity(Handle hPlugin, iNumParams) {
 	
 	char szClass[32], szModel[128]
@@ -221,6 +216,48 @@ Native_CreateEntity(Handle hPlugin, iNumParams) {
 
 	return entProp
 }
+
+Native_GetFrontSpawnPos(Handle hPlugin, iNumParams) {
+	
+	int plyClient = GetNativeCell(1)
+	float vClientOrigin[3], vClientAngles[3], vPropOrigin[3], fRadiansX, fRadiansY
+
+	GetClientEyePosition(plyClient, vClientOrigin)
+	GetClientEyeAngles(plyClient, vClientAngles)
+	
+	fRadiansX = DegToRad(vClientAngles[0])
+	fRadiansY = DegToRad(vClientAngles[1])
+	
+	vPropOrigin[0] = vClientOrigin[0] + (100 * Cosine(fRadiansY) * Cosine(fRadiansX))
+	vPropOrigin[1] = vClientOrigin[1] + (100 * Sine(fRadiansY) * Cosine(fRadiansX))
+	vPropOrigin[2] = vClientOrigin[2] - 20
+
+	SetNativeArray(2, vPropOrigin, sizeof(vPropOrigin))
+}
+
+Native_GetClientAimPosNormal(Handle hPlugin, iNumParams) {
+	
+	int plyClient = GetNativeCell(1)
+	float vClientOrigin[3], vClientAngles[3], vOrigin[3], vSurfaceAngles[3]
+
+	GetClientEyePosition(plyClient, vClientOrigin)
+	GetClientEyeAngles(plyClient, vClientAngles)
+	Handle trace = TR_TraceRayFilterEx(vClientOrigin, vClientAngles, MASK_SHOT, RayType_Infinite, TraceEntityFilterOnlyVPhysics)
+	if (TR_DidHit(trace)) {
+		float vHitNormal[3]
+		TR_GetEndPosition(vOrigin, trace)
+		TR_GetPlaneNormal(trace, vHitNormal)
+		GetVectorAngles(vHitNormal, vSurfaceAngles)
+		vSurfaceAngles[0] += 90
+	}
+	
+	SetNativeArray(2, vOrigin, sizeof(vOrigin))
+	SetNativeArray(3, vSurfaceAngles, sizeof(vSurfaceAngles))
+}
+bool TraceEntityFilterOnlyVPhysics(entity, contentsMask) {
+    return ((entity > MaxClients) && Phys_IsPhysicsObject(entity))
+}
+
 
 
 Native_SetEntityOwner(Handle hPlugin, iNumParams) {

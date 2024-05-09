@@ -27,6 +27,23 @@ enum ModStatus {
 native int LM_CreateEntity(const int plyClient = -1, const char[] szClass, const char[] szModel = "", const float vOrigin[3] = NULL_VECTOR, const float vAngles[3] = NULL_VECTOR)
 
 /**
+ * Get the spawn pos in front of player.
+ * 
+ * @param plyClient			Client to assign the owner if needed
+ * @param vPropOrigin		Origin for new entity to spawn
+ */
+native int LM_GetFrontSpawnPos(const int plyClient = -1, float vPropOrigin[3])
+
+/**
+ * Get aim pos with hit surface angles.
+ * 
+ * @param plyClient			Client to assign the owner if needed
+ * @param vOrigin			Origin of aim pos
+ * @param vAngles			Angles of hit surface
+ */
+native int LM_GetClientAimPosNormal(const int plyClient = -1, float vOrigin[3], float vAngles[3])
+
+/**
  * Register an entity owner.
  * 
  * @param entProp			Entity index.
