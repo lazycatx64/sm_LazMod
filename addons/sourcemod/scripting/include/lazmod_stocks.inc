@@ -1,14 +1,14 @@
 
 bool g_bFirstRun = false
-
+int g_entFirstRun = -1
 
 /**
  * Check if plugin already ran before (plugin reload?)
  * Currently just a placeholder, no further use.
  */
 stock LM_FirstRun() {
-	if (g_bFirstRun) {
-		int g_entFirstRun = FindEntityByClassname(0, "cat_First_Run")
+	if (!g_bFirstRun || g_entFirstRun == -1) {
+		g_entFirstRun = FindEntityByClassname(0, "cat_First_Run")
 		if (g_entFirstRun == -1) {
 			g_entFirstRun = CreateEntityByName("info_target")
 			DispatchKeyValue(g_entFirstRun, "classname", "cat_First_Run")
@@ -17,6 +17,16 @@ stock LM_FirstRun() {
 		} else
 			g_bFirstRun = false
 	}
+}
+
+/**
+ * Check if plugin already ran before (plugin reload?)
+ * Currently just a placeholder, no further use.
+ * 
+ * @return			False if able to find 'cat_First_Run' entity; True otherwise
+ */
+stock bool LM_IsFirstRun() {
+	return FindEntityByClassname(0, "cat_First_Run") == -1
 }
 
 /**
