@@ -72,7 +72,7 @@ public Action Command_SaveSpawn(plyClient, args) {
 	
 	String_ToLower(szMode, szMode, sizeof(szMode))
 
-	if ((StrEqual(szMode, "save") || StrEqual(szMode, "load") || StrEqual(szMode, "delete")) && args > 1) {
+	if ((StrEqual(szMode, "save") || StrEqual(szMode, "load") || StrEqual(szMode, "delete") || StrEqual(szMode, "info")) && args > 1) {
 		if (!Save_CheckSaveName(plyClient, szSaveName))
 			return Plugin_Handled
 			
@@ -80,10 +80,11 @@ public Action Command_SaveSpawn(plyClient, args) {
 			SaveSpawn_Save(plyClient, szSaveName)
 			return Plugin_Handled
 
-
 		} else if (StrEqual(szMode, "load")) {
 			SaveSpawn_Load(plyClient, szSaveName)
 
+		} else if (StrEqual(szMode, "info")) {
+			SaveSpawn_Info(plyClient, szSaveName)
 
 		} else if (StrEqual(szMode, "delete")) {
 			if (FileExists(g_szFileName[plyClient])) {
@@ -129,6 +130,9 @@ void SaveSpawn_Usage(int plyClient) {
 
 void SaveSpawn_Save(const int plyClient, const char[] szSaveName) {
 	
+	if (!Save_CheckSaveName(plyClient, szSaveName))
+		return
+
 	LM_PrintToChat(plyClient, "Gathering data, preparing to save...")
 	g_bIsRunning[plyClient] = true
 	
@@ -139,9 +143,6 @@ void SaveSpawn_Save(const int plyClient, const char[] szSaveName) {
 }
 
 void SaveSpawn_Load(const int plyClient, const char[] szSaveName) {
-
-	if (!Save_CheckSaveName(plyClient, szSaveName))
-		return
 
 	if (!FileExists(g_szFileName[plyClient])) {
 		LM_PrintToChat(plyClient, "The save does not exist.")
@@ -160,21 +161,49 @@ void SaveSpawn_Load(const int plyClient, const char[] szSaveName) {
 	
 }
 
-void SaveSpawn_Info(int plyClient, char[] szSaveName) {
-	// char[] input = "[1,2,3,4,5]";
-	// JSON_Array original = view_as<JSON_Array>(json_decode(input));
-	// PrintToServer("write to file %b ", original.WriteToFile(szListName));
+void SaveSpawn_Info(const int plyClient, const char[] szSaveName) {
 
-	// JSON_Object read = json_read_from_file(szListName);
-	// PrintToServer("read from file %b", read != null);
-	
-	// // _json_encode(read);
+	if (!Save_CheckSaveName(plyClient, szSaveName))
+		return
 
-	// // Test_AssertStringsEqual("input matches output", input, json_encode_output);
+	Handle hFile = OpenFile(g_szFileName[plyClient], "r")
+	if (hFile == INVALID_HANDLE) {
+		LM_PrintToChat(plyClient, "Failed to read the save or save does not exist!")
+		return
+	}
 
-	// json_cleanup_and_delete(original);
-	// json_cleanup_and_delete(read);
-	
+	LM_PrintToChat(plyClient, "Save '%s' info:", szSaveName)
+
+	Regex reMap = CompileRegex("^# savemap\t(\\w.*)$")
+	Regex reDate = CompileRegex("^# savedate\t(\\d+)$")
+	Regex reCount = CompileRegex("^# propcount\t(\\d+)$")
+	char szData[96], szDateTime[64] = ""
+	while (ReadFileLine(hFile, szData, sizeof(szData)) && String_StartsWith(szData, "#")) {
+
+		if (String_StartsWith(szData, "# savemap")) {
+			if (MatchRegex(reMap, szData) > 0){
+				GetRegexSubString(reMap, 1, szData, sizeof(szData))
+				LM_PrintToChat(plyClient, "Saved on maps: %s", szData)
+			} else {
+				LM_PrintToChat(plyClient, "Saved on maps: n/a")
+			}
+		} else if (String_StartsWith(szData, "# savedate")) {
+			if (MatchRegex(reDate, szData) > 0) {
+				GetRegexSubString(reDate, 1, szData, sizeof(szData))
+				FormatTime(szDateTime, sizeof(szDateTime), "%F %T (%c)", StringToInt(szData))
+				LM_PrintToChat(plyClient, "Saved date: %s", szDateTime)
+			} else {
+				LM_PrintToChat(plyClient, "Saved date: n/a")
+			}
+		} else if (String_StartsWith(szData, "# propcount")) {
+			if (MatchRegex(reCount, szData) > 0) {
+				GetRegexSubString(reCount, 1, szData, sizeof(szData))
+				LM_PrintToChat(plyClient, "Saved props: %s", szData)
+			} else {
+				LM_PrintToChat(plyClient, "Saved props: n/a")
+			}
+		}
+	}
 }
 
 void SaveSpawn_Delete(int plyClient, char[] szSaveName) {
