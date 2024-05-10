@@ -6,7 +6,7 @@ int g_entFirstRun = -1
  * Check if plugin already ran before (plugin reload?)
  * Currently just a placeholder, no further use.
  */
-stock LM_FirstRun() {
+stock void LM_FirstRun() {
 	if (!g_bFirstRun || g_entFirstRun == -1) {
 		g_entFirstRun = FindEntityByClassname(0, "cat_First_Run")
 		if (g_entFirstRun == -1) {
@@ -35,7 +35,7 @@ stock bool LM_IsFirstRun() {
  * @param plyClient			Client id
  * @param vAimPos			Aim pos to return
  */
-stock LM_ClientAimPos(int plyClient, float vAimPos[3]) {
+stock void LM_ClientAimPos(int plyClient, float vAimPos[3]) {
 	float vOrigin[3], vAngles[3]
 	
 	GetClientEyePosition(plyClient, vOrigin)

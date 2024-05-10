@@ -51,7 +51,7 @@ native int LM_GetClientAimPosNormal(const int plyClient = -1, float vOrigin[3], 
  * @param Doll				Is prop_ragdoll?
  * @return					Ture on success. False on failure.
  */
-native bool LM_SetEntityOwner(entProp, plyClient, bool Doll = false)
+native bool LM_SetEntityOwner(const int entProp, const int plyClient, bool bIsDoll = false)
 
 /**
  * Get an entity owner.
@@ -59,7 +59,7 @@ native bool LM_SetEntityOwner(entProp, plyClient, bool Doll = false)
  * @param entProp			Entity index.
  * @return					-1 on failure. Any other value indicates a Entity index owner.
  */
-native LM_GetEntityOwner(entProp)
+native int LM_GetEntityOwner(const int entProp)
 
 /**
  * Set client props limit.
@@ -69,7 +69,7 @@ native LM_GetEntityOwner(entProp)
  * @param Doll				Is prop_ragdoll?
  * @noreturn
  */
-native LM_SetSpawnLimit(int plyClient, amount, bool Doll = false)
+native int LM_SetSpawnLimit(const int plyClient, const int iAmount, bool bIsDoll = false)
 
 /**
  * Check client can use BuildMod.
@@ -77,7 +77,7 @@ native LM_SetSpawnLimit(int plyClient, amount, bool Doll = false)
  * @param plyClient			Client index.
  * @return					True on success. False on failure.
  */
-native bool LM_AllowToLazMod(int plyClient)
+native bool LM_AllowToLazMod(const int plyClient)
 
 /**
  * Check client can use Fly.
@@ -85,7 +85,7 @@ native bool LM_AllowToLazMod(int plyClient)
  * @param plyClient			Client index.
  * @return					True on success. False on failure.
  */
-native bool LM_AllowFly(int plyClient)
+native bool LM_AllowFly(const int plyClient)
 
 /**
  * Get client admin.
@@ -93,7 +93,7 @@ native bool LM_AllowFly(int plyClient)
  * @param plyClient			Client index.
  * @return					True on admin. False on not.
  */
-native bool LM_IsAdmin(int plyClient)
+native bool LM_IsAdmin(const int plyClient)
 
 /**
  * Get client aim entity.
@@ -103,7 +103,7 @@ native bool LM_IsAdmin(int plyClient)
  * @param included_clients	Allow native to getting clients?
  * @return					-1 on failure. Any other value indicates a Entity index.
  */
-native LM_GetClientAimEntity(int plyClient, bool show_message = true, bool included_clients = false)
+native int LM_GetClientAimEntity(const int plyClient, bool show_message = true, bool included_clients = false)
 
 /**
  * Get an entity of owner is equal client.
@@ -113,7 +113,7 @@ native LM_GetClientAimEntity(int plyClient, bool show_message = true, bool inclu
  * @param bIgnoreCvar		Ignore 'lm_nonowner' cvar?
  * @return					True on owner. False on not.
  */
-native bool LM_IsEntityOwner(int plyClient, entProp, bool bIgnoreCvar = false)
+native bool LM_IsEntityOwner(const int plyClient, const int entProp, bool bIgnoreCvar = false)
 
 /**
  * Logging commands and args.
@@ -123,7 +123,7 @@ native bool LM_IsEntityOwner(int plyClient, entProp, bool bIgnoreCvar = false)
  * @param args				Args to log.
  * @noreturn
  */
-native LM_LogCmd(int plyClient, const char[] command, const char[] args)
+native void LM_LogCmd(const int plyClient, const char[] command, const char[] args)
 
 /**
  * Prints a message with the BuildMod tag.
@@ -133,7 +133,7 @@ native LM_LogCmd(int plyClient, const char[] command, const char[] args)
  * @param ...				Variable number of format parameters.
  * @noreturn
  */
-native LM_PrintToChat(int plyClient, const char[] format, any ...)
+native void LM_PrintToChat(const int plyClient, const char[] format, any ...)
 
 /**
  * Prints a message to all clients with the BuildMod tag.
@@ -142,7 +142,7 @@ native LM_PrintToChat(int plyClient, const char[] format, any ...)
  * @param ...				Variable number of format parameters.
  * @noreturn
  */
-native LM_PrintToAll(const char[] format, any ...)
+native void LM_PrintToAll(const char[] format, any ...)
 
 /**
  * Check if client is blacklisted.
@@ -150,7 +150,7 @@ native LM_PrintToAll(const char[] format, any ...)
  * @param plyClient			Client index.
  * @return					True on blacklisted. False on not.
  */
-native bool LM_IsBlacklisted(int plyClient)
+native bool LM_IsBlacklisted(const int plyClient)
 
 /**
  * Check is target client valid.
@@ -161,7 +161,7 @@ native bool LM_IsBlacklisted(int plyClient)
  * @param plyReply			True to reply the result to target instead.
  * @return					True if target valid. Otherwise false.
  */
-native bool LM_IsClientValid(int plyClient, int plyTarget, bool bIsAlive = false, bool plyReply = false)
+native bool LM_IsClientValid(const int plyClient, const int plyTarget, bool bIsAlive = false, bool plyReply = false)
 
 /**
  * Check if a prop is a Func_ prop
@@ -169,7 +169,7 @@ native bool LM_IsClientValid(int plyClient, int plyTarget, bool bIsAlive = false
  * @param entProp			Entity index.
  * @return					True if func, false otherwise.
  */
-native bool LM_IsFuncProp(int entProp)
+native bool LM_IsFuncProp(const int entProp)
 
 /**
  * Check if a prop is a Func_ prop
@@ -177,7 +177,7 @@ native bool LM_IsFuncProp(int entProp)
  * @param entProp			Entity index.
  * @return					True if NPC, false otherwise.
  */
-native bool LM_IsNpc(int entProp)
+native bool LM_IsNpc(const int entProp)
 
 /**
  * Check if a prop is a Player
@@ -185,4 +185,4 @@ native bool LM_IsNpc(int entProp)
  * @param entProp			Entity index.
  * @return					True if Player, false otherwise.
  */
-native bool LM_IsPlayer(int entProp)
+native bool LM_IsPlayer(const int entProp)
