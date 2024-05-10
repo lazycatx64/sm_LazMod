@@ -73,6 +73,7 @@ public Action Command_SaveSpawn(plyClient, args) {
 	String_ToLower(szMode, szMode, sizeof(szMode))
 
 	if ((StrEqual(szMode, "save") || StrEqual(szMode, "load") || StrEqual(szMode, "delete") || StrEqual(szMode, "info")) && args > 1) {
+
 		if (!Save_CheckSaveName(plyClient, szSaveName))
 			return Plugin_Handled
 			
@@ -81,22 +82,13 @@ public Action Command_SaveSpawn(plyClient, args) {
 			return Plugin_Handled
 
 		} else if (StrEqual(szMode, "load")) {
-			SaveSpawn_Load(plyClient, szSaveName)
+			SaveSpawn_Load(plyClient)
 
 		} else if (StrEqual(szMode, "info")) {
 			SaveSpawn_Info(plyClient, szSaveName)
 
 		} else if (StrEqual(szMode, "delete")) {
-			if (FileExists(g_szFileName[plyClient])) {
-				if (DeleteFile(g_szFileName[plyClient])) {
-					LM_PrintToChat(plyClient, "Delete save successfully.")
-					CheckSaveList(plyClient, szMode, szSaveName, szSteamID)
-				} else {
-					LM_PrintToChat(plyClient, "Delete save failed!")
-				}
-			} else {
-				LM_PrintToChat(plyClient, "The save does not exist.")
-			}
+			SaveSpawn_Delete(plyClient)
 		}
 
 
@@ -104,7 +96,6 @@ public Action Command_SaveSpawn(plyClient, args) {
 		SaveSpawn_List(plyClient)
 
 	} else {
-	
 		SaveSpawn_Usage(plyClient)
 
 	}
@@ -117,22 +108,20 @@ public Action Command_SaveSpawn(plyClient, args) {
 }
 
 void SaveSpawn_Usage(int plyClient) {
-	LM_PrintToChat(plyClient, "Usage:\n\
+	LM_PrintToChat(plyClient, "SaveSpawn Usage:\n\
 								  !ss save <SaveName>\n\
 								  !ss load <SaveName>\n\
 								  !ss info <SaveName>\n\
 								  !ss delete <SaveName>\n\
-								  !ss list\n\
-								Note: Save names can only be in letters and numbers, and can be up to 32 characters long."
-		)
+								  !ss list")
+	LM_PrintToChat(plyClient, "Note1: Save names can only be in letters and numbers, and can be up to 32 characters long." )
+	LM_PrintToChat(plyClient, "Note2: Deleted saves cannot be undone." )
+		
 
 }
 
 void SaveSpawn_Save(const int plyClient, const char[] szSaveName) {
 	
-	if (!Save_CheckSaveName(plyClient, szSaveName))
-		return
-
 	LM_PrintToChat(plyClient, "Gathering data, preparing to save...")
 	g_bIsRunning[plyClient] = true
 	
@@ -142,7 +131,7 @@ void SaveSpawn_Save(const int plyClient, const char[] szSaveName) {
 	WritePackString(hSavePack, szSaveName)
 }
 
-void SaveSpawn_Load(const int plyClient, const char[] szSaveName) {
+void SaveSpawn_Load(const int plyClient) {
 
 	if (!FileExists(g_szFileName[plyClient])) {
 		LM_PrintToChat(plyClient, "The save does not exist.")
@@ -163,16 +152,13 @@ void SaveSpawn_Load(const int plyClient, const char[] szSaveName) {
 
 void SaveSpawn_Info(const int plyClient, const char[] szSaveName) {
 
-	if (!Save_CheckSaveName(plyClient, szSaveName))
-		return
-
 	Handle hFile = OpenFile(g_szFileName[plyClient], "r")
 	if (hFile == INVALID_HANDLE) {
 		LM_PrintToChat(plyClient, "Failed to read the save or save does not exist!")
 		return
 	}
 
-	LM_PrintToChat(plyClient, "Save '%s' info:", szSaveName)
+	LM_PrintToChat(plyClient, "SaveSpawn '%s' info:", szSaveName)
 
 	Regex reMap = CompileRegex("^# savemap\t(\\w.*)$")
 	Regex reDate = CompileRegex("^# savedate\t(\\d+)$")
@@ -206,12 +192,17 @@ void SaveSpawn_Info(const int plyClient, const char[] szSaveName) {
 	}
 }
 
-void SaveSpawn_Delete(int plyClient, char[] szSaveName) {
-	// Handle hListPack
-	// char szSteamID[32]
-	// GetClientAuthId(plyClient, AuthId_Steam2, szSteamID, sizeof(szSteamID))
-	// ReplaceString(szSteamID, sizeof(szSteamID), ":", "-")
-	
+void SaveSpawn_Delete(int plyClient) {
+
+	if (FileExists(g_szFileName[plyClient])) {
+		if (DeleteFile(g_szFileName[plyClient]))
+			LM_PrintToChat(plyClient, "Deleted save successfully.")
+		else
+			LM_PrintToChat(plyClient, "Delete save failed!")
+		
+	} else {
+		LM_PrintToChat(plyClient, "The save does not exist.")
+	}
 }
 
 void SaveSpawn_List(int plyClient) {
