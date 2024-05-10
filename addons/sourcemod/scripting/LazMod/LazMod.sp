@@ -18,6 +18,7 @@ ConVar g_hCvarModEnabled
 ConVar g_hCvarAllowNonOwner
 ConVar g_hCvarAllowFly
 ConVar g_hCvarAdminBypassOwner
+ConVar g_hCvarAdminBypassAutokick
 ConVar g_hCvarMaxPropServer
 ConVar g_hCvarMaxPropAdmin
 ConVar g_hCvarMaxRagdollAdmin
@@ -28,6 +29,7 @@ ModStatus g_enCvarModEnabled
 bool g_bCvarAllowNonOwner
 bool g_bCvarAllowFly
 bool g_bCvarAdminBypassOwner
+bool g_bCvarAdminBypassAutokick
 int g_iCvarMaxPropServer
 int g_iCvarMaxPropAdmin
 int g_iCvarMaxRagdollAdmin
@@ -93,6 +95,10 @@ public OnPluginStart() {
 	g_hCvarAdminBypassOwner.AddChangeHook(Hook_CvarChanged)
 	CvarChanged(g_hCvarAdminBypassOwner)
 
+	g_hCvarAdminBypassAutokick = CreateConVar("lm_admin_bypass_autokick", "1", "Admins autokick will disabled automatically when join server.", FCVAR_NOTIFY, true, 0.0, true, 1.0)
+	g_hCvarAdminBypassAutokick.AddChangeHook(Hook_CvarChanged)
+	CvarChanged(g_hCvarAdminBypassAutokick)
+
 
 
 	g_hCvarMaxPropServer = CreateConVar("lm_maxprop_server", "2000", "Total prop spawn limit including ragdolls. (Cannot exceed engine-defined upper limit)", FCVAR_NOTIFY, true, 0.0)
@@ -143,6 +149,15 @@ void CvarChanged(Handle convar) {
 		g_bCvarAllowFly = g_hCvarAllowFly.BoolValue
 	else if (convar == g_hCvarAdminBypassOwner)
 		g_bCvarAdminBypassOwner = g_hCvarAdminBypassOwner.BoolValue
+	else if (convar == g_hCvarAdminBypassAutokick) {
+		g_bCvarAdminBypassAutokick = g_hCvarAdminBypassAutokick.BoolValue
+		if (g_bCvarAdminBypassAutokick) {
+			for (int i = 0; i < MaxClients; i++) {
+				if (LM_IsClientValid(i, i) && LM_IsAdmin(i))
+					DisableAutokick(i)
+			}
+		}
+	}
 		
 	else if (convar == g_hCvarMaxPropServer)
 		g_iCvarMaxPropServer = g_hCvarMaxPropServer.IntValue
@@ -154,6 +169,18 @@ void CvarChanged(Handle convar) {
 		g_iCvarMaxPropPlayer = g_hCvarMaxPropPlayer.IntValue
 	else if (convar == g_hCvarMaxRagdollPlayer)
 		g_iCvarMaxRagdollPlayer = g_hCvarMaxRagdollPlayer.IntValue
+}
+
+public OnClientPutInServer(int plyClient) {
+	if (!g_bCvarAdminBypassAutokick || !LM_IsAdmin(plyClient))
+		return
+		
+	DisableAutokick(plyClient)
+}
+void DisableAutokick(int plyClient = -1) {
+	int iUserId = GetClientUserId(plyClient)
+	ServerCommand("mp_disable_autokick %d", iUserId)
+	LogToGame("[LazMod] Auto-kick disabled for %L", plyClient)
 }
 
 public Action Command_Version(plyClient, args) {
