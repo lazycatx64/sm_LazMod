@@ -40,6 +40,10 @@ public OnPluginStart() {
 	RegAdminCmd("sm_spawnf", Command_SpawnFrozen, 0, "Spawn and freeze the prop instantly so it dosen't go anywhere.")
 	RegAdminCmd("sm_spawnd", Command_SpawnDynamic, 0, "Spawn dynamic props.")
 
+	RegAdminCmd("sm_spawnmodel", Command_SpawnModel, 0, "Spawn props by model.")
+	RegAdminCmd("sm_spawnmodelf", Command_SpawnModelFrozen, 0, "Spawn props by model and frozen.")
+	RegAdminCmd("sm_spawnmodeld", Command_SpawnModelDynamic, 0, "Spawn dynamic props by model.")
+
 	RegAdminCmd("sm_ragdoll", Command_SpawnRagdoll, 0, "Spawn ragdoll props.")
 	g_hRagdollNameArray = CreateArray(32, g_iMaxRagdollArray);
 	g_hRagdollModelPathArray = CreateArray(128, g_iMaxRagdollArray);
@@ -76,40 +80,6 @@ void CvarChanged(Handle convar) {
 }
 
 
-public Action Command_SpawnFrozen(plyClient, args) {
-	if (!LM_AllowToLazMod(plyClient) || LM_IsBlacklisted(plyClient) || !LM_IsClientValid(plyClient, plyClient, true))
-		return Plugin_Handled
-	
-	if (args < 1) {
-		LM_PrintToChat(plyClient, "Usage: !spawnf <Prop name> ")
-		LM_PrintToChat(plyClient, "Ex: !spawnf melon")
-		return Plugin_Handled
-	}
-	
-	char spwansf[33]
-	GetCmdArg(1, spwansf, sizeof(spwansf))
-	
-	FakeClientCommand(plyClient, "sm_spawn %s 1", spwansf)
-	return Plugin_Handled
-}
-
-public Action Command_SpawnDynamic(plyClient, args) {
-	if (!LM_AllowToLazMod(plyClient) || LM_IsBlacklisted(plyClient) || !LM_IsClientValid(plyClient, plyClient, true))
-		return Plugin_Handled
-	
-	if (args < 1) {
-		LM_PrintToChat(plyClient, "Usage: !spawnd <Prop name> ")
-		LM_PrintToChat(plyClient, "Ex: !spawnd blastdoor")
-		LM_PrintToChat(plyClient, "Ex: !spawnd support")
-		return Plugin_Handled
-	}
-	
-	char spwansf[33]
-	GetCmdArg(1, spwansf, sizeof(spwansf))
-	
-	FakeClientCommand(plyClient, "sm_spawn %s 2", spwansf)
-	return Plugin_Handled
-}
 
 public Action Command_SpawnProp(plyClient, args) {
 	if (!LM_AllowToLazMod(plyClient) || LM_IsBlacklisted(plyClient) || !LM_IsClientValid(plyClient, plyClient, true))
@@ -173,6 +143,147 @@ public Action Command_SpawnProp(plyClient, args) {
 	GetCmdArgString(szArgs, sizeof(szArgs))
 	LM_LogCmd(plyClient, "sm_spawn", szArgs)
 
+	return Plugin_Handled
+}
+
+public Action Command_SpawnFrozen(plyClient, args) {
+	if (!LM_AllowToLazMod(plyClient) || LM_IsBlacklisted(plyClient) || !LM_IsClientValid(plyClient, plyClient, true))
+		return Plugin_Handled
+	
+	if (args < 1) {
+		LM_PrintToChat(plyClient, "Usage: !spawnf <Prop name> ")
+		LM_PrintToChat(plyClient, "Ex: !spawnf melon")
+		return Plugin_Handled
+	}
+	
+	char szPropName[33]
+	GetCmdArg(1, szPropName, sizeof(szPropName))
+	
+	FakeClientCommand(plyClient, "sm_spawn %s 1", szPropName)
+	return Plugin_Handled
+}
+
+public Action Command_SpawnDynamic(plyClient, args) {
+	if (!LM_AllowToLazMod(plyClient) || LM_IsBlacklisted(plyClient) || !LM_IsClientValid(plyClient, plyClient, true))
+		return Plugin_Handled
+	
+	if (args < 1) {
+		LM_PrintToChat(plyClient, "Usage: !spawnd <Prop name> ")
+		LM_PrintToChat(plyClient, "Ex: !spawnd blastdoor")
+		LM_PrintToChat(plyClient, "Ex: !spawnd support")
+		return Plugin_Handled
+	}
+	
+	char szPropName[33]
+	GetCmdArg(1, szPropName, sizeof(szPropName))
+	
+	FakeClientCommand(plyClient, "sm_spawn %s 2", szPropName)
+	return Plugin_Handled
+}
+
+
+
+
+public Action Command_SpawnModel(plyClient, args) {
+	if (!LM_AllowToLazMod(plyClient) || LM_IsBlacklisted(plyClient) || !LM_IsClientValid(plyClient, plyClient, true))
+		return Plugin_Handled
+	
+	if (args < 1) {
+		LM_PrintToChat(plyClient, "Usage: !spawnmodel <model path>\n\
+									Ex: !spawnmodel props_lab/blastdoor001c\n\
+									Ex: !spawnmodel models/props_c17/support01.mdl")
+		LM_PrintToChat(plyClient, "Note: 'models/' and '.mdl' are acceptable")
+		return Plugin_Handled
+	}
+	
+	char szModel[128]
+	int iPropType
+	GetCmdArg(1, szModel, sizeof(szModel))
+	iPropType = GetCmdArgInt(2)
+	
+	if (!String_StartsWith(szModel, "models/"))
+		Format(szModel, sizeof(szModel), "models/%s", szModel)
+	if (!String_EndsWith(szModel, ".mdl"))
+		Format(szModel, sizeof(szModel), "%s.mdl", szModel)
+	
+	float vSpawnOrigin[3], vSurfaceAngles[3]
+
+	if (g_bCvarSpawnInFront) {
+		LM_GetFrontSpawnPos(plyClient, vSpawnOrigin)
+
+	} else if (iPropType == 2) {
+		LM_GetClientAimPosNormal(plyClient, vSpawnOrigin, vSurfaceAngles)
+	
+	} else {
+		LM_ClientAimPos(plyClient, vSpawnOrigin)
+	}
+			
+
+	char szClass[32]
+	if (iPropType == 2)
+		szClass = "prop_dynamic_override"
+	else
+		szClass = "prop_physics_override"
+
+	int entProp = -1
+	if (iPropType == 2)
+		entProp = LM_CreateEntity(plyClient, szClass, szModel, vSpawnOrigin, vSurfaceAngles)
+	else
+		entProp = LM_CreateEntity(plyClient, szClass, szModel, vSpawnOrigin)
+
+	if (entProp == -1) {
+		LM_PrintToChat(plyClient, "Failed to spawn prop!")
+		return Plugin_Handled
+	}
+
+	DispatchSpawn(entProp)
+	
+	if (iPropType == 1 && Phys_IsPhysicsObject(entProp))
+		Phys_EnableMotion(entProp, false)
+
+
+	char szArgs[128]
+	GetCmdArgString(szArgs, sizeof(szArgs))
+	LM_LogCmd(plyClient, "sm_spawnmodel", szArgs)
+
+	return Plugin_Handled
+}
+
+public Action Command_SpawnModelFrozen(plyClient, args) {
+	if (!LM_AllowToLazMod(plyClient) || LM_IsBlacklisted(plyClient) || !LM_IsClientValid(plyClient, plyClient, true))
+		return Plugin_Handled
+	
+	if (args < 1) {
+		LM_PrintToChat(plyClient, "Usage: !spawnmodelf <model path>\n\
+									Ex: !spawnmodelf props_lab/blastdoor001c\n\
+									Ex: !spawnmodelf models/props_c17/support01.mdl")
+		LM_PrintToChat(plyClient, "Note: 'models/' and '.mdl' are acceptable")
+		return Plugin_Handled
+	}
+	
+	char szModel[33]
+	GetCmdArg(1, szModel, sizeof(szModel))
+	
+	FakeClientCommand(plyClient, "sm_spawnmodel %s 1", szModel)
+	return Plugin_Handled
+}
+
+public Action Command_SpawnModelDynamic(plyClient, args) {
+	if (!LM_AllowToLazMod(plyClient) || LM_IsBlacklisted(plyClient) || !LM_IsClientValid(plyClient, plyClient, true))
+		return Plugin_Handled
+	
+	if (args < 1) {
+		LM_PrintToChat(plyClient, "Usage: !spawnmodeld <model path>\n\
+									Ex: !spawnmodeld props_lab/blastdoor001c\n\
+									Ex: !spawnmodeld models/props_c17/support01.mdl")
+		LM_PrintToChat(plyClient, "Note: 'models/' and '.mdl' are acceptable")
+		return Plugin_Handled
+	}
+	
+	char szModel[33]
+	GetCmdArg(1, szModel, sizeof(szModel))
+	
+	FakeClientCommand(plyClient, "sm_spawnmodel %s 2", szModel)
 	return Plugin_Handled
 }
 
