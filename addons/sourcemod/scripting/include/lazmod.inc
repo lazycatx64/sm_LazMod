@@ -14,7 +14,6 @@ enum ModStatus {
 
 /**
  * Create an entity and finish other basic stuff in one line.
- * Note: Not DispatchSpawn() yet!
  * 
  * @param plyClient			Client to assign the owner if needed
  * @param szClass			Classname for entity to create
@@ -24,7 +23,8 @@ enum ModStatus {
  * 
  * @return 					Entity index, -1 if failed to create entity.
  */
-native int LM_CreateEntity(const int plyClient = -1, const char[] szClass, const char[] szModel = "", const float vOrigin[3] = NULL_VECTOR, const float vAngles[3] = NULL_VECTOR)
+native int LM_CreateEntity(const int plyClient = -1, const char[] szClass, const char[] szModel = "",
+							const float vOrigin[3] = NULL_VECTOR, const float vAngles[3] = NULL_VECTOR, const bool bSpawn = false)
 
 /**
  * Get the spawn pos in front of player.

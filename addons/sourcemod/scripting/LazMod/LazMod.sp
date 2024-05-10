@@ -212,11 +212,15 @@ Native_CreateEntity(Handle hPlugin, iNumParams) {
 	
 	char szClass[32], szModel[128]
 	float vOrigin[3], vAngles[3]
-	int plyClient = GetNativeCell(1)
+	int plyClient
+	bool bSpawn
+
+	plyClient = GetNativeCell(1)
 	GetNativeString(2, szClass, sizeof(szClass))
 	GetNativeString(3, szModel, sizeof(szModel))
 	GetNativeArray(4, vOrigin, sizeof(vOrigin))
 	GetNativeArray(5, vAngles, sizeof(vAngles))
+	bSpawn = GetNativeCell(6)
 
 	int entProp = -1
 	entProp = CreateEntityByName(szClass)
@@ -237,9 +241,10 @@ Native_CreateEntity(Handle hPlugin, iNumParams) {
 	if (StrEqual(szClass, "prop_dynamic") || StrEqual(szClass, "prop_dynamic_override"))
 		LM_SetEntSolidType(entProp, SOLID_VPHYSICS)
 
-	TeleportEntity(entProp, vOrigin, vAngles)
+	if (bSpawn)
+		DispatchSpawn(entProp)
 
-	
+	TeleportEntity(entProp, vOrigin, vAngles)
 
 	return entProp
 }
