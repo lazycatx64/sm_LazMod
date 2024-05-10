@@ -9,9 +9,6 @@
 #include <lazmod>
 
 
-int g_iMaxRagdollArray = 512
-Handle g_hRagdollNameArray
-Handle g_hRagdollModelPathArray
 
 int g_iMaxWheelArray = 32
 Handle g_hWheelNameArray
@@ -22,10 +19,8 @@ bool g_bCvarSpawnInFront
 
 Handle hPropList		= INVALID_HANDLE
 Handle hRagdollList		= INVALID_HANDLE
-Handle hWheelList		= INVALID_HANDLE
-char g_szPathProps[PLATFORM_MAX_PATH]	= "configs/lazmod/props.ini"
+char g_szPathProps[PLATFORM_MAX_PATH]		= "configs/lazmod/props.ini"
 char g_szPathRagdolls[PLATFORM_MAX_PATH]	= "configs/lazmod/ragdolls.ini"
-char g_szPathWheels[PLATFORM_MAX_PATH]	= "configs/lazmod/wheels.ini"
 
 public Plugin myinfo = {
 	name = "LazMod - Creator",
@@ -45,12 +40,10 @@ public OnPluginStart() {
 	RegAdminCmd("sm_spawnmodeld", Command_SpawnModelDynamic, 0, "Spawn dynamic props by model.")
 
 	RegAdminCmd("sm_ragdoll", Command_SpawnRagdoll, 0, "Spawn ragdoll props.")
-	g_hRagdollNameArray = CreateArray(32, g_iMaxRagdollArray);
-	g_hRagdollModelPathArray = CreateArray(128, g_iMaxRagdollArray);
-	ReadRagdolls()
+
 
 	RegAdminCmd("sm_spawnwheel", Command_SpawnWheel, 0, "Place a wheel on your prop.")
-	g_hWheelNameArray = CreateArray(32, g_iMaxWheelArray);
+	g_hWheelNameArray      = CreateArray(32, g_iMaxWheelArray);
 	g_hWheelModelPathArray = CreateArray(128, g_iMaxWheelArray);
 	ReadWheels()
 	
@@ -61,12 +54,18 @@ public OnPluginStart() {
 
 	char szGameName[32]
 	GetGameFolderName(szGameName, sizeof(szGameName))
-	BuildPath(Path_SM, g_szPathProps, sizeof(g_szPathProps), g_szPathProps)
+
+	BuildPath(Path_SM, g_szPathProps,    sizeof(g_szPathProps),    g_szPathProps)
 	hPropList = CreateKeyValues("PropList")
-	FileToKeyValues(hPropList, g_szPathProps)
-	if (!KvJumpToKey(hPropList, szGameName)) {
+	FileToKeyValues(hPropList,  g_szPathProps)
+	if (!KvJumpToKey(hPropList, szGameName))
 		ThrowError("Game not supported because props.ini has no list for this game: %s", szGameName)
-	}
+	
+	BuildPath(Path_SM, g_szPathRagdolls, sizeof(g_szPathRagdolls), g_szPathRagdolls)
+	hRagdollList = CreateKeyValues("RagdollList")
+	FileToKeyValues(hRagdollList,  g_szPathRagdolls)
+	if (!KvJumpToKey(hRagdollList, szGameName))
+		ThrowError("Game not supported because ragdolls.ini has no list for this game: %s", szGameName)
 
 	PrintToServer( "LazMod Creator loaded!" )
 }
@@ -301,113 +300,32 @@ public Action Command_SpawnRagdoll(plyClient, args) {
 		return Plugin_Handled
 	}
 	
-	char szRagdollName[32], szModelPath[128]
+	char szRagdollName[32], szModel[128]
 	GetCmdArg(1, szRagdollName, sizeof(szRagdollName))
 	
-	int iRagdollIndex = FindStringInArray(g_hRagdollNameArray, szRagdollName)
-	
-	if (iRagdollIndex != -1) {
-		
-		int entProp = -1
-		entProp = CreateEntityByName("prop_ragdoll")
-		if (LM_SetEntityOwner(entProp, plyClient, true)) {
-			float vClientEyePos[3], vSpawnOrigin[3], vClientEyeAngles[3], fRadiansX, fRadiansY
-			
-			GetClientEyePosition(plyClient, vClientEyePos)
-			GetClientEyeAngles(plyClient, vClientEyeAngles)
-			
-			fRadiansX = DegToRad(vClientEyeAngles[0])
-			fRadiansY = DegToRad(vClientEyeAngles[1])
-			
-			vSpawnOrigin[0] = vClientEyePos[0] + (100 * Cosine(fRadiansY) * Cosine(fRadiansX))
-			vSpawnOrigin[1] = vClientEyePos[1] + (100 * Sine(fRadiansY) * Cosine(fRadiansX))
-			vSpawnOrigin[2] = vClientEyePos[2] - 10
-			
-			GetArrayString(g_hRagdollModelPathArray, iRagdollIndex, szModelPath, sizeof(szModelPath))
-			
-			if (!IsModelPrecached(szModelPath))
-				PrecacheModel(szModelPath)
-			PrintToServer(szModelPath)
-			DispatchKeyValue(entProp, "model", szModelPath)
-			
-			DispatchSpawn(entProp)
-			TeleportEntity(entProp, vSpawnOrigin, NULL_VECTOR, NULL_VECTOR)
-			
-		} else
-			RemoveEdict(entProp)
-	} else {
-		LM_PrintToChat(plyClient, "Prop not found: %s", szRagdollName)
+	KvGetString(hRagdollList, szRagdollName, szModel, sizeof(szModel))
+	if (StrEqual(szModel, "")) {
+		LM_PrintToChat(plyClient, "Ragdoll not found: %s", szRagdollName)
+		return Plugin_Handled
+	}
+
+	float vSpawnOrigin[3]
+	LM_GetFrontSpawnPos(plyClient, vSpawnOrigin)
+
+	int entProp = -1
+	entProp = LM_CreateEntity(plyClient, "prop_ragdoll", szModel, vSpawnOrigin, NULL_VECTOR, true)
+
+	if (entProp == -1) {
+		LM_PrintToChat(plyClient, "Failed to spawn ragdoll: %s", szRagdollName)
+		return Plugin_Handled
 	}
 
 	char szArgs[128]
 	GetCmdArgString(szArgs, sizeof(szArgs))
-	LM_LogCmd(plyClient, "sm_spawn", szArgs)
+	LM_LogCmd(plyClient, "sm_ragdoll", szArgs)
 
 	return Plugin_Handled
 }
-
-ReadRagdolls() {
-	char szFile[128]
-	BuildPath(Path_SM, szFile, sizeof(szFile), "configs/lazmod/ragdolls.ini")
-	
-	Handle hFile = OpenFile(szFile, "rt")
-	if (hFile == INVALID_HANDLE)
-		return
-	
-	int iCountRagdolls = 0
-	while (!IsEndOfFile(hFile))
-	{
-		
-		char szLine[255]
-		if (!ReadFileLine(hFile, szLine, sizeof(szLine)))
-			break
-		
-		/* 略過註解 */
-		int iLen = strlen(szLine)
-		bool bIgnore = false
-		
-		for (int i = 0; i < iLen; i++) {
-			if (bIgnore) {
-				if (szLine[i] == '"')
-					bIgnore = false
-			} else {
-				if (szLine[i] == '"')
-					bIgnore = true
-				else if (szLine[i] == ';') {
-					szLine[i] = '\0'
-					break
-				} else if (szLine[i] == '/' && i != iLen - 1 && szLine[i+1] == '/') {
-					szLine[i] = '\0'
-					break
-				}
-			}
-		}
-		
-		TrimString(szLine)
-		
-		if ((szLine[0] == '/' && szLine[1] == '/') || (szLine[0] == ';' || szLine[0] == '\0'))
-			continue
-	
-		ReadRagdollsLine(szLine, iCountRagdolls++)
-	}
-	PrintToServer( "LazMod Creator - Loaded %i ragdolls", iCountRagdolls )
-	CloseHandle(hFile)
-}
-
-ReadRagdollsLine(const char[] szLine, iCountRagdolls) {
-	
-	char szRagdollInfo[2][128]
-	ExplodeString(szLine, ", ", szRagdollInfo, sizeof(szRagdollInfo), sizeof(szRagdollInfo[]))
-	
-	StripQuotes(szRagdollInfo[0])
-	SetArrayString(g_hRagdollNameArray, iCountRagdolls, szRagdollInfo[0])
-	
-	StripQuotes(szRagdollInfo[1])
-	SetArrayString(g_hRagdollModelPathArray, iCountRagdolls, szRagdollInfo[1])
-	
-}
-
-
 
 
 
