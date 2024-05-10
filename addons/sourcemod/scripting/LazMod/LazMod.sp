@@ -77,8 +77,6 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, err_max) {
 
 public OnPluginStart() {
 
-	// TODO: convar for apply auto kick
-
 	g_hCvarModEnabled = CreateConVar("lm_enable", "2", "Enable the LazMod. 2=For All, 1=Admins Only, 0=Disabled.", FCVAR_NOTIFY, true, 0.0, true, 2.0)
 	g_hCvarModEnabled.AddChangeHook(Hook_CvarChanged)
 	CvarChanged(g_hCvarModEnabled)
