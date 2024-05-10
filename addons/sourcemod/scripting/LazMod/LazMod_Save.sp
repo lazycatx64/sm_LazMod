@@ -269,7 +269,7 @@ void SaveSpawn_List(int plyClient) {
 		while (strlen(szSaveName) < sizeof(szSaveName)-2) {
 			StrCat(szSaveName, sizeof(szSaveName), " ")
 		}
-		PrintToConsole(plyClient, "%s | %s | %d | Maps:%s", szSaveName, szDateTime, iPropCount, szMap)
+		PrintToConsole(plyClient, "%s | %s | %5d | Maps:%s", szSaveName, szDateTime, iPropCount, szMap)
 		CloseHandle(hFile)
 	}
 	return
