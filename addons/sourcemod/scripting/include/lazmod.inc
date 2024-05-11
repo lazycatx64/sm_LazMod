@@ -51,7 +51,7 @@ native int LM_GetClientAimPosNormal(const int plyClient = -1, float vOrigin[3], 
  * @param Doll				Is prop_ragdoll?
  * @return					Ture on success. False on failure.
  */
-native bool LM_SetEntityOwner(const int entProp, const int plyClient, bool bIsDoll = false)
+native bool LM_SetEntOwner(const int entProp, const int plyClient, bool bIsDoll = false)
 
 /**
  * Get an entity owner.
@@ -59,7 +59,17 @@ native bool LM_SetEntityOwner(const int entProp, const int plyClient, bool bIsDo
  * @param entProp			Entity index.
  * @return					-1 on failure. Any other value indicates a Entity index owner.
  */
-native int LM_GetEntityOwner(const int entProp)
+native int LM_GetEntOwner(const int entProp)
+
+/**
+ * Get an entity of owner is equal client.
+ * 
+ * @param plyClient			Client index.
+ * @param entProp			Entity index.
+ * @param bIgnoreCvar		Ignore 'lm_nonowner' cvar?
+ * @return					True on owner. False on not.
+ */
+native bool LM_IsEntOwner(const int plyClient, const int entProp, bool bIgnoreCvar = false)
 
 /**
  * Set client props limit.
@@ -93,7 +103,7 @@ native bool LM_AllowFly(const int plyClient)
  * @param plyClient			Client index.
  * @return					True on admin. False on not.
  */
-native bool LM_IsAdmin(const int plyClient)
+native bool LM_IsClientAdmin(const int plyClient)
 
 /**
  * Get client aim entity.
@@ -104,16 +114,6 @@ native bool LM_IsAdmin(const int plyClient)
  * @return					-1 on failure. Any other value indicates a Entity index.
  */
 native int LM_GetClientAimEntity(const int plyClient, bool show_message = true, bool included_clients = false)
-
-/**
- * Get an entity of owner is equal client.
- * 
- * @param plyClient			Client index.
- * @param entProp			Entity index.
- * @param bIgnoreCvar		Ignore 'lm_nonowner' cvar?
- * @return					True on owner. False on not.
- */
-native bool LM_IsEntityOwner(const int plyClient, const int entProp, bool bIgnoreCvar = false)
 
 /**
  * Logging commands and args.
@@ -162,27 +162,3 @@ native bool LM_IsBlacklisted(const int plyClient)
  * @return					True if target valid. Otherwise false.
  */
 native bool LM_IsClientValid(const int plyClient, const int plyTarget, bool bIsAlive = false, bool plyReply = false)
-
-/**
- * Check if a prop is a Func_ prop
- *
- * @param entProp			Entity index.
- * @return					True if func, false otherwise.
- */
-native bool LM_IsFuncProp(const int entProp)
-
-/**
- * Check if a prop is a Func_ prop
- *
- * @param entProp			Entity index.
- * @return					True if NPC, false otherwise.
- */
-native bool LM_IsNpc(const int entProp)
-
-/**
- * Check if a prop is a Player
- *
- * @param entProp			Entity index.
- * @return					True if Player, false otherwise.
- */
-native bool LM_IsPlayer(const int entProp)

@@ -90,7 +90,7 @@ public Action Command_FreezeProp(plyClient, args) {
 	if (entProp == -1) 
 		return Plugin_Handled
 	
-	if (LM_IsEntityOwner(plyClient, entProp, true)) {
+	if (LM_IsEntOwner(plyClient, entProp, true)) {
 		if(Phys_IsPhysicsObject(entProp)) {
 			Phys_EnableMotion(entProp, false)
 		} else
@@ -111,7 +111,7 @@ public Action Command_UnFreezeProp(plyClient, args) {
 	if (entProp == -1) 
 		return Plugin_Handled
 	
-	if (LM_IsEntityOwner(plyClient, entProp, true)) {
+	if (LM_IsEntOwner(plyClient, entProp, true)) {
 		if(Phys_IsPhysicsObject(entProp)) {
 			Phys_EnableMotion(entProp, true)
 			Phys_Sleep(entProp)
@@ -133,7 +133,7 @@ public Action Command_ForceFreeze(plyClient, args) {
 	if (entProp == -1) 
 		return Plugin_Handled
 	
-	if (LM_IsEntityOwner(plyClient, entProp)) {
+	if (LM_IsEntOwner(plyClient, entProp)) {
 		SetEntityMoveType(entProp, MOVETYPE_NONE)
 		if(Phys_IsPhysicsObject(entProp)) {
 			Phys_EnableMotion(entProp, false)
@@ -156,7 +156,7 @@ public Action Command_UnForceFreeze(plyClient, args) {
 	if (entProp == -1) 
 		return Plugin_Handled
 	
-	if (LM_IsEntityOwner(plyClient, entProp)) {
+	if (LM_IsEntOwner(plyClient, entProp)) {
 		SetEntityMoveType(entProp, MOVETYPE_VPHYSICS)
 		if(Phys_IsPhysicsObject(entProp)) {
 			Phys_EnableMotion(entProp, true)
@@ -189,7 +189,7 @@ public Action Command_Rotate(plyClient, args) {
 	if (entProp == -1) 
 		return Plugin_Handled
 	
-	if (LM_IsEntityOwner(plyClient, entProp)) {
+	if (LM_IsEntOwner(plyClient, entProp)) {
 		float vPropAngles[3], vAddAngles[3], vNewAngles[3]
 		vAddAngles[0] = GetCmdArgFloat(1)
 		vAddAngles[1] = GetCmdArgFloat(2)
@@ -220,7 +220,7 @@ public Action Command_SetAngles(plyClient, args) {
 	if (entProp == -1) 
 		return Plugin_Handled
 	
-	if (LM_IsEntityOwner(plyClient, entProp)) {
+	if (LM_IsEntOwner(plyClient, entProp)) {
 		float vEntityAngle[3]
 		vEntityAngle[0] = GetCmdArgFloat(1)
 		vEntityAngle[1] = GetCmdArgFloat(2)
@@ -243,7 +243,7 @@ public Action Command_Stand(plyClient, args) {
 	if (entProp == -1) 
 		return Plugin_Handled
 	
-	if (LM_IsEntityOwner(plyClient, entProp)) {
+	if (LM_IsEntOwner(plyClient, entProp)) {
 		float vEntityAngle[3] = {0.0,...}
 		TeleportEntity(entProp, NULL_VECTOR, vEntityAngle, NULL_VECTOR)
 	}
@@ -272,7 +272,7 @@ public Action Command_Renderfx(plyClient, args) {
 	if (entProp == -1) 
 		return Plugin_Handled
 	
-	if (LM_IsEntityOwner(plyClient, entProp)) {
+	if (LM_IsEntOwner(plyClient, entProp)) {
 		char szRenderFX[20]
 
 		GetCmdArg(1, szRenderFX, sizeof(szRenderFX))
@@ -302,7 +302,7 @@ public Action Command_RenderColor(plyClient, args) {
 	if (entProp == -1) 
 		return Plugin_Handled
 	
-	if (LM_IsEntityOwner(plyClient, entProp)) {
+	if (LM_IsEntOwner(plyClient, entProp)) {
 		char szColorRGB[20][3], szColors[33]
 		GetCmdArg(1, szColorRGB[0], sizeof(szColorRGB))
 		GetCmdArg(2, szColorRGB[1], sizeof(szColorRGB))
@@ -334,7 +334,7 @@ public Action Command_RenderAlpha(plyClient, args) {
 	if (entProp == -1) 
 		return Plugin_Handled
 	
-	if (LM_IsEntityOwner(plyClient, entProp)) {
+	if (LM_IsEntOwner(plyClient, entProp)) {
 		char szAlpha[4]
 		GetCmdArg(1, szAlpha, sizeof(szAlpha))
 		
@@ -367,7 +367,7 @@ public Action Command_Move(plyClient, args) {
 	if (entProp == -1) 
 		return Plugin_Handled
 	
-	if (LM_IsEntityOwner(plyClient, entProp)) {
+	if (LM_IsEntOwner(plyClient, entProp)) {
 		float fEntityOrigin[3], fEntityAngle[3];	
 		char szArgX[33], szArgY[33], szArgZ[33]
 		GetCmdArg(1, szArgX, sizeof(szArgX))
@@ -407,7 +407,7 @@ public Action Command_Align(plyClient, args) {
 	if (entProp == -1) 
 		return Plugin_Handled
 	
-	if (!LM_IsEntityOwner(plyClient, entProp))
+	if (!LM_IsEntOwner(plyClient, entProp))
 		return Plugin_Handled
 	
 	char szMode[5]
@@ -445,7 +445,7 @@ public Action Command_Center(plyClient, args) {
 	if (entProp == -1) 
 		return Plugin_Handled
 	
-	if (!LM_IsEntityOwner(plyClient, entProp))
+	if (!LM_IsEntOwner(plyClient, entProp))
 		return Plugin_Handled
 
 
@@ -491,7 +491,7 @@ public Action Command_NoBreakProp(plyClient, args) {
 	if (entProp == -1) 
 		return Plugin_Handled
 	
-	if (LM_IsEntityOwner(plyClient, entProp)) {
+	if (LM_IsEntOwner(plyClient, entProp)) {
 		SetVariantString("999999999")
 		AcceptEntityInput(entProp, "sethealth", -1)
 	}
@@ -510,7 +510,7 @@ public Action Command_UnNoBreakProp(plyClient, args) {
 	if (entProp == -1) 
 		return Plugin_Handled
 	
-	if (LM_IsEntityOwner(plyClient, entProp)) {
+	if (LM_IsEntOwner(plyClient, entProp)) {
 		SetVariantString("50")
 		AcceptEntityInput(entProp, "sethealth", -1)
 	}
@@ -535,7 +535,7 @@ public Action Command_Skin(plyClient, args) {
 	if (entProp == -1) 
 		return Plugin_Handled
 	
-	if (!LM_IsEntityOwner(plyClient, entProp)) 
+	if (!LM_IsEntOwner(plyClient, entProp)) 
 		return Plugin_Handled
 
 
@@ -562,7 +562,7 @@ public Action Command_LightDynamic(plyClient, args) {
 	}
 	
 	int entLightMelon = CreateEntityByName("prop_physics_multiplayer")
-	if (LM_SetEntityOwner(entLightMelon, plyClient)) {
+	if (LM_SetEntOwner(entLightMelon, plyClient)) {
 		char szColor[12]
 		int iRange, iColorR, iColorG, iColorB, iBright 
 		char szNameMelon[64]
@@ -642,7 +642,7 @@ public Action Command_SetMass(plyClient, args) {
 	if (entProp == -1) 
 		return Plugin_Handled
 	
-	if (LM_IsEntityOwner(plyClient, entProp))
+	if (LM_IsEntOwner(plyClient, entProp))
 		return Plugin_Handled
 
 	char szAmount[16]
@@ -678,7 +678,7 @@ public Action Command_Drop(plyClient, args) {
 	if (entProp == -1) 
 		return Plugin_Handled
 	
-	// if (LM_IsEntityOwner(Client, entProp))
+	// if (LM_IsEntOwner(Client, entProp))
 		// FakeClientCommand(Client, "e_drop")	// SourceOP Dead
 	
 	char szArgs[128]
@@ -695,7 +695,7 @@ public Action Command_Weld(plyClient, args) {
 	if (entProp == -1) 
 		return Plugin_Handled
 	
-	if (LM_IsEntityOwner(plyClient, entProp)) {
+	if (LM_IsEntOwner(plyClient, entProp)) {
 		static iTempEnt = 0
 		if (!iTempEnt) {
 			if (IsValidEntity(entProp) && Phys_IsPhysicsObject(entProp)) {
@@ -729,7 +729,7 @@ public Action Command_SetParent(plyClient, args) {
 	if (entProp == -1) 
 		return Plugin_Handled
 	
-	if (LM_IsEntityOwner(plyClient, entProp)) {
+	if (LM_IsEntOwner(plyClient, entProp)) {
 		g_entSetParent[plyClient] = entProp
 	}
 
@@ -747,7 +747,7 @@ public Action Command_DoParent(plyClient, args) {
 	if (entProp == -1) 
 		return Plugin_Handled
 	
-	if (LM_IsEntityOwner(plyClient, entProp)) {
+	if (LM_IsEntOwner(plyClient, entProp)) {
 		if (!IsValidEntity(g_entSetParent[plyClient])) {
 			LM_PrintToChat(plyClient, "You have to !setparent on a target prop first!")
 			return Plugin_Handled
@@ -779,7 +779,7 @@ public Action Command_ClearParent(plyClient, args) {
 	if (entProp == -1) 
 		return Plugin_Handled
 	
-	if (LM_IsEntityOwner(plyClient, entProp)) {
+	if (LM_IsEntOwner(plyClient, entProp)) {
 		SetVariantString("")
 		AcceptEntityInput(entProp, "ClearParent")
 	}
@@ -873,7 +873,7 @@ public Action Command_EntGetName(plyClient, args) {
 	if (entProp == -1) 
 		return Plugin_Handled
 	
-	if (!LM_IsEntityOwner(plyClient, entProp) && !LM_IsAdmin(plyClient)) {
+	if (!LM_IsEntOwner(plyClient, entProp) && !LM_IsClientAdmin(plyClient)) {
 		LM_PrintToChat(plyClient, "You can only use this command to your own props!")
 		return Plugin_Handled
 	}
@@ -905,12 +905,12 @@ public Action Command_EntInput(plyClient, args) {
 	if (entProp == -1) 
 		return Plugin_Handled
 	
-	if (!LM_IsAdmin(plyClient)) {
-		if (LM_IsPlayer(entProp))
+	if (!LM_IsClientAdmin(plyClient)) {
+		if (LM_IsEntPlayer(entProp))
 			return Plugin_Handled
 	}
 	
-	if (!LM_IsEntityOwner(plyClient, entProp) && !LM_IsAdmin(plyClient)) {
+	if (!LM_IsEntOwner(plyClient, entProp) && !LM_IsClientAdmin(plyClient)) {
 		LM_PrintToChat(plyClient, "You can only use this command to your own props!")
 		return Plugin_Handled
 	}
@@ -942,7 +942,7 @@ public Action Command_EntOutput(plyClient, args) {
 	if (entProp == -1) 
 		return Plugin_Handled
 	
-	if (!LM_IsEntityOwner(plyClient, entProp) && !LM_IsAdmin(plyClient)) {
+	if (!LM_IsEntOwner(plyClient, entProp) && !LM_IsClientAdmin(plyClient)) {
 		LM_PrintToChat(plyClient, "You can only use this command to your own props!")
 		return Plugin_Handled
 	}

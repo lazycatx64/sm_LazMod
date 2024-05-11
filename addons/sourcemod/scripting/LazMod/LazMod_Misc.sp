@@ -97,7 +97,7 @@ public Action Command_PropInfo(plyClient, args) {
 	char szOwner[MAX_NAME_LENGTH], szClass[32], szTargetname[64], szModel[PLATFORM_MAX_PATH] 
 	float vOrigin[3], vAngles[3]
 
-	int plyOwner = LM_GetEntityOwner(entProp)
+	int plyOwner = LM_GetEntOwner(entProp)
 	if (plyOwner != -1)
 		GetClientName(plyOwner, szOwner, sizeof(szOwner))
 	else if (plyOwner > MAXPLAYERS){
@@ -192,7 +192,7 @@ public Action Command_SetEnt(Client, args) {
 	if (entProp == -1) 
 		return Plugin_Handled
 	
-	if (LM_IsEntityOwner(Client, entProp)) {
+	if (LM_IsEntOwner(Client, entProp)) {
 		LM_PrintToChat(Client, "First prop selected, use !rp to select second prop to finish.")
 		// FakeClientCommand(Client, "e_setent")	// SourceOP Dead
 	}
@@ -220,7 +220,7 @@ public Action Command_SetInertia(Client, args) {
 	if (entProp == -1) 
 		return Plugin_Handled
 	
-	if (LM_IsEntityOwner(Client, entProp)) {
+	if (LM_IsEntOwner(Client, entProp)) {
 		char szX[16], szY[16], szZ[16]
 		GetCmdArg(1, szX, sizeof(szX))
 		GetCmdArg(2, szY, sizeof(szY))
@@ -253,7 +253,7 @@ public Action Command_Push(Client, args) {
 	if (entProp == -1) 
 		return Plugin_Handled
 	
-	if (LM_IsEntityOwner(Client, entProp)) {
+	if (LM_IsEntOwner(Client, entProp)) {
 		char szForce[16]
 		GetCmdArg(1, szForce, sizeof(szForce))
 		
@@ -279,7 +279,7 @@ public Action Command_Setview(Client, args) {
 	if (entProp == -1) 
 		return Plugin_Handled
 	
-	// if (LM_IsEntityOwner(Client, entProp))
+	// if (LM_IsEntOwner(Client, entProp))
 		// FakeClientCommand(Client, "e_setview")	// SourceOP Dead
 	
 	char szTemp[33], szArgs[128]
@@ -316,7 +316,7 @@ public Action Command_Rope(Client, args) {
 	if (entProp == -1) 
 		return Plugin_Handled
 	
-	// if (LM_IsEntityOwner(Client, entProp))
+	// if (LM_IsEntOwner(Client, entProp))
 		// FakeClientCommand(Client, "e_rope")	// SourceOP Dead
 	
 	char szTemp[33], szArgs[128]
@@ -344,7 +344,7 @@ public Action Command_Thruster(Client, args) {
 	if (entProp == -1) 
 		return Plugin_Handled
 	
-	if (LM_IsEntityOwner(Client, entProp)) {
+	if (LM_IsEntOwner(Client, entProp)) {
 		char szGroup[16], szForce[12]
 		GetCmdArg(1, szGroup, sizeof(szGroup))
 		GetCmdArg(2, szForce, sizeof(szForce))
@@ -465,9 +465,9 @@ public Action Command_AdminSetOwner(Client, args) {
 	GetCmdArg(1, szTarget, sizeof(szTarget))
 	GetEdictClassname(entProp, szClass, sizeof(szClass))
 	
-	int plyOwner = LM_GetEntityOwner(entProp)
+	int plyOwner = LM_GetEntOwner(entProp)
 	if (StrEqual(szTarget, "-1")) {
-		LM_SetEntityOwner(entProp, -1)
+		LM_SetEntOwner(entProp, -1)
 		if(StrEqual(szClass, "prop_ragdoll"))
 			LM_SetSpawnLimit(plyOwner, -1)
 		else
@@ -484,7 +484,7 @@ public Action Command_AdminSetOwner(Client, args) {
 		}
 		for (int i = 0; i < target_count; i++) {
 			new target = target_list[i]
-			LM_SetEntityOwner(entProp, target)
+			LM_SetEntOwner(entProp, target)
 			if(plyOwner != -1)
 				LM_SetSpawnLimit(plyOwner, -1, StrEqual(szClass, "prop_ragdoll"))
 			
@@ -557,7 +557,7 @@ public Action Command_AdminHurt(Client, args) {
 	
 	int entProp = GetClientAimTarget(Client)
 	if (entProp != -1)
-		if (LM_IsPlayer(entProp))
+		if (LM_IsEntPlayer(entProp))
 			LM_GetEntOrigin(entProp, fAimPos)
 	
 	if (StrEqual(szHurtDamage, ""))

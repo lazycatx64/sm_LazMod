@@ -51,19 +51,15 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, err_max) {
 	CreateNative("LM_GetFrontSpawnPos",		Native_GetFrontSpawnPos)
 	CreateNative("LM_GetClientAimPosNormal",Native_GetClientAimPosNormal)
 
-	CreateNative("LM_SetEntityOwner",		Native_SetEntityOwner)
-	CreateNative("LM_GetEntityOwner",		Native_GetEntityOwner)
-	CreateNative("LM_IsEntityOwner",		Native_IsEntityOwner)
+	CreateNative("LM_SetEntOwner",			Native_SetEntOwner)
+	CreateNative("LM_GetEntOwner",			Native_GetEntOwner)
+	CreateNative("LM_IsEntOwner",			Native_IsEntOwner)
 
 	CreateNative("LM_AllowToLazMod",		Native_AllowToLazMod)
 	CreateNative("LM_AllowFly",				Native_AllowFly)
 
 	CreateNative("LM_IsClientValid",		Native_IsClientValid)
-	CreateNative("LM_IsAdmin",				Native_IsAdmin)
-
-	CreateNative("LM_IsFuncProp", 			Native_IsFuncProp)
-	CreateNative("LM_IsNpc",				Native_IsNpc)
-	CreateNative("LM_IsPlayer",				Native_IsPlayer)
+	CreateNative("LM_IsClientAdmin",		Native_IsClientAdmin)
 
 	CreateNative("LM_SetSpawnLimit",		Native_SetSpawnLimit)
 	CreateNative("LM_LogCmd",				Native_LogCmd)
@@ -151,7 +147,7 @@ void CvarChanged(Handle convar) {
 		g_bCvarAdminBypassAutokick = g_hCvarAdminBypassAutokick.BoolValue
 		if (g_bCvarAdminBypassAutokick) {
 			for (int i = 0; i < MaxClients; i++) {
-				if (LM_IsClientValid(i, i) && LM_IsAdmin(i))
+				if (LM_IsClientValid(i, i) && LM_IsClientAdmin(i))
 					DisableAutokick(i)
 			}
 		}
@@ -170,7 +166,7 @@ void CvarChanged(Handle convar) {
 }
 
 public OnClientPutInServer(int plyClient) {
-	if (!g_bCvarAdminBypassAutokick || !LM_IsAdmin(plyClient))
+	if (!g_bCvarAdminBypassAutokick || !LM_IsClientAdmin(plyClient))
 		return
 		
 	DisableAutokick(plyClient)
@@ -190,12 +186,12 @@ public Action Command_SpawnCount(plyClient, args) {
 	if (!LM_AllowToLazMod(plyClient) || LM_IsBlacklisted(plyClient))
 		return Plugin_Handled
 	
-	LM_PrintToChat(plyClient, "Your Limit: %i/%i [Ragdoll: %i/%i]", g_iPropCurrent[plyClient],(LM_IsAdmin(plyClient) ? g_iCvarMaxPropAdmin : g_iCvarMaxPropPlayer), g_iDollCurrent[plyClient], (LM_IsAdmin(plyClient) ? g_iCvarMaxRagdollAdmin : g_iCvarMaxRagdollPlayer))
+	LM_PrintToChat(plyClient, "Your Limit: %i/%i [Ragdoll: %i/%i]", g_iPropCurrent[plyClient],(LM_IsClientAdmin(plyClient) ? g_iCvarMaxPropAdmin : g_iCvarMaxPropPlayer), g_iDollCurrent[plyClient], (LM_IsClientAdmin(plyClient) ? g_iCvarMaxRagdollAdmin : g_iCvarMaxRagdollPlayer))
 	LM_PrintToChat(plyClient, "Server Limit: %i/%i (%i/%i edicts)",  g_iServerCurrent, g_iCvarMaxPropServer, GetEntityCount(), LM_GetMaxEdict())
-	if (LM_IsAdmin(plyClient)) {
+	if (LM_IsClientAdmin(plyClient)) {
 		for (int i = 1; i < MaxClients; i++) {
 			if (LM_IsClientValid(i, i) && plyClient != i)
-				LM_PrintToChat(plyClient, "%N: %i/%i [Ragdoll: %i/%i]", i, g_iPropCurrent[i], (LM_IsAdmin(i) ? g_iCvarMaxPropAdmin : g_iCvarMaxPropPlayer), g_iDollCurrent[i], (LM_IsAdmin(i) ? g_iCvarMaxRagdollAdmin : g_iCvarMaxRagdollPlayer))
+				LM_PrintToChat(plyClient, "%N: %i/%i [Ragdoll: %i/%i]", i, g_iPropCurrent[i], (LM_IsClientAdmin(i) ? g_iCvarMaxPropAdmin : g_iCvarMaxPropPlayer), g_iDollCurrent[i], (LM_IsClientAdmin(i) ? g_iCvarMaxRagdollAdmin : g_iCvarMaxRagdollPlayer))
 		
 		}
 	}
@@ -233,7 +229,7 @@ Native_CreateEntity(Handle hPlugin, iNumParams) {
 	}
 	DispatchKeyValue(entProp, "model", szModel)
 
-	if (plyClient != -1 && !LM_SetEntityOwner(entProp, plyClient, StrEqual(szClass, "prop_ragdoll", false))) {
+	if (plyClient != -1 && !LM_SetEntOwner(entProp, plyClient, StrEqual(szClass, "prop_ragdoll", false))) {
 		RemoveEdict(entProp)
 		return -1
 	}
@@ -292,7 +288,7 @@ bool TraceEntityFilterOnlyVPhysics(entity, contentsMask) {
 
 
 
-Native_SetEntityOwner(Handle hPlugin, iNumParams) {
+Native_SetEntOwner(Handle hPlugin, iNumParams) {
 	int entProp = GetNativeCell(1)
 	int plyClient = GetNativeCell(2)
 	bool bIsDoll = false
@@ -315,7 +311,7 @@ Native_SetEntityOwner(Handle hPlugin, iNumParams) {
 		return false
 	}
 		
-	if (LM_IsPlayer(entProp)) {
+	if (LM_IsEntPlayer(entProp)) {
 		ThrowNativeError(SP_ERROR_NATIVE, "Not allowed to set owner to a player. Client:%i, Ent:%i", plyClient, entProp)
 		return false
 	}
@@ -331,7 +327,7 @@ Native_SetEntityOwner(Handle hPlugin, iNumParams) {
 	}
 
 	if (bIsDoll) {
-		if (g_iDollCurrent[plyClient] < (LM_IsAdmin(plyClient) ? g_iCvarMaxRagdollAdmin : g_iCvarMaxRagdollPlayer)) {
+		if (g_iDollCurrent[plyClient] < (LM_IsClientAdmin(plyClient) ? g_iCvarMaxRagdollAdmin : g_iCvarMaxRagdollPlayer)) {
 			g_iDollCurrent[plyClient] += 1
 			g_iPropCurrent[plyClient] += 1
 		} else {
@@ -339,7 +335,7 @@ Native_SetEntityOwner(Handle hPlugin, iNumParams) {
 			return false
 		}
 	} else {
-		if (g_iPropCurrent[plyClient] < (LM_IsAdmin(plyClient) ? g_iCvarMaxPropAdmin : g_iCvarMaxPropPlayer))
+		if (g_iPropCurrent[plyClient] < (LM_IsClientAdmin(plyClient) ? g_iCvarMaxPropAdmin : g_iCvarMaxPropPlayer))
 			g_iPropCurrent[plyClient] += 1
 		else {
 			LM_PrintToChat(plyClient, "Your props has reached the limit.")
@@ -351,7 +347,7 @@ Native_SetEntityOwner(Handle hPlugin, iNumParams) {
 	return true
 }
 
-Native_GetEntityOwner(Handle hPlugin, iNumParams) {
+Native_GetEntOwner(Handle hPlugin, iNumParams) {
 	int entProp = GetNativeCell(1)
 	if (IsValidEntity(entProp))
 		return g_entPropOwner[entProp]
@@ -359,6 +355,32 @@ Native_GetEntityOwner(Handle hPlugin, iNumParams) {
 		ThrowNativeError(SP_ERROR_NATIVE, "Entity id %i is invalid.", entProp)
 		return -1
 	}
+}
+
+Native_IsEntOwner(Handle hPlugin, iNumParams) {
+	int plyClient = GetNativeCell(1)
+	int entProp = GetNativeCell(2)
+	bool bIngoreCvar = false
+	
+	if (iNumParams >= 3)
+		bIngoreCvar = GetNativeCell(3)
+	
+	if (LM_IsClientAdmin(plyClient) && g_bCvarAdminBypassOwner)
+		return true
+
+	if (LM_GetEntOwner(entProp) == plyClient)
+		return true
+
+	if (LM_IsEntPlayer(entProp) && (!LM_IsClientAdmin(plyClient) || !g_bCvarAdminBypassOwner)) {
+		LM_PrintToChat(plyClient, "You are not allowed to do this to players!")
+		return false
+	}
+
+	if (LM_GetEntOwner(entProp) == -1 && (bIngoreCvar || g_bCvarAllowNonOwner))
+		return true
+
+	LM_PrintToChat(plyClient, "This prop does not belong to you!")
+	return false
 }
 
 Native_SetSpawnLimit(Handle hPlugin, iNumParams) {
@@ -411,7 +433,7 @@ Native_AllowToLazMod(Handle hPlugin, iNumParams) {
 			return false
 		}
 		case LAZMOD_ADMINONLY: {
-			if (!LM_IsAdmin(plyClient)) {
+			if (!LM_IsClientAdmin(plyClient)) {
 				LM_PrintToChat(plyClient, "LazMod is not available or disabled.")
 				return false
 			} else
@@ -443,7 +465,7 @@ Native_AllowFly(Handle hPlugin, iNumParams) {
 	
 }
 
-Native_IsAdmin(Handle hPlugin, iNumParams) {
+Native_IsClientAdmin(Handle hPlugin, iNumParams) {
 	int plyClient = GetNativeCell(1)
 
 	if (!IsClientConnected(plyClient)){
@@ -475,7 +497,7 @@ Native_GetClientAimEntity(Handle hPlugin, iNumParams) {
 	{
 		/*
 		float AnglesVec[3], float EndPoint[3], float Distance
-		if (LM_IsAdmin(Client))
+		if (LM_IsClientAdmin(Client))
 			Distance = 50000.0
 		else
 			Distance = 1000.0
@@ -497,7 +519,7 @@ Native_GetClientAimEntity(Handle hPlugin, iNumParams) {
 		
 		if (entProp > 0 && IsValidEntity(entProp)) {
 			if(!bIncClient) {
-				if (!(LM_IsPlayer(entProp))) {
+				if (!(LM_IsEntPlayer(entProp))) {
 					CloseHandle(trace)
 					return entProp
 				}
@@ -516,32 +538,6 @@ Native_GetClientAimEntity(Handle hPlugin, iNumParams) {
 }
 bool TraceEntityFilter(entity, mask, any data) {
     return data != entity
-}
-
-Native_IsEntityOwner(Handle hPlugin, iNumParams) {
-	int plyClient = GetNativeCell(1)
-	int entProp = GetNativeCell(2)
-	bool bIngoreCvar = false
-	
-	if (iNumParams >= 3)
-		bIngoreCvar = GetNativeCell(3)
-	
-	if (LM_IsAdmin(plyClient) && g_bCvarAdminBypassOwner)
-		return true
-
-	if (LM_GetEntityOwner(entProp) == plyClient)
-		return true
-
-	if (LM_IsPlayer(entProp) && (!LM_IsAdmin(plyClient) || !g_bCvarAdminBypassOwner)) {
-		LM_PrintToChat(plyClient, "You are not allowed to do this to players!")
-		return false
-	}
-
-	if (LM_GetEntityOwner(entProp) == -1 && (bIngoreCvar || g_bCvarAllowNonOwner))
-		return true
-
-	LM_PrintToChat(plyClient, "This prop does not belong to you!")
-	return false
 }
 
 Native_LogCmd(Handle hPlugin, iNumParams) {
@@ -607,29 +603,4 @@ Native_IsClientValid(Handle hPlugin, iNumParams) {
 		}
 	}
 	return true
-}
-
-Native_IsFuncProp(Handle hPlugin, iNumParams) {
-	char szClass[32]
-	int entProp = GetNativeCell(1)
-	GetEdictClassname(entProp, szClass, sizeof(szClass))
-	if (StrContains(szClass, "func_", false) == 0 && !StrEqual(szClass, "func_physbox"))
-		return true
-	return false
-}
-
-Native_IsNpc(Handle hPlugin, iNumParams) {
-	char szClass[32]
-	int entProp = GetNativeCell(1)
-	GetEdictClassname(entProp, szClass, sizeof(szClass))
-	if (StrContains(szClass, "npc_", false) == 0)
-		return true
-	return false
-}
-
-Native_IsPlayer(Handle hPlugin, iNumParams) {
-	int entProp = GetNativeCell(1)
-	if (GetEntityFlags(entProp) & (FL_CLIENT | FL_FAKECLIENT))
-		return true
-	return false
 }

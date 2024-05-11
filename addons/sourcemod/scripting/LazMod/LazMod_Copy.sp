@@ -63,7 +63,7 @@ public Action Command_Stack(plyClient, args) {
 	if (entProp == -1) 
 		return Plugin_Handled
 	
-	if (!LM_IsEntityOwner(plyClient, entProp))
+	if (!LM_IsEntOwner(plyClient, entProp))
 		return Plugin_Handled
 	
 	char szModel[128], szClass[33]
@@ -77,13 +77,13 @@ public Action Command_Stack(plyClient, args) {
 	iUnFreeze = GetCmdArgInt(5)
 	
 	
-	if (!LM_IsAdmin(plyClient) && iAmount > g_iCvarStackMax) {
+	if (!LM_IsClientAdmin(plyClient) && iAmount > g_iCvarStackMax) {
 		LM_PrintToChat(plyClient, "Max stack limit is %d", g_iCvarStackMax)
 		return Plugin_Handled
 	}
 	
 	GetEdictClassname(entProp, szClass, sizeof(szClass))
-	if ((StrEqual(szClass, "prop_ragdoll") || StrEqual(szModel, "models/props_c17/oildrum001_explosive.mdl")) && !LM_IsAdmin(plyClient)) {
+	if ((StrEqual(szClass, "prop_ragdoll") || StrEqual(szModel, "models/props_c17/oildrum001_explosive.mdl")) && !LM_IsClientAdmin(plyClient)) {
 		LM_PrintToChat(plyClient, "Restricted to prevent griefing!")
 		return Plugin_Handled
 	}
@@ -141,7 +141,7 @@ public Action Timer_Stack(Handle Timer, Handle hDataPack) {
 		if (StrEqual(szClass, "prop_ragdoll"))
 			IsDoll = true
 			
-		if (LM_SetEntityOwner(iStackEntity, Client, IsDoll)) {			
+		if (LM_SetEntOwner(iStackEntity, Client, IsDoll)) {			
 			DispatchKeyValue(iStackEntity, "model", szModel)
 			if (StrEqual(szClass, "prop_dynamic"))
 				LM_SetEntSolidType(iStackEntity, SOLID_VPHYSICS)
@@ -193,7 +193,7 @@ public Action Command_Extend(plyClient, args) {
 	
 	char szClass[33]
 	GetEdictClassname(entProp1, szClass, sizeof(szClass))
-	if (LM_IsEntityOwner(plyClient, entProp1)) {
+	if (LM_IsEntOwner(plyClient, entProp1)) {
 		int entProp3
 		if (StrContains(szClass, "prop_dynamic") >= 0) {
 			entProp3 = CreateEntityByName("prop_dynamic_override")
@@ -201,7 +201,7 @@ public Action Command_Extend(plyClient, args) {
 		} else
 			entProp3 = CreateEntityByName(szClass)
 			
-		if (LM_SetEntityOwner(entProp3, plyClient)) {
+		if (LM_SetEntOwner(entProp3, plyClient)) {
 			if (!g_bExtendIsRunning[plyClient]) {
 				g_entExtendTarget[plyClient] = entProp1
 				g_bExtendIsRunning[plyClient] = true

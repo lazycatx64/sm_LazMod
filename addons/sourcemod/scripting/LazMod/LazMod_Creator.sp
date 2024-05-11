@@ -358,9 +358,9 @@ public Action Command_SpawnWheel(plyClient, args) {
 		
 		if (TR_DidHit(trace) && TR_GetEntityIndex(trace)) {
 			int entIndex = TR_GetEntityIndex(trace)
-			if (LM_IsEntityOwner(plyClient, entIndex)) {	
+			if (LM_IsEntOwner(plyClient, entIndex)) {	
 				int entWheel = CreateEntityByName("prop_physics_override")
-				if (LM_SetEntityOwner(entWheel, plyClient)) {
+				if (LM_SetEntOwner(entWheel, plyClient)) {
 					float vHitPos[3]
 					float vHitNormal[3]
 					TR_GetEndPosition(vHitPos, trace)

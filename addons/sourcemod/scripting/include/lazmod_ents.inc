@@ -149,3 +149,40 @@ stock int LM_GetEntActiveWeapon(const int entProp) {
 	return GetEntPropEnt(entProp, Prop_Send, "m_hActiveWeapon")
 }
 
+
+/**
+ * Check if a prop is a func_* prop
+ *
+ * @param entProp			Entity index.
+ * @return					True if func, false otherwise.
+ */
+stock bool LM_IsEntFunc(const int entProp) {
+	char szClass[32]
+	LM_GetEntClassname(entProp, szClass, sizeof(szClass))
+	if (StrContains(szClass, "func_", false) == 0 && !StrEqual(szClass, "func_physbox"))
+		return true
+	return false
+}
+
+/**
+ * Check if a prop is a npc_* prop
+ *
+ * @param entProp			Entity index.
+ * @return					True if NPC, false otherwise.
+ */
+stock bool LM_IsEntNpc(const int entProp) {
+	return view_as<bool>(GetEntityFlags(entProp) & (FL_NPC))
+}
+
+/**
+ * Check if a prop is a Player
+ *
+ * @param entProp			Entity index.
+ * @return					True if Player, false otherwise.
+ */
+stock bool LM_IsEntPlayer(const int entProp) {
+	return view_as<bool>(GetEntityFlags(entProp) & (FL_CLIENT | FL_FAKECLIENT))
+}
+
+
+

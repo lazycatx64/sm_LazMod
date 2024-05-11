@@ -98,7 +98,7 @@ public Action OnPlayerRunCmd(Client, &buttons, &impulse, float vel[3], float ang
 	
 	if (buttons & (IN_ATTACK | IN_ATTACK2) && iWeapon != -1 && IsValidEdict(iWeapon) && GetEdictClassname(iWeapon, szWeapon, sizeof(szWeapon)) && StrEqual(szWeapon, "weapon_crowbar")) {
 		int iCurrent
-		if (LM_IsAdmin(Client))
+		if (LM_IsClientAdmin(Client))
 		iCurrent = g_iPlayerCurrent[Client]
 			
 		if (iCurrent != 0) {
@@ -113,7 +113,7 @@ public Action OnPlayerRunCmd(Client, &buttons, &impulse, float vel[3], float ang
 		}
 	}
 	
-	if (LM_IsAdmin(Client) && buttons & (IN_ATTACK | IN_ATTACK2) && iWeapon != -1 && IsValidEdict(iWeapon) && GetEdictClassname(iWeapon, szWeapon, sizeof(szWeapon)) && StrEqual(szWeapon, "weapon_stunstick")) {
+	if (LM_IsClientAdmin(Client) && buttons & (IN_ATTACK | IN_ATTACK2) && iWeapon != -1 && IsValidEdict(iWeapon) && GetEdictClassname(iWeapon, szWeapon, sizeof(szWeapon)) && StrEqual(szWeapon, "weapon_stunstick")) {
 		if (g_iAdminCurrent[Client] != 0) {
 			if (buttons & IN_ATTACK && !g_bIsPressingAttack[Client]) {
 				RunAdminCommand(Client)

@@ -68,7 +68,7 @@ public Action Command_NoKill(Client, args) {
 	GetCmdArg(1, szPlayer, sizeof(szPlayer))
 	iSwitch = GetCmdArgInt(2)
 	
-	if (args > 0 && LM_IsAdmin(Client)) {
+	if (args > 0 && LM_IsClientAdmin(Client)) {
 		char target_name[MAX_TARGET_LENGTH]
 		int target_list[MAXPLAYERS], target_count
 		bool tn_is_ml

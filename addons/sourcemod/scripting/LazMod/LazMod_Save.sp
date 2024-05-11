@@ -293,7 +293,7 @@ public Action Timer_Save(Handle hTimer, Handle hDataPack) {
 	for (int i = 0; i < GetMaxEntities(); i++) {
 		if (!IsValidEdict(i))
 			continue
-		if (LM_GetEntityOwner(i) != plyClient)
+		if (LM_GetEntOwner(i) != plyClient)
 			continue
 		LM_GetEntClassname(i, szCls, sizeof(szCls))
 		if (!String_StartsWith(szCls, "prop_physics") && !String_StartsWith(szCls, "prop_dynamic"))
@@ -402,7 +402,7 @@ public Action Timer_Save(Handle hTimer, Handle hDataPack) {
 	for (int entProp = 0; entProp < GetMaxEntities(); entProp++) {
 		if (!IsValidEdict(entProp))
 			continue
-		if (LM_GetEntityOwner(entProp) != plyClient)
+		if (LM_GetEntOwner(entProp) != plyClient)
 			continue
 		LM_GetEntClassname(entProp, szClass, sizeof(szClass))
 		if (!String_StartsWith(szClass, "prop_physics") && !String_StartsWith(szClass, "prop_dynamic"))

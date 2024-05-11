@@ -73,15 +73,15 @@ void EntityInfo(plyClient, entTarget) {
 	if (!g_bCvarPropInfo)
 		return
 
-	if (LM_IsFuncProp(entTarget))
+	if (LM_IsEntFunc(entTarget))
 		return
 	
-	if (LM_IsPlayer(entTarget)) {
+	if (LM_IsEntPlayer(entTarget)) {
 		Display_Player(plyClient, entTarget)
 		return
 	}
 
-	if (LM_IsNpc(entTarget)) {
+	if (LM_IsEntNpc(entTarget)) {
 		Display_Npc(plyClient, entTarget)
 		return
 	}
@@ -100,7 +100,7 @@ stock void Display_Player(int plyClient, int entTarget) {
 	// I forgor why, maybe prevent something stupid due to game engine
 	if (iHealth <= 1) iHealth = 0
 
-	if (LM_IsAdmin(plyClient)) {
+	if (LM_IsClientAdmin(plyClient)) {
 		char szSteamId[32]
 		GetClientAuthId(entTarget, AuthId_Steam2, szSteamId, sizeof(szSteamId))
 		ShowHudText(plyClient, -1, "Player: %N\nHealth: %i\nUserID: %i\nSteamID:%s", entTarget, iHealth, GetClientUserId(entTarget), szSteamId)
@@ -132,7 +132,7 @@ stock void Display_Prop(int plyClient, int entTarget) {
 	SetHudTextParams(0.015, 0.08, 0.1, 255, 255, 255, 255, 0, 6.0, 0.1, 0.2)
 
 	char szOwner[32]
-	int plyOwner = LM_GetEntityOwner(entTarget)
+	int plyOwner = LM_GetEntOwner(entTarget)
 	if (plyOwner != -1)
 		GetClientName(plyOwner, szOwner, sizeof(szOwner))
 	else if (plyOwner > MAXPLAYERS){

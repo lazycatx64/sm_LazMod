@@ -75,12 +75,12 @@ public Action Command_GrabentOn(plyClient, args) {
 		return Plugin_Handled
 	}	
 	
-	if (!LM_IsAdmin(plyClient)) {
+	if (!LM_IsClientAdmin(plyClient)) {
 		if (GetEntityFlags(g_entGrabTarget[plyClient]) == (FL_CLIENT | FL_FAKECLIENT))
 			return Plugin_Handled
 	}
 	
-	if (!LM_IsEntityOwner(plyClient, g_entGrabTarget[plyClient]))
+	if (!LM_IsEntOwner(plyClient, g_entGrabTarget[plyClient]))
 		return Plugin_Handled
 
 	char szFreeze[20]
@@ -200,12 +200,12 @@ public Action Command_CopyentOn(plyClient, args) {
 	if (entProp == -1)
 		return Plugin_Handled
 	
-	if(!LM_IsAdmin(plyClient) && (LM_IsFuncProp(entProp) || LM_IsPlayer(entProp))) {
+	if(!LM_IsClientAdmin(plyClient) && (LM_IsEntFunc(entProp) || LM_IsEntPlayer(entProp))) {
 		LM_PrintToChat(plyClient, "You cannot copy this prop!")
 		return Plugin_Handled
 	}
 	
-	if (!LM_IsEntityOwner(plyClient, entProp, true))
+	if (!LM_IsEntOwner(plyClient, entProp, true))
 		return Plugin_Handled
 	
 	if (g_bCopyIsRunning[plyClient]) {
