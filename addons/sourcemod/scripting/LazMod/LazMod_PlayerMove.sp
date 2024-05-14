@@ -112,10 +112,10 @@ public Action Command_SwitchFly(plyClient, args) {
 		return Plugin_Handled
 
 	if (GetEntityMoveType(plyClient) != MOVETYPE_NOCLIP) {
-		if (!LM_IsClientAdmin(plyClient) && g_bCvarAllowFly) {
-			SetEntityMoveType(plyClient, MOVETYPE_NOCLIP)
-		} else {
+		if (!LM_IsClientAdmin(plyClient) && !g_bCvarAllowFly) {
 			LM_PrintToChat(plyClient, "Fly is not available or disabled.")
+		} else {
+			SetEntityMoveType(plyClient, MOVETYPE_NOCLIP)
 		}
 	} else {
 		SetEntityMoveType(plyClient, MOVETYPE_WALK)
