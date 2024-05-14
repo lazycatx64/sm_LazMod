@@ -1,9 +1,9 @@
 
 #define LAZMOD_VER "1.0.0"
 #define MAX_HOOK_ENTITIES 4096
-#define MSGTAG "\x01[\x04LM\x01]"
 
 #include <lazmod_ents>
+#include <lazmod_msg>
 #include <lazmod_stocks>
 
 enum ModStatus {
@@ -124,25 +124,6 @@ native int LM_GetClientAimEntity(const int plyClient, bool show_message = true, 
  * @noreturn
  */
 native void LM_LogCmd(const int plyClient, const char[] command, const char[] args)
-
-/**
- * Prints a message with the BuildMod tag.
- *
- * @param plyClient			Client index.
- * @param format			Formatting rules.
- * @param ...				Variable number of format parameters.
- * @noreturn
- */
-native void LM_PrintToChat(const int plyClient, const char[] format, any ...)
-
-/**
- * Prints a message to all clients with the BuildMod tag.
- *
- * @param format			Formatting rules.
- * @param ...				Variable number of format parameters.
- * @noreturn
- */
-native void LM_PrintToAll(const char[] format, any ...)
 
 /**
  * Check if client is blacklisted.
