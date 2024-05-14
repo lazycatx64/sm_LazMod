@@ -58,13 +58,9 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, err_max) {
 	CreateNative("LM_AllowToLazMod",		Native_AllowToLazMod)
 	CreateNative("LM_AllowFly",				Native_AllowFly)
 
-	CreateNative("LM_IsClientValid",		Native_IsClientValid)
-	CreateNative("LM_IsClientAdmin",		Native_IsClientAdmin)
-
 	CreateNative("LM_SetSpawnLimit",		Native_SetSpawnLimit)
 	CreateNative("LM_LogCmd",				Native_LogCmd)
-	CreateNative("LM_PrintToChat",			Native_PrintToChat)
-	CreateNative("LM_PrintToAll",			Native_PrintToAll)
+
 	CreateNative("LM_GetClientAimEntity",	Native_GetClientAimEntity)
 
 	
@@ -465,22 +461,7 @@ Native_AllowFly(Handle hPlugin, iNumParams) {
 	
 }
 
-Native_IsClientAdmin(Handle hPlugin, iNumParams) {
-	int plyClient = GetNativeCell(1)
 
-	if (!IsClientConnected(plyClient)){
-		ThrowNativeError(SP_ERROR_NATIVE, "Client id %i is not connected.", plyClient)
-		return -1
-	}
-
-	new AdminId:Aid = GetUserAdmin(plyClient)
-	if (GetAdminFlag(Aid, Admin_Ban))
-		return true
-	else
-		return false
-	
-	
-}
 
 Native_GetClientAimEntity(Handle hPlugin, iNumParams) {
 	int plyClient = GetNativeCell(1)
@@ -564,43 +545,4 @@ Native_LogCmd(Handle hPlugin, iNumParams) {
 	}
 }
 
-Native_PrintToChat(Handle hPlugin, iNumParams) {
-	char szMsg[192]
-	int written
-	FormatNativeString(0, 2, 3, sizeof(szMsg), written, szMsg)
-	if (GetNativeCell(1) > 0)
-		PrintToChat(GetNativeCell(1), "%s %s", MSGTAG, szMsg)
-}
 
-Native_PrintToAll(Handle hPlugin, iNumParams) {
-	char szMsg[192]
-	int written
-	FormatNativeString(0, 1, 2, sizeof(szMsg), written, szMsg)
-	PrintToChatAll("%s %s", MSGTAG, szMsg)
-}
-
-Native_IsClientValid(Handle hPlugin, iNumParams) {
-	int plyClient = GetNativeCell(1)
-	int plyTarget = GetNativeCell(2)
-	bool IsAlive, ReplyTarget
-	if (iNumParams == 3)
-		IsAlive = GetNativeCell(3)
-	if (iNumParams == 4)
-		ReplyTarget = GetNativeCell(4)
-	
-	if (plyTarget < 1 || plyTarget > MAXPLAYERS)
-		return false
-	if (!IsClientInGame(plyTarget))
-		return false
-	else if (IsAlive) {
-		if (!IsPlayerAlive(plyTarget)) {
-			if (ReplyTarget) 
-				LM_PrintToChat(plyClient, "This command can only be used on alive players.")
-			else
-				LM_PrintToChat(plyClient, "You cannot use the command while dead.")
-			
-			return false
-		}
-	}
-	return true
-}

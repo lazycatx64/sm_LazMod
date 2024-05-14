@@ -98,14 +98,6 @@ native bool LM_AllowToLazMod(const int plyClient)
 native bool LM_AllowFly(const int plyClient)
 
 /**
- * Get client admin.
- * 
- * @param plyClient			Client index.
- * @return					True on admin. False on not.
- */
-native bool LM_IsClientAdmin(const int plyClient)
-
-/**
  * Get client aim entity.
  * 
  * @param plyClient			Client index.
@@ -132,14 +124,3 @@ native void LM_LogCmd(const int plyClient, const char[] command, const char[] ar
  * @return					True on blacklisted. False on not.
  */
 native bool LM_IsBlacklisted(const int plyClient)
-
-/**
- * Check is target client valid.
- *
- * @param plyClient			Client index.
- * @param plyTarget			Target index.
- * @param bIsAlive			Check is target alive.
- * @param plyReply			True to reply the result to target instead.
- * @return					True if target valid. Otherwise false.
- */
-native bool LM_IsClientValid(const int plyClient, const int plyTarget, bool bIsAlive = false, bool plyReply = false)

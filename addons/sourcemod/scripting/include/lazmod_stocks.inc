@@ -29,6 +29,75 @@ stock bool LM_IsFirstRun() {
 	return FindEntityByClassname(0, "cat_First_Run") == -1
 }
 
+
+
+/**
+ * Check is target client valid.
+ *
+ * @param plyClient			Client to check.
+ * @param plyReply			Client to reply if assigned; no reply otherwise
+ * @param bCheckAlive		Also check is target alive.
+ * @return					True if target valid. Otherwise false.
+ */
+stock bool LM_IsClientValid(const int plyClient, const int plyReply = -1, const bool bCheckAlive = false) {
+	
+	if (plyClient < 1 || plyClient > MAXPLAYERS) {
+		if (plyReply == plyClient) {
+			// Client not in game
+		} else if (plyReply == 0) {
+			LM_PrintToServerError("Client is not valid.")
+		} else if (plyReply != -1) {
+			LM_PrintToChat(plyReply, "Client is not valid.")
+		}
+
+		return false
+	}
+
+	if (!IsClientInGame(plyClient) || !IsClientAuthorized(plyClient)) {
+		if (plyReply == plyClient) {
+			// Client not in game
+		} else if (plyReply == 0) {
+			LM_PrintToServerError("Client is not fully in game.")
+		} else if (plyReply != -1) {
+			LM_PrintToChat(plyReply, "Client is not fully in game.")
+		}
+
+		return false
+	}
+	
+	if (bCheckAlive && !IsPlayerAlive(plyClient)) {
+		if (plyReply == plyClient) {
+			LM_PrintToChat(plyReply, "You cannot use the command while dead.")
+		} else if (plyReply == 0) {
+			LM_PrintToServer("Client is dead.")
+		} else if (plyReply != -1) {
+			LM_PrintToChat(plyReply, "Client is dead.")
+		}
+		
+		return false
+	}
+
+	return true
+}
+
+/**
+ * Check if client is admin.
+ * 
+ * @param plyClient			Client index.
+ * @return					True if admin; false otherwise.
+ */
+stock bool LM_IsClientAdmin(const int plyClient) {
+
+	if (!IsClientConnected(plyClient))
+		ThrowError("Client id %i is not connected.", plyClient)
+	
+	AdminId Aid = GetUserAdmin(plyClient)
+	return GetAdminFlag(Aid, Admin_Generic)
+}
+
+
+
+
 /**
  * Get the coordinates of the client's aiming position
  *
