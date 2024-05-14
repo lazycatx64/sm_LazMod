@@ -54,19 +54,20 @@ public OnPluginStart() {
 	{
 		// RegAdminCmd("sm_ball", Command_Ball, ADMFLAG_GENERIC, "Spawn a energy ball.")
 		
-		RegAdminCmd("sm_setowner", Command_AdminSetOwner, ADMFLAG_BAN, "WTF.")
+		RegAdminCmd("sm_setowner", Command_AdminSetOwner, ADMFLAG_BAN, "Set the owner of aimed prop.")
 		RegAdminCmd("sm_delay", Command_AdminDelay, ADMFLAG_BAN, "Fire a command that will execute later")
+
 		RegAdminCmd("sm_team", Command_AdminTeam, ADMFLAG_GENERIC, "Force a player join a team.")
-		RegAdminCmd("sm_hurt", Command_AdminHurt, ADMFLAG_BAN, "To hurt you.")
-		RegAdminCmd("sm_shoot", Command_AdminShoot, ADMFLAG_BAN, "WTF.")
-		RegAdminCmd("sm_mis", Command_AdminMissile, ADMFLAG_CONVARS, "To fire rockets.")
-		RegAdminCmd("sm_misset", Command_AdminMissileSet, ADMFLAG_CONVARS, "To set rockets model.")
-		RegAdminCmd("sm_misla", Command_AdminMissileLast, ADMFLAG_CONVARS, "Attack last target.")
-		RegAdminCmd("sm_gb", Command_AdminBottle, ADMFLAG_CONVARS, "Create bottles.")
+		RegAdminCmd("sm_hurt", Command_AdminHurt, ADMFLAG_BAN, "EXPERIMENTAL: To hurt you.")
+		// RegAdminCmd("sm_shoot", Command_AdminShoot, ADMFLAG_BAN, "WTF.")
+		RegAdminCmd("sm_mis", Command_AdminMissileSpawn, ADMFLAG_CONVARS, "To fire rockets.")
+		RegAdminCmd("sm_misset", Command_AdminMissileSetTarget, ADMFLAG_CONVARS, "EXPERIMENTAL: To set rockets model.")
+		RegAdminCmd("sm_misla", Command_AdminMissileLastTarget, ADMFLAG_CONVARS, "EXPERIMENTAL: Attack last target.")
+		RegAdminCmd("sm_gb", Command_AdminBottle, ADMFLAG_CONVARS, "EXPERIMENTAL: Create bottles.")
 		//RegAdminCmd("sm_strider", Command_RActionStrider, ADMFLAG_CONVARS, "Range action strider style.")
 		//RegAdminCmd("sm_square", Command_RActionSquare, ADMFLAG_CONVARS, "Range action square style.")
 		
-		RegAdminCmd("sm_atest", Command_Test, ADMFLAG_ROOT, "test.")
+		RegAdminCmd("sm_atest", Command_Test, ADMFLAG_ROOT, "EXPERIMENTAL: test.")
 	}
 	
 	RegConsoleCmd("kill", Command_Suicide, "")
@@ -447,16 +448,16 @@ public Action Command_rDisableThruster(Client, args) {
 }
 
 
-public Action Command_AdminSetOwner(Client, args) {
-	if (!LM_IsClientValid(Client, Client, true))
+public Action Command_AdminSetOwner(plyClient, args) {
+	if (!LM_IsClientValid(plyClient, plyClient, true))
 		return Plugin_Handled
 	
-	int entProp = LM_GetClientAimEntity(Client)
+	int entProp = LM_GetClientAimEntity(plyClient)
 	if (entProp == -1) 
 		return Plugin_Handled
 	
 	if (args < 1) {
-		LM_PrintToChat(Client, "Usage: !setowner <Player>")
+		LM_PrintToChat(plyClient, "Usage: !setowner <Player>")
 		return Plugin_Handled
 	}
 	
@@ -465,32 +466,23 @@ public Action Command_AdminSetOwner(Client, args) {
 	GetCmdArg(1, szTarget, sizeof(szTarget))
 	GetEdictClassname(entProp, szClass, sizeof(szClass))
 	
-	int plyOwner = LM_GetEntOwner(entProp)
 	if (StrEqual(szTarget, "-1")) {
-		LM_SetEntOwner(entProp, -1)
-		if(StrEqual(szClass, "prop_ragdoll"))
-			LM_SetSpawnLimit(plyOwner, -1)
-		else
-			LM_SetSpawnLimit(plyOwner, -1, true)
-		LM_PrintToChat(Client, "SetOwner to: none")
+		LM_SetEntOwner(entProp, -1, StrEqual(szClass, "prop_ragdoll"))
+		LM_PrintToChat(plyClient, "SetOwner to: *None")
 	} else {
 		char target_name[MAX_TARGET_LENGTH]
 		int target_list[MAXPLAYERS], target_count
 		bool tn_is_ml
 		
-		if ((target_count = ProcessTargetString(szTarget, Client, target_list, MAXPLAYERS, 0, target_name, sizeof(target_name), tn_is_ml)) <= 0) {
-			ReplyToTargetError(Client, target_count)
+		if ((target_count = ProcessTargetString(szTarget, plyClient, target_list, MAXPLAYERS, 0, target_name, sizeof(target_name), tn_is_ml)) <= 0) {
+			ReplyToTargetError(plyClient, target_count)
 			return Plugin_Handled
 		}
 		for (int i = 0; i < target_count; i++) {
-			new target = target_list[i]
-			LM_SetEntOwner(entProp, target)
-			if(plyOwner != -1)
-				LM_SetSpawnLimit(plyOwner, -1, StrEqual(szClass, "prop_ragdoll"))
+			int plyTarget = target_list[i]
+			LM_SetEntOwner(entProp, plyTarget)
 			
-			LM_SetSpawnLimit(target, -1, StrEqual(szClass, "prop_ragdoll"))
-			
-			LM_PrintToChat(Client, "SetOwner to: %N", target)
+			LM_PrintToChat(plyClient, "SetOwner to: %N", plyTarget)
 		}
 	}
 
@@ -501,13 +493,13 @@ public Action Command_AdminSetOwner(Client, args) {
 		GetCmdArg(i, szTemp, sizeof(szTemp))
 		Format(szArgs, sizeof(szArgs), "%s %s", szArgs, szTemp)
 	}
-	LM_LogCmd(Client, "sm_setowner", szArgs)
+	LM_LogCmd(plyClient, "sm_setowner", szArgs)
 	return Plugin_Handled
 }
 
-public Action Command_AdminTeam(Client, args) {
+public Action Command_AdminTeam(plyClient, args) {
 	if (args < 2) {
-		LM_PrintToChat(Client, "Usage: !team <UserID> <Team>")
+		LM_PrintToChat(plyClient, "Usage: !team <UserID> <Team>")
 		return Plugin_Handled
 	}
 	
@@ -519,15 +511,15 @@ public Action Command_AdminTeam(Client, args) {
 	int target_list[MAXPLAYERS], target_count
 	bool tn_is_ml
 	
-	if ((target_count = ProcessTargetString(szPlayer, Client, target_list, MAXPLAYERS, 0, target_name, sizeof(target_name), tn_is_ml)) <= 0) {
-		ReplyToTargetError(Client, target_count)
+	if ((target_count = ProcessTargetString(szPlayer, plyClient, target_list, MAXPLAYERS, 0, target_name, sizeof(target_name), tn_is_ml)) <= 0) {
+		ReplyToTargetError(plyClient, target_count)
 		return Plugin_Handled
 	}
 
 	for (int i = 0; i < target_count; i++) {
-		new target = target_list[i]
-		ChangeClientTeam(target, StringToInt(szTeam))
-		FakeClientCommand(target, "jointeam %s", szTeam)
+		int plyTarget = target_list[i]
+		ChangeClientTeam(plyTarget, StringToInt(szTeam))
+		FakeClientCommand(plyTarget, "jointeam %s", szTeam)
 	}
 	
 	char szTemp[33], szArgs[128]
@@ -535,11 +527,11 @@ public Action Command_AdminTeam(Client, args) {
 		GetCmdArg(i, szTemp, sizeof(szTemp))
 		Format(szArgs, sizeof(szArgs), "%s %s", szArgs, szTemp)
 	}
-	LM_LogCmd(Client, "sm_team", szArgs)
+	LM_LogCmd(plyClient, "sm_team", szArgs)
 	return Plugin_Handled
 }
 
-public Action Command_AdminHurt(Client, args) {
+public Action Command_AdminHurt(plyClient, args) {
 	if (args < 3)
 		return Plugin_Handled
 	
@@ -552,10 +544,10 @@ public Action Command_AdminHurt(Client, args) {
 	GetCmdArg(4, szClassName, sizeof(szClassName))
 	GetCmdArg(5, szParent, sizeof(szParent))
 	
-	LM_ClientAimPos(Client, fAimPos)
-	GetClientAbsOrigin(Client, vOriginPlayer)
+	LM_ClientAimPos(plyClient, fAimPos)
+	GetClientAbsOrigin(plyClient, vOriginPlayer)
 	
-	int entProp = GetClientAimTarget(Client)
+	int entProp = GetClientAimTarget(plyClient)
 	if (entProp != -1)
 		if (LM_IsEntPlayer(entProp))
 			LM_GetEntOrigin(entProp, fAimPos)
@@ -590,12 +582,12 @@ public Action Command_AdminHurt(Client, args) {
 	
 	
 	if (StrEqual(szParent, "")) {
-		AcceptEntityInput(entHurt, "hurt", Client, Client)
+		AcceptEntityInput(entHurt, "hurt", plyClient, plyClient)
 	} else if (StrEqual(szParent, "r")) {
 		float fOriginEntity[3]
-		DispatchKeyValue(Client, "targetname", "szHurtFrom")
+		DispatchKeyValue(plyClient, "targetname", "szHurtFrom")
 		SetVariantString("szHurtFrom")
-		AcceptEntityInput(entHurt, "setparent", Client, Client)
+		AcceptEntityInput(entHurt, "setparent", plyClient, plyClient)
 		for(int i = 0; i < 4000; i++) {
 			if(IsValidEdict(i)) {
 				LM_GetEntOrigin(i, fOriginEntity)
@@ -603,46 +595,47 @@ public Action Command_AdminHurt(Client, args) {
 				if((StrContains(szClassName, "npc_") == 0 || StrEqual(szClassName, "player")) && LM_IsInRange(fOriginEntity, fAimPos, StringToFloat(szHurtRange))) {
 					DispatchKeyValue(i, "targetname", "HurtTarget")
 					DispatchKeyValue(entHurt, "damagetarget", "HurtTarget")
-					AcceptEntityInput(entHurt, "hurt", Client, Client)
+					AcceptEntityInput(entHurt, "hurt", plyClient, plyClient)
 					DispatchKeyValue(i, "targetname", "HurtTargetDrop")
 				}
 			}
 		}
-		DispatchKeyValue(Client, "targetname", "szHurtUserDrop")
+		DispatchKeyValue(plyClient, "targetname", "szHurtUserDrop")
 	} else if (StrEqual(szParent, "all")) {
-		new iPlayer = -1
-		DispatchKeyValue(Client, "targetname", "szHurtFrom")
+		int plyTarget = -1
+		DispatchKeyValue(plyClient, "targetname", "szHurtFrom")
 		SetVariantString("szHurtFrom")
-		AcceptEntityInput(entHurt, "setparent", Client, Client)
+		AcceptEntityInput(entHurt, "setparent", plyClient, plyClient)
 		for (int i = 0; i < MAXPLAYERS; i++) {
-			while ((iPlayer = FindEntityByClassname(iPlayer, "player")) != -1) {
-				DispatchKeyValue(iPlayer, "targetname", "HurtTarget")
-				DispatchKeyValue(entHurt, "damagetarget", "HurtTarget")
-				AcceptEntityInput(entHurt, "hurt", Client, Client)
-				DispatchKeyValue(iPlayer, "targetname", "HurtTargetDrop")
+			while ((plyTarget = FindEntityByClassname(plyTarget, "player")) != -1) {
+				DispatchKeyValue(plyTarget, "targetname", "HurtTarget")
+				DispatchKeyValue(plyTarget, "damagetarget", "HurtTarget")
+				AcceptEntityInput(plyTarget, "hurt", plyClient, plyClient)
+				DispatchKeyValue(plyTarget, "targetname", "HurtTargetDrop")
 			}
 		}
-		DispatchKeyValue(Client, "targetname", "szHurtUserDrop")
+		DispatchKeyValue(plyClient, "targetname", "szHurtUserDrop")
 	} else {
-		new iPlayer = GetClientOfUserId(StringToInt(szParent))
-		DispatchKeyValue(iPlayer, "targetname", "HurtTarget")
+		int plyTarget = GetClientOfUserId(StringToInt(szParent))
+		DispatchKeyValue(plyTarget, "targetname", "HurtTarget")
 		DispatchKeyValue(entHurt, "damagetarget", "HurtTarget")
-		DispatchKeyValue(Client, "targetname", "szHurtFrom")
+		DispatchKeyValue(plyClient, "targetname", "szHurtFrom")
 		SetVariantString("szHurtFrom")
-		AcceptEntityInput(entHurt, "setparent", Client, Client)
-		AcceptEntityInput(entHurt, "hurt", Client, Client)
-		DispatchKeyValue(Client, "targetname", "szHurtUserDrop")
-		DispatchKeyValue(iPlayer, "targetname", "HurtTargetDrop")
+		AcceptEntityInput(entHurt, "setparent", plyClient, plyClient)
+		AcceptEntityInput(entHurt, "hurt", plyClient, plyClient)
+		DispatchKeyValue(plyClient, "targetname", "szHurtUserDrop")
+		DispatchKeyValue(plyTarget, "targetname", "HurtTargetDrop")
 	}
 	EmitAmbientSound("ion/attack.wav", vOriginPlayer, entHurt, SNDLEVEL_NORMAL, SND_NOFLAGS, 0.5)
 	EmitAmbientSound("ion/attack.wav", fAimPos, entHurt, SNDLEVEL_NORMAL, SND_NOFLAGS, 0.5)
-	//new iPitch = GetRandomInt(50, 255)
+	//int iPitch = GetRandomInt(50, 255)
 	//EmitAmbientSound("npc/sniper/sniper1.wav", vOriginPlayer, entHurt, SNDLEVEL_NORMAL, SND_NOFLAGS, 1.0, iPitch)
 	//EmitAmbientSound("npc/sniper/echo1.wav", fAimPos, entHurt, SNDLEVEL_NORMAL, SND_NOFLAGS, 1.0, iPitch)
 	AcceptEntityInput(entHurt, "kill", -1)
 	return Plugin_Handled
 }
 
+// SOURCEOP: SourceOP Dead
 public Action Command_AdminShoot(Client, args) {
 	char Prop[128]
 	GetCmdArg(1, Prop, sizeof(Prop))
@@ -657,7 +650,7 @@ public Action Command_AdminShoot(Client, args) {
 	return Plugin_Handled;	
 }
 
-public Action Command_AdminMissile(Client, args) {
+public Action Command_AdminMissileSpawn(Client, args) {
 	int entInfoTarget
 	g_iMissileTarget[Client] = LM_GetClientAimEntity(Client, _, true)
 	if (g_iMissileTarget[Client] == -1) {
@@ -682,7 +675,7 @@ public Action Command_AdminMissile(Client, args) {
 	if (StrEqual(g_szMissileModel[Client], ""))
 		return Plugin_Handled
 	
-	int entMissileLauncher;entMissileLauncher = CreateEntityByName("npc_launcher")
+	int entMissileLauncher = CreateEntityByName("npc_launcher")
 	TeleportEntity(entMissileLauncher, vOriginPlayer, fAnglePlayer, NULL_VECTOR)
 	DispatchKeyValue(g_iMissileTarget[Client], "targetname", "szMissileTarget")
 	DispatchKeyValue(entMissileLauncher, "MissileModel", g_szMissileModel[Client])
@@ -718,7 +711,7 @@ public Action Command_AdminMissile(Client, args) {
 	return Plugin_Handled
 }
 
-public Action Command_AdminMissileSet(Client, args) {
+public Action Command_AdminMissileSetTarget(Client, args) {
 	int entProp = LM_GetClientAimEntity(Client)
 	if (entProp == -1) {
 		g_szMissileModel[Client] = "models/props_junk/watermelon01.mdl"
@@ -731,7 +724,7 @@ public Action Command_AdminMissileSet(Client, args) {
 	return Plugin_Handled
 }
 
-public Action Command_AdminMissileLast(Client, args) {
+public Action Command_AdminMissileLastTarget(Client, args) {
 	float vOriginPlayer[3], fAnglePlayer[3]
 	GetClientAbsOrigin(Client, vOriginPlayer)
 	GetClientAbsAngles(Client, fAnglePlayer)
@@ -782,17 +775,17 @@ public Action Command_AdminMissileLast(Client, args) {
 public Action Command_AdminBottle(Client, args) {
 	char type[16]
 	float aim[3]
-	new bottle
+	int entBottle
 	LM_ClientAimPos(Client, aim);	
 	GetCmdArg(1, type, sizeof(type))
 	
 	if (StrEqual(type, "1")) {
-		bottle = CreateEntityByName("prop_physics")
-		TeleportEntity(bottle, aim, NULL_VECTOR, NULL_VECTOR)
-		DispatchKeyValue(bottle, "model", "models/props_junk/GlassBottle01a.mdl")
-		DispatchKeyValue(bottle, "exploderadius", "100")
-		DispatchKeyValue(bottle, "explodedamage", "300")
-		DispatchSpawn(bottle)
+		entBottle = CreateEntityByName("prop_physics")
+		TeleportEntity(entBottle, aim, NULL_VECTOR, NULL_VECTOR)
+		DispatchKeyValue(entBottle, "model", "models/props_junk/GlassBottle01a.mdl")
+		DispatchKeyValue(entBottle, "exploderadius", "100")
+		DispatchKeyValue(entBottle, "explodedamage", "300")
+		DispatchSpawn(entBottle)
 		return Plugin_Handled
 	}
 	LM_PrintToChat(Client, "No bottle type selected.")

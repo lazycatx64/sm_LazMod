@@ -186,3 +186,62 @@ stock bool LM_IsEntPlayer(const int entProp) {
 
 
 
+/**
+ * Get client aim entity.
+ * 
+ * @param plyClient		Client index.
+ * @param bShowMsg		Show a message when entity invalid?
+ * @param bIncClient	Allow native to getting clients?
+ * @param fDistance		Limit the trace distance if > 0
+ * @return				Index of found entity; -1 if not found.
+ */
+stock int LM_GetClientAimEntity(const int plyClient, const bool bShowMsg = true, const bool bIncClient = false, const float fDistance = 0.0) {
+	
+	float vOrigin[3], vAngles[3]
+	Handle hTrace
+	GetClientEyePosition(plyClient, vOrigin)
+	GetClientEyeAngles(plyClient, vAngles)
+	
+
+	if (fDistance > 0) {
+		float AnglesVec[3], EndPoint[3]
+		
+		GetAngleVectors(vAngles, AnglesVec, NULL_VECTOR, NULL_VECTOR)
+
+		EndPoint[0] = vOrigin[0] + (AnglesVec[0] * fDistance)
+		EndPoint[1] = vOrigin[1] + (AnglesVec[1] * fDistance)
+		EndPoint[2] = vOrigin[2] + (AnglesVec[2] * fDistance)
+
+		hTrace = TR_TraceRayFilterEx(vOrigin, EndPoint, MASK_SHOT, RayType_EndPoint, TraceEntityFilter, plyClient)
+
+	} else {
+		hTrace = TR_TraceRayFilterEx(vOrigin, vAngles, MASK_SOLID, RayType_Infinite, TraceEntityFilter, plyClient)
+	}
+	
+	if (TR_DidHit(hTrace)) {
+		int entProp = TR_GetEntityIndex(hTrace)
+		
+		if (entProp > 0 && IsValidEntity(entProp)) {
+			if(!bIncClient) {
+				if (!(LM_IsEntPlayer(entProp))) {
+					CloseHandle(hTrace)
+					return entProp
+				}
+			} else {
+				CloseHandle(hTrace)
+				return entProp
+			}
+		}
+	}
+	
+	if (bShowMsg)
+		LM_PrintToChat(plyClient, "You dont have a target or target invalid.")
+	
+	CloseHandle(hTrace)
+	return -1
+}
+bool TraceEntityFilter(entity, mask, any data) {
+    return data != entity
+}
+
+

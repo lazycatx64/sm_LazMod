@@ -503,7 +503,7 @@ public Action Timer_Load(Handle hTimer, Handle hDataPack) {
 				ExplodeString(szDataHeader, "\t", szHeaderBuffer, 9, 255)
 				ExplodeString(szLoadString, "\t", szDataBuffer, 9, 255)
 
-				for (new i = 0; i < sizeof(szDataBuffer); i++) {
+				for (int i = 0; i < sizeof(szDataBuffer); i++) {
 					if (StrEqual(szHeaderBuffer[i], "classname")) {
 						Format(szClass, sizeof(szClass), "%s", szDataBuffer[i])
 					} else if (StrEqual(szHeaderBuffer[i], "model")) {

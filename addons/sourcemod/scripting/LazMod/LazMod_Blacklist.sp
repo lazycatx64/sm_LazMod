@@ -87,7 +87,7 @@ public Action Command_RemoveBL(plyClient, args) {
 	}
 
 	for (int i = 0; i < target_count; i++) {
-		new target = target_list[i]
+		int target = target_list[i]
 		
 		if(!RemoveBlacklist(target)) {
 			LM_PrintToChat(plyClient, "%s is not in blacklist!", target_name)
@@ -136,7 +136,7 @@ RemoveBlacklist(int plyClient) {
 	GetClientAuthId(plyClient, AuthId_Steam2, szAuthid, sizeof(szAuthid))
 	GetClientName(plyClient, szName, sizeof(szName))
 	
-	for (new i = 0; i < GetArraySize(g_hBlackListArray); i++) {
+	for (int i = 0; i < GetArraySize(g_hBlackListArray); i++) {
 		GetArrayString(g_hBlackListArray , i, szData, sizeof(szData))
 		if(StrContains(szData, szAuthid) != -1) {
 			RemoveFromArray(g_hBlackListArray, i)
@@ -180,7 +180,7 @@ ReadBlackList() {
 	if (hFile == INVALID_HANDLE)
 		return
 	
-	new iClients = 0
+	int iClients = 0
 	while (!IsEndOfFile(hFile))
 	{
 		char szLine[255]

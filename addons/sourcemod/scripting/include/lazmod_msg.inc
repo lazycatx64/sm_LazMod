@@ -124,6 +124,41 @@ stock int LM_PrintToServerError(const char[] format, any ...) {
 }
 
 
+/**
+ * Logging commands and args.
+ * 
+ * @param plyClient			Client index.
+ * @param command			Command to log.
+ * @param args				Args to log.
+ * @return					Number of bytes written.
+ */
+stock int LM_LogCmd(const int plyClient, const char[] szCmd, const char[] szArgs) {
+	
+	static char szLogPath[64]
+	char szTime[16], szName[33], szAuthid[33]
+	
+	FormatTime(szTime, sizeof(szTime), "%Y-%m-%d")
+	GetClientName(plyClient, szName, sizeof(szName))
+	GetClientAuthId(plyClient, AuthId_Steam2, szAuthid, sizeof(szAuthid))
+	
+	BuildPath(Path_SM, szLogPath, 64, "logs/LazMod-%s.log", szTime)
+	
+	char szBuffer[256]
+	int iWritten = 0
+	if (StrEqual(szArgs, "")) {
+		Format(szBuffer, sizeof(szBuffer), "\"%s\" (%s) Cmd: %s", szName, szAuthid, szCmd)
+		LogToFile(szLogPath, szBuffer)
+		LogToGame(szBuffer)
+		iWritten = strlen(szBuffer)
+	} else {
+		Format(szBuffer, sizeof(szBuffer), "\"%s\" (%s) Cmd: %s, Args:%s", szName, szAuthid, szCmd, szArgs)
+		LogToFile(szLogPath, szBuffer)
+		LogToGame(szBuffer)
+		iWritten = strlen(szBuffer)
+	}
+	return iWritten
+}
+
 
 
 

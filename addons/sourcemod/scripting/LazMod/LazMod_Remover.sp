@@ -151,7 +151,7 @@ public OnClientPutInServer(plyClient) {
 public OnClientDisconnect(plyClient) {
 	g_szConnectedClient[plyClient] = ""
 	GetClientAuthId(plyClient, AuthId_Steam2, g_szDisconnectClient[plyClient], sizeof(g_szDisconnectClient))
-	new iCount
+	int iCount = 0
 	for (int iCheck = 0; iCheck < MAX_HOOK_ENTITIES; iCheck++) {
 		if (IsValidEntity(iCheck)) {
 			if (LM_GetEntOwner(iCheck) == plyClient) {
@@ -161,8 +161,9 @@ public OnClientDisconnect(plyClient) {
 			}
 		}
 	}
-	LM_SetSpawnLimit(plyClient, 0)
-	LM_SetSpawnLimit(plyClient, 0, true)
+	LM_SetClientPropCount(plyClient, 0, true)
+	LM_SetClientPropCount(plyClient, 0)
+
 	if (iCount > 0) {
 		Handle hPack
 		CreateDataTimer(0.001, Timer_Disconnect, hPack)
@@ -274,14 +275,8 @@ public Action Command_Delete(plyClient, args) {
 				AcceptEntityInput(entDissolver, "kill", -1)
 				DispatchKeyValue(entProp, "targetname", "Del_Drop")
 				
-				int plyOwner = LM_GetEntOwner(entProp)
-				if (plyOwner != -1) {
-					if (StrEqual(szClass, "prop_ragdoll"))
-						LM_SetSpawnLimit(plyOwner, -1, true)
-					else
-						LM_SetSpawnLimit(plyOwner, -1)
-					LM_SetEntOwner(entProp, -1)
-				}
+				LM_SetEntOwner(entProp, -1)
+
 				return Plugin_Handled
 			}
 			if (!LM_IsEntPlayer(entProp)) {
@@ -301,10 +296,6 @@ public Action Command_Delete(plyClient, args) {
 			DispatchKeyValue(entProp, "targetname", "Del_Drop")
 		}
 		
-		if (StrEqual(szClass, "prop_ragdoll"))
-			LM_SetSpawnLimit(plyClient, -1, true)
-		else
-			LM_SetSpawnLimit(plyClient, -1)
 		LM_SetEntOwner(entProp, -1)
 	}
 	
@@ -344,8 +335,8 @@ public Action Command_DeleteAll(plyClient, args) {
 		LM_PrintToChat(plyClient, "You don't have any prop.")
 
 	
-	LM_SetSpawnLimit(plyClient, 0)
-	LM_SetSpawnLimit(plyClient, 0, true)
+	LM_SetClientPropCount(plyClient, 0, true)
+	LM_SetClientPropCount(plyClient, 0)
 	
 	char szArgString[256]
 	GetCmdArgString(szArgString, sizeof(szArgString))
@@ -647,11 +638,7 @@ public Action Time_DelRange(Handle hTimer, any plyClient) {
 						DispatchKeyValue(entProp, "targetname", "Del_Drop")
 					}
 					
-					int plyOwner = LM_GetEntOwner(entProp)
-					if (plyOwner != -1) {
-						LM_SetSpawnLimit(plyOwner, -1, StrEqual(szClass, "prop_ragdoll"))
-						LM_SetEntOwner(entProp, -1)
-					}
+					LM_SetEntOwner(entProp, -1)
 				}
 			}
 		}
@@ -770,7 +757,7 @@ public Action Timer_DSfire(Handle hTimer, Handle hDataPack) {
 	
 	int entDissolver = CreateDissolver("3")
 	float vOriginEntity[3]
-	new iCount = 0
+	int iCount = 0
 	int entProp = -1
 	for (int i = 0; i < sizeof(g_szEntityType); i++) {
 		while ((entProp = FindEntityByClassname(entProp, g_szEntityType[i])) != -1) {
@@ -788,11 +775,8 @@ public Action Timer_DSfire(Handle hTimer, Handle hDataPack) {
 					DispatchKeyValue(entProp, "targetname", "Del_Drop")
 				}
 				
-				int plyOwner = LM_GetEntOwner(entProp)
-				if (plyOwner != -1) {
-					LM_SetSpawnLimit(plyOwner, -1, StrEqual(szClass, "prop_ragdoll"))
-					LM_SetEntOwner(entProp, -1)
-				}
+				LM_SetEntOwner(entProp, -1)
+
 				iCount++
 			}
 		}
@@ -904,7 +888,7 @@ public Action Timer_DSfire2(Handle hTimer, Handle hDataPack) {
 	
 	int entDissolver = CreateDissolver("3")
 	float vOriginEntity[3]
-	new iCount = 0
+	int iCount = 0
 	int entProp = -1
 	for (int i = 0; i < sizeof(g_szEntityType); i++) {
 		while ((entProp = FindEntityByClassname(entProp, g_szEntityType[i])) != -1) {
@@ -921,11 +905,9 @@ public Action Timer_DSfire2(Handle hTimer, Handle hDataPack) {
 					AcceptEntityInput(entDissolver, "dissolve", entProp, entDissolver, 0)
 					DispatchKeyValue(entProp, "targetname", "Del_Drop")
 				}
-				int plyOwner = LM_GetEntOwner(entProp)
-				if (plyOwner != -1) {
-					LM_SetSpawnLimit(plyOwner, -1, StrEqual(szClass, "prop_ragdoll"))
-					LM_SetEntOwner(entProp, -1)
-				}
+				
+				LM_SetEntOwner(entProp, -1)
+				
 				iCount++
 			}
 		}
@@ -943,14 +925,14 @@ public OnPropBreak(const char[] output, int entProp, int entActivator, float fDe
 }
 
 public Action Timer_PropBreak(Handle hTimer, any entProp) {
+	
+	LM_SetEntOwner(entProp, -1)
+
 	if (!IsValidEntity(entProp))
 		return Plugin_Handled
-	int plyOwner = LM_GetEntOwner(entProp)
-	if (plyOwner > 0) {
-		LM_SetSpawnLimit(plyOwner, -1)
-		LM_SetEntOwner(entProp, -1)
-		AcceptEntityInput(entProp, "kill", -1)
-	}
+		
+	AcceptEntityInput(entProp, "kill", -1)
+	
 	return Plugin_Handled
 }
 

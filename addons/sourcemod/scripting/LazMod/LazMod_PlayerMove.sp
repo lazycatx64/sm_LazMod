@@ -7,8 +7,13 @@
 #include <lazmod>
 
 
-public Plugin myinfo =
-{
+
+ConVar g_hCvarAllowFly
+bool g_bCvarAllowFly
+
+
+
+public Plugin myinfo = {
 	name		= "LazMod - PlayerMove",
 	author		= "LaZycAt, hjkwe654",
 	description = "Noclip, sprint, teleport, etc.",
@@ -16,31 +21,49 @@ public Plugin myinfo =
 	url			= ""
 }
 
-public OnPluginStart()
-{
+public OnPluginStart() {
+
 	// Player commands
 	{
 		RegAdminCmd("+sprint", Command_EnableSprint, 0, "Sprint with x3 speed!")
 		RegAdminCmd("-sprint", Command_DisableSprint, 0, "Stop Sprinting")
 		RegAdminCmd("+lightspeed", Command_EnableLightspeed, 0, "Sprint with x10 speed!")
 		RegAdminCmd("-lightspeed", Command_DisableSprint, 0, "Stop Lightspeed")
+		RegAdminCmd("sm_fly", Command_SwitchFly, 0, "Player noclip.")
 	}
 
 	// Admin commands
 	{
-		RegAdminCmd("sm_fly", Command_AdminFly, 0, "WTF.")
 		RegAdminCmd("sm_tp", Command_AdminTeleport, ADMFLAG_GENERIC, "Teleport player.")
 		RegAdminCmd("sm_bring", Command_AdminBring, ADMFLAG_GENERIC, "Bring player.")
 	}
 	
+	g_hCvarAllowFly = CreateConVar("lm_allow_fly", "1", "Players can use !fly to noclip", FCVAR_NOTIFY, true, 0.0, true, 1.0)
+	g_hCvarAllowFly.AddChangeHook(Hook_CvarChanged)
+	CvarChanged(g_hCvarAllowFly)
+	
 	PrintToServer( "LazMod PlayerMove loaded!" )
 }
+
+
+
+Hook_CvarChanged(Handle convar, const char[] oldValue, const char[] newValue) {
+	CvarChanged(convar)
+}
+void CvarChanged(Handle convar) {
+	if (convar == g_hCvarAllowFly)
+		g_bCvarAllowFly = g_hCvarAllowFly.BoolValue
+	
+}
+
+
+
+
 
 //////////////////////////////
 // Player Commands
 //////////////////////////////
-public Action Command_EnableSprint(plyClient, args) 
-{
+public Action Command_EnableSprint(plyClient, args) {
 	if (!LM_AllowToLazMod(plyClient) || LM_IsBlacklisted(plyClient) || !LM_IsClientValid(plyClient, plyClient, true))
 		return Plugin_Handled
 
@@ -57,8 +80,7 @@ public Action Command_EnableSprint(plyClient, args)
 	return Plugin_Handled
 }
 
-public Action Command_EnableLightspeed(plyClient, args) 
-{
+public Action Command_EnableLightspeed(plyClient, args) {
 	if (!LM_AllowToLazMod(plyClient) || LM_IsBlacklisted(plyClient) || !LM_IsClientValid(plyClient, plyClient, true))
 		return Plugin_Handled
 
@@ -75,9 +97,8 @@ public Action Command_EnableLightspeed(plyClient, args)
 	return Plugin_Handled
 }
 
-public Action Command_DisableSprint(plyClient, args)
-{
-	new entSpeedMod = CreateEntityByName("player_speedmod")
+public Action Command_DisableSprint(plyClient, args) {
+	int entSpeedMod = CreateEntityByName("player_speedmod")
 	DispatchSpawn(entSpeedMod)
 	SetVariantString("1.0")
 	AcceptEntityInput(entSpeedMod, "ModifySpeed", plyClient, plyClient)
@@ -86,28 +107,31 @@ public Action Command_DisableSprint(plyClient, args)
 	return Plugin_Handled
 }
 
-//////////////////////////////
-// Admin Commands
-//////////////////////////////
-public Action Command_AdminFly(plyClient, args)
-{
+public Action Command_SwitchFly(plyClient, args) {
 	if (!LM_AllowToLazMod(plyClient) || LM_IsBlacklisted(plyClient) || !LM_IsClientValid(plyClient, plyClient, true))
 		return Plugin_Handled
 
-	if (GetEntityMoveType(plyClient) != MOVETYPE_NOCLIP)
-	{
-		if (LM_AllowFly(plyClient))
+	if (GetEntityMoveType(plyClient) != MOVETYPE_NOCLIP) {
+		if (!LM_IsClientAdmin(plyClient) && g_bCvarAllowFly) {
 			SetEntityMoveType(plyClient, MOVETYPE_NOCLIP)
-	}
-	else {
+		} else {
+			LM_PrintToChat(plyClient, "Fly is not available or disabled.")
+		}
+	} else {
 		SetEntityMoveType(plyClient, MOVETYPE_WALK)
 	}
 
 	return Plugin_Handled
 }
 
-public Action Command_AdminTeleport(plyClient, args)
-{
+
+
+
+//////////////////////////////
+// Admin Commands
+//////////////////////////////
+
+public Action Command_AdminTeleport(plyClient, args) {
 	if (args < 1)
 	{
 		LM_PrintToChat(plyClient, "Usage: !tp <player to> [player sent]")
@@ -169,8 +193,7 @@ public Action Command_AdminTeleport(plyClient, args)
 	return Plugin_Handled
 }
 
-public Action Command_AdminBring(plyClient, args)
-{
+public Action Command_AdminBring(plyClient, args) {
 	if (args < 1)
 	{
 		LM_PrintToChat(plyClient, "Usage: !bring <player bring>")
@@ -202,8 +225,7 @@ public Action Command_AdminBring(plyClient, args)
 	return Plugin_Handled
 }
 
-void TeleportPlayerToPlayer(int plyTo, int plySent)
-{
+void TeleportPlayerToPlayer(int plyTo, int plySent) {
 	float vToPos[3], vToAngles[3]
 	GetClientAbsOrigin(plyTo, vToPos)
 	GetClientEyeAngles(plyTo, vToAngles)
