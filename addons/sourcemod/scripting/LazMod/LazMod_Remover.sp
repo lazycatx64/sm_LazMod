@@ -12,10 +12,10 @@ ConVar g_hCvarDelEffect
 bool g_bCvarDelEffect
 
 
-static int COLOR_WHITE[4]	= {255,255,255,255}
-static int COLOR_RED[4]	= {255,50,50,255}
-static int COLOR_GREEN[4]	= {50,255,50,255}
-static int COLOR_BLUE[4]	= {50,50,255,255}
+static int COLOR_WHITE[4] = {255,255,255,255}
+static int COLOR_RED[4]   = {255,50,50,255}
+static int COLOR_GREEN[4] = {50,255,50,255}
+static int COLOR_BLUE[4]  = {50,50,255,255}
 
 
 char g_szConnectedClient[32][MAXPLAYERS]
@@ -26,8 +26,8 @@ int g_iTempOwner[MAX_HOOK_ENTITIES] = {-1,...}
 float g_vDelRangePoint1[MAXPLAYERS][3]
 float g_vDelRangePoint2[MAXPLAYERS][3]
 float g_vDelRangePoint3[MAXPLAYERS][3]
-int g_iDelRangeStatus[MAXPLAYERS] = {0,...}
-bool g_bDelRangeCancel[MAXPLAYERS] = {false,...}
+int   g_iDelRangeStatus[MAXPLAYERS] = {0,...}
+bool  g_bDelRangeCancel[MAXPLAYERS] = {false,...}
 
 int g_mdlBeam
 int g_mdlHalo
