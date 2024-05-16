@@ -56,7 +56,7 @@ public Action Command_SaveSpawn(plyClient, args) {
 	if (!LM_AllowToLazMod(plyClient) || LM_IsBlacklisted(plyClient) && LM_IsClientValid(plyClient, plyClient))
 		return Plugin_Handled
 	
-	char szMode[8], szSaveName[64], szSteamID[32]
+	char szMode[8], szSaveName[64], szSteamID[MAX_AUTHID_LENGTH]
 	GetCmdArg(1, szMode, sizeof(szMode))
 	GetCmdArg(2, szSaveName, sizeof(szSaveName))
 	GetClientAuthId(plyClient, AuthId_Steam2, szSteamID, sizeof(szSteamID))
@@ -210,7 +210,7 @@ void SaveSpawn_List(int plyClient) {
 	// int iCount = 0
 	char szSavePath[512]
 	char szFileName[64]
-	char szAuthSteamID[24], szFileSteamID[24], szSaveName[36]
+	char szAuthSteamID[MAX_AUTHID_LENGTH], szFileSteamID[MAX_AUTHID_LENGTH], szSaveName[36]
 
 	Regex reFile = CompileRegex("(.*)#(.*).csv$")
 	Regex reMap = CompileRegex("^# savemap\t(\\w.*)$")
@@ -381,7 +381,7 @@ public Action Timer_Save(Handle hTimer, Handle hDataPack) {
 	
 	
 	// Save begin
-	char szSteamID[32], szHeaders[256]
+	char szSteamID[MAX_AUTHID_LENGTH], szHeaders[256]
 	GetClientAuthId(plyClient, AuthId_Steam2, szSteamID, sizeof(szSteamID))
 	ImplodeStrings(g_szDataTypes, sizeof(g_szDataTypes), "\t", szHeaders, sizeof(szHeaders))
 

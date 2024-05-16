@@ -156,7 +156,7 @@ stock void Display_Player(int plyClient, int entProp) {
 	if (iHealth <= 1) iHealth = 0
 
 	if (LM_IsClientAdmin(plyClient)) {
-		char szSteamId[32]
+		char szSteamId[MAX_AUTHID_LENGTH]
 		GetClientAuthId(entProp, AuthId_Steam2, szSteamId, sizeof(szSteamId))
 		ShowHudText(plyClient, -1, "Player: %N\nHealth: %d\nUserID: %d\nSteamID:%s", entProp, iHealth, GetClientUserId(entProp), szSteamId)
 	} else {

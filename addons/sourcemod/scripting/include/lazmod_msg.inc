@@ -135,7 +135,7 @@ stock int LM_PrintToServerError(const char[] format, any ...) {
 stock int LM_LogCmd(const int plyClient, const char[] szCmd, const char[] szArgs) {
 	
 	static char szLogPath[64]
-	char szTime[16], szName[33], szAuthid[33]
+	char szTime[16], szName[33], szAuthid[MAX_AUTHID_LENGTH]
 	
 	FormatTime(szTime, sizeof(szTime), "%Y-%m-%d")
 	GetClientName(plyClient, szName, sizeof(szName))

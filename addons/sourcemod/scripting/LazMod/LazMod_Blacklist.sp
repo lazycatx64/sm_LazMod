@@ -111,7 +111,7 @@ public Action Command_RemoveBL(plyClient, args) {
 }
 
 AddBlacklist(int plyClient) {
-	char szAuthid[33], szName[33], WriteToArray[128], szData[128]
+	char szAuthid[MAX_AUTHID_LENGTH], szName[33], WriteToArray[128], szData[128]
 	GetClientAuthId(plyClient, AuthId_Steam2, szAuthid, sizeof(szAuthid))
 	GetClientName(plyClient, szName, sizeof(szName))
 	
@@ -132,7 +132,7 @@ AddBlacklist(int plyClient) {
 }
 
 RemoveBlacklist(int plyClient) {
-	char szAuthid[33], szName[33], szData[128]
+	char szAuthid[MAX_AUTHID_LENGTH], szName[33], szData[128]
 	GetClientAuthId(plyClient, AuthId_Steam2, szAuthid, sizeof(szAuthid))
 	GetClientName(plyClient, szName, sizeof(szName))
 	
@@ -150,7 +150,7 @@ RemoveBlacklist(int plyClient) {
 
 Native_IsBlacklisted(Handle hPlugin, iNumParams) {
 	int plyClient = GetNativeCell(1)
-	char szAuthid[33], szData[128]
+	char szAuthid[MAX_AUTHID_LENGTH], szData[128]
 	bool bIsBlacklisted = false
 	GetClientAuthId(plyClient, AuthId_Steam2, szAuthid, sizeof(szAuthid))
 
