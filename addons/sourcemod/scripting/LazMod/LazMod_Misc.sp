@@ -54,10 +54,13 @@ public OnPluginStart() {
 	{
 		// RegAdminCmd("sm_ball", Command_Ball, ADMFLAG_GENERIC, "Spawn a energy ball.")
 		
-		RegAdminCmd("sm_setowner", Command_AdminSetOwner, ADMFLAG_BAN, "Set the owner of aimed prop.")
-		RegAdminCmd("sm_delay", Command_AdminDelay, ADMFLAG_BAN, "Fire a command that will execute later")
+		// RegAdminCmd("sm_revive", Command_AdminRevive, ADMFLAG_GENERIC, "Revives a player from death, will revive self if no target assigned.")
+
+		RegAdminCmd("sm_setowner", Command_AdminSetOwner, ADMFLAG_GENERIC, "Set the owner of aimed prop.")
 
 		RegAdminCmd("sm_team", Command_AdminTeam, ADMFLAG_GENERIC, "Force a player join a team.")
+
+		RegAdminCmd("sm_delay", Command_AdminDelay, ADMFLAG_BAN, "Fire a command that will execute later")
 		RegAdminCmd("sm_hurt", Command_AdminHurt, ADMFLAG_BAN, "EXPERIMENTAL: To hurt you.")
 		// RegAdminCmd("sm_shoot", Command_AdminShoot, ADMFLAG_BAN, "WTF.")
 		RegAdminCmd("sm_mis", Command_AdminMissileSpawn, ADMFLAG_CONVARS, "To fire rockets.")
