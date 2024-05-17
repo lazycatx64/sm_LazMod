@@ -31,6 +31,9 @@ char g_szDataTypes[9][16] = {
 }
 
 
+// [ ]: Save load unbreaks
+// [ ]: Save load NCs
+
 
 public Plugin myinfo = {
 	name = "LazMod - SaveSpawn",

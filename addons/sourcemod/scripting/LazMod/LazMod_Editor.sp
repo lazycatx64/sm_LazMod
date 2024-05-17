@@ -54,7 +54,7 @@ public OnPluginStart() {
 
 		RegAdminCmd("sm_skin", Command_Skin, 0, "Change skin of a prop (not every prop have multiple skins).")
 		RegAdminCmd("sm_light", Command_LightDynamic, 0, "Create a dynamic light.")
-		// RegAdminCmd("sm_drop", Command_Drop, 0, "Drop a prop from sky.") // SOURCEOP: SourceOP dead
+		// RegAdminCmd("sm_drop", Command_Drop, 0, "Drop a prop from sky.")
 
 
 		RegAdminCmd("sm_setmass", Command_SetMass, 0, "Set the mass of a prop.")
@@ -669,7 +669,7 @@ public Action Command_SetMass(plyClient, args) {
 
 
 
-// SOURCEOP: SourceOP dead
+// SOURCEOP: sm_drop
 public Action Command_Drop(plyClient, args) {
 	if (!LM_AllowToLazMod(plyClient) || LM_IsBlacklisted(plyClient) || !LM_IsClientValid(plyClient, plyClient, true))
 		return Plugin_Handled
