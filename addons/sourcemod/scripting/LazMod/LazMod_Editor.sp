@@ -648,7 +648,7 @@ public Action Command_SetMass(plyClient, args) {
 	}
 	
 	
-	if (LM_IsEntOwner(plyClient, entProp))
+	if (!LM_IsEntOwner(plyClient, entProp))
 		return Plugin_Handled
 
 	float fAmount = GetCmdArgFloat(1)
