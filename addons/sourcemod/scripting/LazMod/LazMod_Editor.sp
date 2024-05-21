@@ -642,8 +642,30 @@ public Action Command_SetMass(plyClient, args) {
 	if (entProp == -1) 
 		return Plugin_Handled
 	
+	if(!Phys_IsPhysicsObject(entProp)) {
+		LM_PrintToChat(plyClient, "This isn't a physics prop!")
+		return Plugin_Handled
+	}
+	
+	
 	if (LM_IsEntOwner(plyClient, entProp))
 		return Plugin_Handled
+
+	float fAmount = GetCmdArgFloat(1)
+	
+	// I think Source Engine itself already built-in this limit, but just in case
+	if (fAmount < 1)
+		fAmount = 1.0
+	else if (fAmount > 50000)
+		fAmount = 50000.0
+	
+	Phys_SetMass(entProp, fAmount)
+
+	char szArgs[128]
+	GetCmdArgString(szArgs, sizeof(szArgs))
+	LM_LogCmd(plyClient, "sm_setmass", szArgs)
+	return Plugin_Handled
+}
 
 	char szAmount[16]
 	GetCmdArg(1, szAmount, sizeof(szAmount))
