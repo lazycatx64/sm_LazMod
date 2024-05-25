@@ -24,8 +24,8 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, err_max) {
 
 public OnPluginStart() {	
 	LoadTranslations("common.phrases")
-	RegAdminCmd("sm_bl", Command_AddBL, ADMFLAG_BAN, "Add client to LazMod blacklist to prevent them from using LazMod commands.")
-	RegAdminCmd("sm_unbl", Command_RemoveBL, ADMFLAG_BAN, "Remove client from blacklist")
+	RegAdminCmd("sm_bl", Command_AddBL, ADMFLAG_GENERIC, "Add player to LazMod blacklist to prevent them from using LazMod commands.")
+	RegAdminCmd("sm_unbl", Command_RemoveBL, ADMFLAG_GENERIC, "Remove player from blacklist")
 
 	g_hBlackListArray = CreateArray(33, 128);	// 33 arrays, every array size is 128
 	ReadBlackList()

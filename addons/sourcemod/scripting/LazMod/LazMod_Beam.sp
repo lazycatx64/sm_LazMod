@@ -31,8 +31,8 @@ public Plugin myinfo = {
 }
 
 public OnPluginStart() {
-	RegAdminCmd("sm_deathray", Command_Deathray, 0, "boom boom.")
-	RegAdminCmd("sm_droct", Command_DrOct, 0, "Will pull everything in the range, then push them away.")
+	RegAdminCmd("sm_deathray", Command_Deathray, ADMFLAG_GENERIC, "boom boom.")
+	RegAdminCmd("sm_droct", Command_DrOct, ADMFLAG_GENERIC, "Will pull everything in the range, then push them away.")
 
 	g_hCvarDRayRandClr	= CreateConVar("lm_deathray_randcolor", "1", "Should the beam use random color", FCVAR_NOTIFY, true, 0.0, true, 1.0)
 	g_hCvarDRayRandClr.AddChangeHook(Hook_CvarChanged)
