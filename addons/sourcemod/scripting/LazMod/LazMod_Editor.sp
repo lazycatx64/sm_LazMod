@@ -369,20 +369,16 @@ public Action Command_Move(plyClient, args) {
 		return Plugin_Handled
 	
 	if (LM_IsEntOwner(plyClient, entProp)) {
-		float fEntityOrigin[3], fEntityAngle[3];	
-		char szArgX[33], szArgY[33], szArgZ[33]
-		GetCmdArg(1, szArgX, sizeof(szArgX))
-		GetCmdArg(2, szArgY, sizeof(szArgY))
-		GetCmdArg(3, szArgZ, sizeof(szArgZ))
+		float fEntOrigin[3], fArgMove[3]
+		fArgMove[0] = GetCmdArgFloat(1)
+		fArgMove[1] = GetCmdArgFloat(2)
+		fArgMove[2] = GetCmdArgFloat(3)
 		
-		LM_GetEntOrigin(entProp, fEntityOrigin)
-		LM_GetEntAngles(entProp, fEntityAngle)
+		LM_GetEntOrigin(entProp, fEntOrigin)
 		
-		fEntityOrigin[0] += StringToFloat(szArgX)
-		fEntityOrigin[1] += StringToFloat(szArgY)
-		fEntityOrigin[2] += StringToFloat(szArgZ)
-		
-		TeleportEntity(entProp, fEntityOrigin, fEntityAngle, NULL_VECTOR)
+		AddVectors(fArgMove, fArgMove, fEntOrigin)
+
+		TeleportEntity(entProp, fEntOrigin, NULL_VECTOR, NULL_VECTOR)
 	}
 	
 	char szArgs[128]
@@ -642,7 +638,7 @@ public Action Command_SetMass(plyClient, args) {
 	int entProp = LM_GetClientAimEntity(plyClient)
 	if (entProp == -1) 
 		return Plugin_Handled
-	
+
 	if(!Phys_IsPhysicsObject(entProp)) {
 		LM_PrintToChat(plyClient, "This isn't a physics prop!")
 		return Plugin_Handled
@@ -713,7 +709,7 @@ public Action Command_SetModelScale(plyClient, args) {
 	LM_PrintToChat(plyClient, "%f %f %f - %f %f %f", vMins[0], vMins[1], vMins[2], vMaxs[0], vMaxs[1], vMaxs[2])
 	// Entity_SetMinMaxSize(entProp, vMins, vMaxs)
 	DispatchKeyValueFloat(entProp, "modelscale", fAmount)
-	
+
 	char szArgs[128]
 	GetCmdArgString(szArgs, sizeof(szArgs))
 	LM_LogCmd(plyClient, "sm_scale", szArgs)
