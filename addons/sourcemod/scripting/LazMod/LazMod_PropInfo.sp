@@ -107,7 +107,7 @@ public Action Display_Msgs(Handle timer) {
 
 	for (int plyClient = 1; plyClient <= MaxClients; plyClient++) {		
 
-		if (LM_IsClientValid(plyClient, plyClient, true) && !IsFakeClient(plyClient)) {
+		if (LM_IsClientValid(plyClient, plyClient) && !IsFakeClient(plyClient)) {
 			
 			int entProp = LM_GetClientAimEntity(plyClient, false, true)
 
