@@ -237,7 +237,7 @@ Native_CreateEntity(Handle hPlugin, iNumParams) {
 
 	if (!LM_CheckMaxEdict()) {
 		LM_PrintToAll("TOO MUCH ENTITIES!!!")
-		return -1
+		return -2
 	}
 
 	if (g_iServerCurrent + 1 > g_iCvarMaxPropServer) {
@@ -245,7 +245,7 @@ Native_CreateEntity(Handle hPlugin, iNumParams) {
 			LM_PrintToAll("The number of prop has reached the server limit.")
 		else
 			LM_PrintToChat(plyClient, "The number of prop has reached the server limit.")
-		return -1
+		return -3
 	}
 
 	int entProp = -1
@@ -261,7 +261,7 @@ Native_CreateEntity(Handle hPlugin, iNumParams) {
 
 	if (plyClient != -1 && !LM_SetEntOwner(entProp, plyClient, StrEqual(szClass, "prop_ragdoll", false))) {
 		RemoveEdict(entProp)
-		return -1
+		return -4
 	}
 
 	if (StrEqual(szClass, "prop_dynamic") || StrEqual(szClass, "prop_dynamic_override"))
@@ -351,6 +351,8 @@ Native_SetEntOwner(Handle hPlugin, iNumParams) {
 
 	if (LM_AddClientPropCount(plyClient, 1, bIsDoll))
 		g_entPropOwner[entProp] = plyClient
+	else
+		return false
 
 	return true
 }
