@@ -219,6 +219,7 @@ public Action Command_SpawnModel(plyClient, args) {
 									Ex: !spawnmodel props_lab/blastdoor001c\n\
 									Ex: !spawnmodel models/props_c17/support01.mdl")
 		LM_PrintToChat(plyClient, "Note: 'models/' and '.mdl' are acceptable")
+		LM_PrintToChat(plyClient, "Warning: Do not try spawn models thats like '*60', it might crash server")
 		return Plugin_Handled
 	}
 	
@@ -284,6 +285,7 @@ public Action Command_SpawnModelFrozen(plyClient, args) {
 									Ex: !spawnmodelf props_lab/blastdoor001c\n\
 									Ex: !spawnmodelf models/props_c17/support01.mdl")
 		LM_PrintToChat(plyClient, "Note: 'models/' and '.mdl' are acceptable")
+		LM_PrintToChat(plyClient, "Warning: Do not try spawn models thats like '*60', it might crash server")
 		return Plugin_Handled
 	}
 	
@@ -303,6 +305,7 @@ public Action Command_SpawnModelDynamic(plyClient, args) {
 									Ex: !spawnmodeld props_lab/blastdoor001c\n\
 									Ex: !spawnmodeld models/props_c17/support01.mdl")
 		LM_PrintToChat(plyClient, "Note: 'models/' and '.mdl' are acceptable")
+		LM_PrintToChat(plyClient, "Warning: Do not try spawn models thats like '*60', it might crash server")
 		return Plugin_Handled
 	}
 	
