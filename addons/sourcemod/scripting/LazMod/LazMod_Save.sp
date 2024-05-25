@@ -455,6 +455,8 @@ public Action Timer_Load(Handle hTimer, Handle hDataPack) {
 	int plyClient = ReadPackCell(hDataPack)
 	ReadPackString(hDataPack, szDataHeader, sizeof(szDataHeader))
 	
+	int entProp = -1
+
 	if (!LM_IsClientValid(plyClient, plyClient))
 		return Plugin_Handled
 	
@@ -498,7 +500,6 @@ public Action Timer_Load(Handle hTimer, Handle hDataPack) {
 				
 			} else if (StrContains(szLoadString, "prop_physics") != -1 || StrContains(szLoadString, "prop_dynamic") != -1) {
 				
-				int entProp = -1
 				char szDataBuffer[9][255], szHeaderBuffer[9][255], szClass[32], szModel[128], szColor[16], szAlpha[4]
 				char szOrigin[3][16], szAngles[3][16]
 				float vOrigin[3], vAngles[3]
@@ -556,7 +557,7 @@ public Action Timer_Load(Handle hTimer, Handle hDataPack) {
 
 				entProp = LM_CreateEntity(plyClient, szClass, szModel, vOrigin, vAngles)
 				
-				if (entProp == -1) {
+				if (entProp < 0) {
 					g_iError[plyClient]++
 
 				} else {
@@ -572,7 +573,7 @@ public Action Timer_Load(Handle hTimer, Handle hDataPack) {
 				}
 			}
 		}
-		if (!IsEndOfFile(g_hFile[plyClient]) && !bRegOwnerError) {
+		if (!IsEndOfFile(g_hFile[plyClient]) && !bRegOwnerError && entProp >= -1) {
 			Handle hNewPack
 			CreateDataTimer(0.05, Timer_Load, hNewPack)
 			WritePackCell(hNewPack, plyClient)
