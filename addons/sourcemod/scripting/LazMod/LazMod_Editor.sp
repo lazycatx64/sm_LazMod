@@ -58,7 +58,8 @@ public OnPluginStart() {
 
 
 		RegAdminCmd("sm_setmass", Command_SetMass, 0, "Set the mass of a prop.")
-		// RegAdminCmd("sm_mass", Command_GetMass, 0, "Get the mass of a prop.")
+		RegAdminCmd("sm_scale", Command_SetModelScale, 0, "Set the model scale of a prop.")
+		
 		RegAdminCmd("sm_weld", Command_Weld, 0, "Weld a prop.")
 
 		RegAdminCmd("sm_setparent", Command_SetParent, 0, "Set parent.")
@@ -667,24 +668,55 @@ public Action Command_SetMass(plyClient, args) {
 	return Plugin_Handled
 }
 
-	char szAmount[16]
-	GetCmdArg(1, szAmount, sizeof(szAmount))
+
+public Action Command_SetModelScale(plyClient, args) {
+	if (!LM_AllowToLazMod(plyClient) || LM_IsBlacklisted(plyClient) || !LM_IsClientValid(plyClient, plyClient, true))
+		return Plugin_Handled
+	
+	if (args < 1) {
+		LM_PrintToChat(plyClient, "Usage: !scale <amount>")
+		LM_PrintToChat(plyClient, "Ex: !scale 2")
+		LM_PrintToChat(plyClient, "warning: Command still wip")
+		return Plugin_Handled
+	}
+	int entProp = LM_GetClientAimEntity(plyClient)
+	if (entProp == -1) 
+		return Plugin_Handled
+	
+	if(!Phys_IsPhysicsObject(entProp)) {
+		LM_PrintToChat(plyClient, "This isn't a physics prop!")
+		return Plugin_Handled
+	}
+	
+	LM_PrintToChat(plyClient, "1")
+	if (!LM_IsEntOwner(plyClient, entProp))
+		return Plugin_Handled
+
+	float fAmount = GetCmdArgFloat(1)
+	
 	
 	// I think Source Engine itself already built-in this limit, but just in case
-	if (StringToInt(szAmount) < 1)
-		szAmount = "1"
-	if (StringToInt(szAmount) > 50000)
-		szAmount = "50000"
+	if (fAmount < 0.1)
+		fAmount = 0.1
+	if (fAmount > 5.0)
+		fAmount = 5.0
 	
-	if(Phys_IsPhysicsObject(entProp)) {
-		float fMass = StringToFloat(szAmount)
-		Phys_SetMass(entProp, fMass)
-	} else
-		LM_PrintToChat(plyClient, "This isn't a physics prop!")
+	// TODO: HOW???
+	float vMins[3], vMaxs[3]
+	// Entity_GetMinSize(entProp, vMins)
+	// Entity_GetMaxSize(entProp, vMaxs)
+	GetEntPropVector(entProp, Prop_Send, "m_collisionMins", vMins)
+	GetEntPropVector(entProp, Prop_Send, "m_collisionMaxs", vMaxs)
+	LM_PrintToChat(plyClient, "%f %f %f - %f %f %f", vMins[0], vMins[1], vMins[2], vMaxs[0], vMaxs[1], vMaxs[2])
+	ScaleVector(vMins, fAmount)
+	ScaleVector(vMaxs, fAmount)
+	LM_PrintToChat(plyClient, "%f %f %f - %f %f %f", vMins[0], vMins[1], vMins[2], vMaxs[0], vMaxs[1], vMaxs[2])
+	// Entity_SetMinMaxSize(entProp, vMins, vMaxs)
+	DispatchKeyValueFloat(entProp, "modelscale", fAmount)
 	
 	char szArgs[128]
 	GetCmdArgString(szArgs, sizeof(szArgs))
-	LM_LogCmd(plyClient, "sm_setmass", szArgs)
+	LM_LogCmd(plyClient, "sm_scale", szArgs)
 	return Plugin_Handled
 }
 
