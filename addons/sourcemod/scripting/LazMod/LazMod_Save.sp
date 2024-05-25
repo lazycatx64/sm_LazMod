@@ -44,7 +44,7 @@ public Plugin myinfo = {
 }
 
 public OnPluginStart() {
-	RegAdminCmd("sm_ss", Command_SaveSpawn, ADMFLAG_CUSTOM1, "Save system ftw.")
+	RegAdminCmd("sm_ss", Command_SaveSpawn, 0, "Save system ftw.")
 
 
 	PrintToServer( "LazMod Save loaded!" )
